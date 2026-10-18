@@ -203,8 +203,6 @@
     <string name="install_next">Siguiente</string>
     <string name="install_select_partition">Seleccionar partición</string>
     <string name="install_upload_lkm_file">Usar archivo LKM local</string>
-    <string name="install_force_backup">Respaldar como imagen original</string>
-    <string name="install_force_backup_summary">Asegúrate de que la imagen de arranque seleccionada sea la imagen original</string>
     <string name="install_only_support_ko_file">Solo se admiten archivos .ko</string>
     <string name="select_file_tip">Se recomienda la imagen de partición %1$s</string>
     <string name="select_kmi">Selecciona KMI</string>
@@ -377,4 +375,6 @@
     <string name="script_param_below_min">Debe ser como mínimo %d</string>
     <string name="script_param_above_max">Debe ser como máximo %d</string>
     <string name="script_param_invalid">Valor no válido</string>
+    <string name="settings_module_update_badge">Insignia de actualización de módulos</string>
+    <string name="settings_module_update_badge_summary">Mostrar insignia en la barra de navegación cuando haya actualizaciones de módulos</string>
 </resources>

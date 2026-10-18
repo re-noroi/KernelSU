@@ -145,8 +145,6 @@
     <string name="settings_kernel_umount">Desmontar kernel</string>
     <string name="settings_kernel_umount_summary">Comportamento de desmontagem no nível do kernel controlado pelo KernelSU</string>
     <string name="profile_flags_desc_no_new_privs">Impede uma escalada adicional de privilégios via KernelSU no contexto deste perfil root.</string>
-    <string name="install_force_backup">Fazer backup como imagem original</string>
-    <string name="install_force_backup_summary">Certifique-se de que a imagem de boot selecionada seja a imagem original</string>
     <string name="home_device_model">Modelo do dispositivo</string>
     <string name="home_seccomp_status">Status do Seccomp</string>
     <string name="seccomp_status_not_supported">Sem suporte</string>
@@ -379,4 +377,6 @@
     <string name="script_param_below_min">Deve ser no mínimo %d</string>
     <string name="script_param_above_max">Deve ser no máximo %d</string>
     <string name="script_param_invalid">Valor inválido</string>
+    <string name="settings_module_update_badge">Selo de atualização de módulos</string>
+    <string name="settings_module_update_badge_summary">Mostrar selo na barra de navegação quando houver atualizações de módulos</string>
 </resources>
