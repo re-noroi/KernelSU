@@ -165,6 +165,12 @@ enum Commands {
         #[command(subcommand)]
         command: Initrc,
     },
+
+    /// Manage thermal profile and bypass charging
+    Tuning {
+        #[command(subcommand)]
+        command: TuningCmd,
+    },
 }
 
 #[derive(clap::Subcommand, Debug)]
@@ -519,6 +525,30 @@ enum Initrc {
     Refresh,
 }
 
+#[derive(clap::Subcommand, Debug)]
+enum TuningCmd {
+    /// Show current thermal / bypass charging status
+    Status,
+
+    /// List supported thermal profiles
+    List,
+
+    /// Apply a thermal profile and remember it for the next boot
+    Thermal {
+        /// profile index (see `ksud tuning list`)
+        index: i32,
+    },
+
+    /// Enable (1) or disable (0) bypass charging and remember it for the next boot
+    Bypass {
+        /// 1 to enable, 0 to disable
+        value: u8,
+    },
+
+    /// Reapply the persisted tuning settings
+    Apply,
+}
+
 pub fn run() -> Result<()> {
     android_logger::init_once(
         Config::default()
@@ -857,6 +887,23 @@ pub fn run() -> Result<()> {
         },
         Commands::Initrc { command } => match command {
             Initrc::Refresh => regenerate_preinit(),
+        },
+
+        Commands::Tuning { command } => match command {
+            TuningCmd::Status => {
+                crate::tuning::print_status();
+                Ok(())
+            }
+            TuningCmd::List => {
+                crate::tuning::print_profiles();
+                Ok(())
+            }
+            TuningCmd::Thermal { index } => crate::tuning::set_thermal(index),
+            TuningCmd::Bypass { value } => crate::tuning::set_bypass(value != 0),
+            TuningCmd::Apply => {
+                crate::tuning::apply_persisted();
+                Ok(())
+            }
         },
     };
 
