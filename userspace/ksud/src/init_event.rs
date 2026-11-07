@@ -179,6 +179,9 @@ pub fn on_services() {
 
     info!("on_services triggered!");
     run_stage("service", ScriptWait::NoWait);
+
+    // restore thermal / bypass charging preferences chosen in the manager
+    crate::tuning::apply_persisted();
 }
 
 pub fn on_boot_completed() {
