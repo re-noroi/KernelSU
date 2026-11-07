@@ -86,6 +86,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.graphics.BlendMode as ComposeBlendMode
+import androidx.compose.ui.layout.ContentScale
 
 @Composable
 fun AboutScreenMiuix(
@@ -296,7 +297,7 @@ private fun AboutContent(
             ) {
                 Image(
                     modifier = Modifier
-                        .requiredSize(245.dp)
+                        .fillMaxSize()
                         .then(
                             if (enableBlur) {
                                 Modifier.textureBlur(
@@ -312,6 +313,7 @@ private fun AboutContent(
                     painter = painterResource(id = state.appIconRes),
                     colorFilter = ColorFilter.tint(colorScheme.onBackground),
                     contentDescription = null,
+                    contentScale = ContentScale.Fit
                 )
             }
             Text(

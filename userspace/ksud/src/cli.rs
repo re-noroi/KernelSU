@@ -13,7 +13,7 @@ use crate::{
     utils,
 };
 
-/// MidoriSU userspace cli
+/// noroiSU userspace cli
 #[derive(Parser, Debug)]
 #[command(author, version = defs::FULL_VERSION, about, long_about = None)]
 struct Args {
@@ -23,7 +23,7 @@ struct Args {
 
 #[derive(clap::Subcommand, Debug)]
 enum Commands {
-    /// Manage MidoriSU modules
+    /// Manage noroiSU modules
     Module {
         #[command(subcommand)]
         command: Module,
@@ -77,7 +77,7 @@ enum Commands {
         params: Vec<String>,
     },
 
-    /// Install MidoriSU userspace component to system
+    /// Install noroiSU userspace component to system
     Install {
         #[arg(long, default_value = None)]
         libadbroot: Option<PathBuf>,
@@ -86,10 +86,10 @@ enum Commands {
         data_path: Option<PathBuf>,
     },
 
-    /// Unload MidoriSU kernel module (LKM Only)
+    /// Unload noroiSU kernel module (LKM Only)
     Unload,
 
-    /// Uninstall MidoriSU modules and itself(LKM Only)
+    /// Uninstall noroiSU modules and itself(LKM Only)
     Uninstall {
         #[arg(long, default_value_t = String::from(defs::DEFAULT_PACKAGE_NAME))]
         package_name: String,
@@ -113,10 +113,10 @@ enum Commands {
         command: Feature,
     },
 
-    /// Patch boot or init_boot images to apply MidoriSU
+    /// Patch boot or init_boot images to apply noroiSU
     BootPatch(BootPatchArgs),
 
-    /// Restore boot or init_boot images patched by MidoriSU
+    /// Restore boot or init_boot images patched by noroiSU
     BootRestore(BootRestoreArgs),
 
     /// Patch KernelSU into a boot image
@@ -523,7 +523,7 @@ pub fn run() -> Result<()> {
     android_logger::init_once(
         Config::default()
             .with_max_level(crate::debug_select!(LevelFilter::Trace, LevelFilter::Info))
-            .with_tag("MidoriSU"),
+            .with_tag("noroiSU"),
     );
 
     ksucalls::setup_sigsys_handler();
@@ -706,7 +706,7 @@ pub fn run() -> Result<()> {
         }
         Commands::Services => {
             if ksucalls::get_version() <= 0 {
-                info!("MidoriSU not available, exiting services");
+                info!("noroiSU not available, exiting services");
                 std::process::exit(0);
             }
             init_event::on_services();
