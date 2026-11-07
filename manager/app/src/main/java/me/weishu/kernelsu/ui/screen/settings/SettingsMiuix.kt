@@ -42,6 +42,7 @@ import androidx.compose.material.icons.rounded.NewReleases
 import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material.icons.rounded.SystemUpdateAlt
+import androidx.compose.material.icons.rounded.Thermostat
 import androidx.compose.material.icons.rounded.Update
 import androidx.compose.material.icons.rounded.UploadFile
 import androidx.compose.runtime.Composable
@@ -257,6 +258,29 @@ fun SettingPagerMiuix(
                                     )
                                 },
                                 onClick = actions.onOpenProfileTemplate
+                            )
+                        }
+                    }
+
+                    KsuIsValid {
+                        Card(
+                            modifier = Modifier
+                                .padding(top = 12.dp)
+                                .fillMaxWidth(),
+                        ) {
+                            val tuning = stringResource(id = R.string.settings_tuning)
+                            ArrowPreference(
+                                title = tuning,
+                                summary = stringResource(id = R.string.settings_tuning_summary),
+                                startAction = {
+                                    Icon(
+                                        Icons.Rounded.Thermostat,
+                                        modifier = Modifier.padding(end = 6.dp),
+                                        contentDescription = tuning,
+                                        tint = colorScheme.onBackground
+                                    )
+                                },
+                                onClick = actions.onOpenTuning
                             )
                         }
                     }

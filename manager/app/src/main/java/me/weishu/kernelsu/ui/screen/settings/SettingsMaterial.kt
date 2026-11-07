@@ -40,6 +40,7 @@ import androidx.compose.material.icons.filled.NewReleases
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.SystemUpdateAlt
+import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.material.icons.rounded.Dashboard
 import androidx.compose.material.icons.rounded.UploadFile
@@ -205,6 +206,27 @@ fun SettingPagerMaterial(
                             headlineContent = { Text(profileTemplate) },
                             supportingContent = { Text(stringResource(id = R.string.settings_profile_template_summary)) },
                             leadingContent = { Icon(Icons.Filled.Description, profileTemplate) },
+                            trailingContent = {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                    null
+                                )
+                            }
+                        )
+                    }
+                )
+            }
+
+            KsuIsValid {
+                val tuning = stringResource(id = R.string.settings_tuning)
+                SegmentedColumn(
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
+                    content = listOf {
+                        SegmentedListItem(
+                            onClick = actions.onOpenTuning,
+                            headlineContent = { Text(tuning) },
+                            supportingContent = { Text(stringResource(id = R.string.settings_tuning_summary)) },
+                            leadingContent = { Icon(Icons.Filled.Thermostat, tuning) },
                             trailingContent = {
                                 Icon(
                                     Icons.AutoMirrored.Filled.KeyboardArrowRight,

@@ -62,6 +62,9 @@ mod android {
     // Written by installer.sh when customize.sh requests a hot install
     pub const HOT_INSTALL_MARKER: &str = ".ksu_hot_install";
 
+    // Thermal profile / bypass charging preferences
+    pub const TUNING_CONFIG_PATH: &str = concatcp!(WORKING_DIR, "tuning.conf");
+
     // Module config system
     pub const MODULE_CONFIG_DIR: &str = concatcp!(WORKING_DIR, "module_configs/");
     pub const PERSIST_CONFIG_NAME: &str = "persist.config";
