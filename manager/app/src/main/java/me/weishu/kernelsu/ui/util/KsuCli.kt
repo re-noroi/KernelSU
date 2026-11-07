@@ -56,6 +56,11 @@ data class FlashResult(val code: Int, val err: String, val showReboot: Boolean) 
     constructor(result: Shell.Result) : this(result, result.isSuccess)
 }
 
+/** Captures the exit code and both streams of a ksud command. */
+data class KsuCliResult(val code: Int, val out: String, val err: String) {
+    val isSuccess: Boolean get() = code == 0
+}
+
 object KsuCli {
     val SHELL: Shell = createRootShell()
     val GLOBAL_MNT_SHELL: Shell = createRootShell(true)
@@ -125,6 +130,30 @@ suspend fun getFeatureStatus(feature: String): String = withContext(Dispatchers.
     val out = shell.newJob()
         .add("${getKsuDaemonPath()} feature check $feature").to(ArrayList<String>(), null).exec().out
     out.firstOrNull()?.trim().orEmpty()
+}
+
+/**
+ * Runs a ksud command and returns its exit code together with stdout/stderr.
+ * Used by screens that need to parse structured output such as `ksud tuning status`.
+ */
+suspend fun execKsudCommand(
+    args: String,
+    newShell: Boolean = false,
+    globalMnt: Boolean = false,
+): KsuCliResult = withContext(Dispatchers.IO) {
+    val command = "${getKsuDaemonPath()} $args"
+    val result = if (newShell) {
+        withNewRootShell(globalMnt) {
+            newJob().add(command).exec()
+        }
+    } else {
+        getRootShell(globalMnt).newJob().add(command).exec()
+    }
+    KsuCliResult(
+        code = result.code,
+        out = result.out.joinToString("\n"),
+        err = result.err.joinToString("\n"),
+    )
 }
 
 suspend fun getFeaturePersistValue(feature: String): Long? = readFeatureValue("--config $feature")
