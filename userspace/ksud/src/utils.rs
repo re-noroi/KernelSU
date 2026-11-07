@@ -296,7 +296,7 @@ pub fn uninstall(package_name: &str) -> Result<()> {
         out: None,
         out_name: None,
     })?;
-    println!("- Uninstall MidoriSU manager..");
+    println!("- Uninstall noroiSU manager..");
     Command::new("pm")
         .args(["uninstall", package_name])
         .spawn()?;

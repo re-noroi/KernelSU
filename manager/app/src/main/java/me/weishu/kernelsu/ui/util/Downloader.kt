@@ -78,7 +78,7 @@ fun checkNewVersion(): LatestVersionInfo {
                         continue
                     }
 
-                    val regex = Regex("MidoriSU_(.+?)_(\\d+)-")
+                    val regex = Regex("noroiSU_(.+?)_(\\d+)-")
                     val matchResult = regex.find(name) ?: continue
                     val versionCode = matchResult.groupValues[2].toInt()
                     val downloadUrl = asset.getString("browser_download_url")
