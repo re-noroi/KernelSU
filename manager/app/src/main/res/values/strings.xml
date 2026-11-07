@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name_official" translatable="false">KernelSU</string>
-    <string name="app_name_midorisu" translatable="false">MidoriSU</string>
+    <string name="app_name_midorisu" translatable="false">noroiSU</string>
     <string name="app_name_kowsu" translatable="false">KowSU</string>
     <string name="settings_app_icon">App icon</string>
     <string name="home">Home</string>
@@ -201,7 +201,7 @@
     <string name="home_support_title">Support Us</string>
     <string name="home_support_content">KernelSU is, and always will be, free, and open source. However, you can show us that you care by making a donation.</string>
     <string name="home_gki_warning">Starting from v3.0.0, the GKI work mode will be used only in testing environments. We do not recommend it for daily use, and image files will no longer be provided.</string>
-    <string name="about_source_code"><![CDATA[View source code at %1$s<br/>Join our %2$s channel]]></string>
+    <string name="about_source_code"><![CDATA[View source code at %1$s<br/>Based on %2$s]]></string>
     <string name="profile" translatable="false">App Profile</string>
     <string name="profile_default">Default</string>
     <string name="profile_template">Template</string>
@@ -748,7 +748,7 @@
     <string name="bento_copy_report">Copy Report</string>
     <string name="bento_report_copied">Diagnostic summary copied to clipboard</string>
     <string name="bento_smart_pill_panic">Kernel panic log detected, tap to analyze</string>
-    <string name="bento_smart_pill_update">MidoriSU %1$s update available</string>
+    <string name="bento_smart_pill_update">noroiSU %1$s update available</string>
     <string name="bento_smart_pill_driver_update">KSU Driver %1$s update available</string>
     <string name="settings_modern_bento">Modern Bento Dashboard</string>
     <string name="settings_modern_bento_summary">Use modular Bento tiles and card dashboard for home screen</string>

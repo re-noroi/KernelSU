@@ -1,1 +1,1 @@
-# MidoriSU installer/uninstaller script
+# noroiSU installer/uninstaller script

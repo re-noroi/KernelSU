@@ -1111,7 +1111,7 @@ private fun BentoDeviceSpecsCard(
                     haptic.performHapticFeedback(HapticFeedbackType.VirtualKey)
                     val report = generateDiagnosticReport(context, systemInfo)
                     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                    val clip = android.content.ClipData.newPlainText("MidoriSU Diagnostic Report", report)
+                    val clip = android.content.ClipData.newPlainText("noroiSU Diagnostic Report", report)
                     clipboard.setPrimaryClip(clip)
                     if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2) {
                         Toast.makeText(context, R.string.bento_report_copied, Toast.LENGTH_SHORT).show()
@@ -2290,7 +2290,7 @@ private fun previewHomeScreenState(
     isGki2: Boolean = true,
     localVersion: String = "-midori",
 ) = HomeUiState(
-    appName = "MidoriSU",
+    appName = "noroiSU",
     kernelVersion = KernelVersion(6, 1, 0),
     ksuVersion = ksuVersion,
     lkmMode = lkmMode,
