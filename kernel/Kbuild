@@ -170,17 +170,17 @@ $(info -- KSU_NEW_DCACHE_FLUSH: $(KSU_NEW_DCACHE_FLUSH))
 
 KSU_IS_PR_BUILD ?= 0
 ifeq ($(KSU_IS_PR_BUILD),0)
-KSU_PACKAGE_NAME ?= com.midori.supermanager
+KSU_PACKAGE_NAME ?= com.noroi.supermanager
 else
-KSU_PACKAGE_NAME ?= com.midori.supermanager.pr
+KSU_PACKAGE_NAME ?= com.noroi.supermanager.pr
 endif
 
 ifndef KSU_EXPECTED_SIZE
-KSU_EXPECTED_SIZE := 0x0368
+KSU_EXPECTED_SIZE := 0x037c
 endif
 
 ifndef KSU_EXPECTED_HASH
-KSU_EXPECTED_HASH := b9ee6759de4794f954883458b722b97ae6527cb7709a051db9a2348c0eea1e42
+KSU_EXPECTED_HASH := cb4c3be2293943b82bd85c77a93c2317d34b99b8dc1b323b75ff8cebb4b2c2ba
 endif
 
 $(info -- KernelSU Manager package name: $(KSU_PACKAGE_NAME))

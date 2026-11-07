@@ -1112,7 +1112,7 @@ pub fn patch(args: BootPatchArgs) -> Result<()> {
                 "Cannot work with Magisk patched image"
             );
 
-            println!("- Adding MidoriSU LKM");
+            println!("- Adding noroiSU LKM");
             let is_kernelsu_patched = cpio.exists("kernelsu.ko");
 
             if !is_kernelsu_patched && cpio.exists("init") {
@@ -1321,7 +1321,7 @@ pub fn restore(args: BootRestoreArgs) -> Result<()> {
 
     ensure!(
         cpio.exists("kernelsu.ko"),
-        "boot image is not patched by MidoriSU"
+        "boot image is not patched by noroiSU"
     );
 
     #[cfg(target_os = "android")]
@@ -1407,7 +1407,7 @@ fn rebuild_without_ksu(
     cpio: &mut Cpio,
     vendor_ramdisk_idx: Option<usize>,
 ) -> Result<Vec<u8>> {
-    println!("- Removing MidoriSU from boot image");
+    println!("- Removing noroiSU from boot image");
     cpio.rm("kernelsu.ko", false);
     if cpio.exists("init.real") {
         cpio.mv("init.real", "init")?;

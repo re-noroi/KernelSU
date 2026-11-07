@@ -1,4 +1,4 @@
-name: Build MidoriSU Manager
+name: Build noroiSU Manager
 
 on:
   workflow_call:
