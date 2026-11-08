@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import me.weishu.kernelsu.ui.util.execKsudCommand
+import me.weishu.kernelsu.ui.screen.tuning.NetworkState
 
 data class ThermalProfile(val index: Int, val name: String)
 
@@ -43,6 +44,7 @@ data class TuningUiState(
     val scheduler: SchedulerState = SchedulerState(),
     val cgroups: List<CgroupState> = emptyList(),
     val persist: Boolean = true,
+    val network: NetworkState = NetworkState(),
     val errorMessage: String? = null,
 )
 
@@ -129,6 +131,17 @@ class TuningViewModel : ViewModel() {
             )
         }
 
+        val tcpAvailStr = execRootCommand("cat /proc/sys/net/ipv4/tcp_available_congestion_control")
+        val tcpCur = execRootCommand("cat /proc/sys/net/ipv4/tcp_congestion_control")
+        val qdiscCur = execRootCommand("cat /proc/sys/net/core/default_qdisc")
+        
+        val network = NetworkState(
+            supported = tcpAvailStr.isNotEmpty(),
+            tcpAvailable = tcpAvailStr.split(" ").filter { it.isNotBlank() },
+            tcpCurrent = tcpCur,
+            qdiscCurrent = qdiscCur
+        )
+
         val persistStr = execRootCommand(
             "grep '^persist=' $configPath 2>/dev/null | cut -d= -f2"
         )
@@ -147,6 +160,7 @@ class TuningViewModel : ViewModel() {
                 scheduler = scheduler,
                 cgroups = cgroups,
                 persist = persist,
+                network = network,
                 errorMessage = null,
             )
         }
@@ -216,6 +230,16 @@ class TuningViewModel : ViewModel() {
         apply("cgroup_${name}_shares", v.toString())
     }
 
+    fun setTcpCongestion(value: String) {
+        _uiState.update { it.copy(network = it.network.copy(tcpCurrent = value)) }
+        apply("tcp_congestion", value)
+    }
+
+    fun setQdisc(value: String) {
+        _uiState.update { it.copy(network = it.network.copy(qdiscCurrent = value)) }
+        apply("qdisc", value)
+    }
+
     private fun apply(type: String, value: String) {
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update { it.copy(isApplying = true, errorMessage = null) }
@@ -240,6 +264,8 @@ class TuningViewModel : ViewModel() {
                         "tuning cgroup $name $key $value"
                     }
                 }
+                type == "tcp_congestion" -> "tuning tcp-congestion $value"
+                type == "qdisc" -> "tuning qdisc $value"
                 else -> null
             }
 
