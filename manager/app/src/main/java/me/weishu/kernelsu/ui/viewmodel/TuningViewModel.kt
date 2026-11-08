@@ -11,26 +11,12 @@ import kotlinx.coroutines.launch
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import me.weishu.kernelsu.ui.util.execKsudCommand
+import me.weishu.kernelsu.ui.screen.tuning.SchedulerState
+import me.weishu.kernelsu.ui.screen.tuning.CgroupState
 import me.weishu.kernelsu.ui.screen.tuning.NetworkState
 import me.weishu.kernelsu.ui.screen.tuning.MemoryState
 
 data class ThermalProfile(val index: Int, val name: String)
-
-data class SchedulerState(
-    val supported: Boolean = false,
-    val skipHeadroom: Int = 1,
-    val hrScaling: Int = 0,
-    val boostHrLp: Int = 0,
-    val boostHrBig: Int = 0,
-    val boostHrPrime: Int = 0,
-)
-
-data class CgroupState(
-    val name: String,
-    val uclampMin: Int = 0,
-    val uclampMax: Int = 100,
-    val shares: Int = 1024,
-)
 
 data class TuningUiState(
     val isLoading: Boolean = true,
