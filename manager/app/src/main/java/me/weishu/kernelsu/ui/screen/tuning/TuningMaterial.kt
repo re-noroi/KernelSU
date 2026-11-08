@@ -302,69 +302,89 @@ fun TuningScreenMaterial(
             }
 
             // ---- SCHEDULERS ----
-            if (state.scheduler.supported) {
+            if (state.scheduler.skipHeadroomSupported || state.cgroups.isNotEmpty()) {
                 item { SectionHeader(stringResource(R.string.tuning_section_schedulers)) }
 
+                // FakeDreamers
                 item { SubHeader(stringResource(R.string.tuning_section_fakedreamers)) }
                 item {
                     SegmentedColumn(
                         modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
                     ) {
-                        item {
-                            SegmentedSwitchItem(
-                                icon = Icons.Filled.Speed,
-                                title = stringResource(R.string.tuning_sched_skip_headroom),
-                                summary = stringResource(
-                                    if (state.scheduler.skipHeadroom == 0)
-                                        R.string.tuning_sched_skip_headroom_on
-                                    else R.string.tuning_sched_skip_headroom_off
-                                ),
-                                checked = state.scheduler.skipHeadroom == 0,
-                                enabled = true,
-                                onCheckedChange = actions.onSetSkipHeadroom,
-                            )
-                        }
-                        if (state.scheduler.skipHeadroom == 0) {
+                        if (state.scheduler.skipHeadroomSupported) {
                             item {
                                 SegmentedSwitchItem(
-                                    icon = Icons.Filled.TrendingUp,
-                                    title = stringResource(R.string.tuning_sched_hr_scaling),
-                                    summary = if (state.scheduler.hrScaling != 0) "On" else "Off",
-                                    checked = state.scheduler.hrScaling != 0,
+                                    icon = Icons.Filled.Speed,
+                                    title = stringResource(R.string.tuning_sched_skip_headroom),
+                                    summary = stringResource(
+                                        if (state.scheduler.skipHeadroom == 0) R.string.tuning_sched_skip_headroom_on
+                                        else R.string.tuning_sched_skip_headroom_off
+                                    ),
+                                    checked = state.scheduler.skipHeadroom == 0,
                                     enabled = true,
-                                    onCheckedChange = actions.onSetHrScaling,
+                                    onCheckedChange = actions.onSetSkipHeadroom,
                                 )
                             }
-                            if (state.scheduler.hrScaling != 0) {
-                                item {
-                                    IntSliderItem(
-                                        title = stringResource(R.string.tuning_sched_boost_lp),
-                                        value = state.scheduler.boostHrLp,
-                                        range = -50..100,
-                                        onValueChange = actions.onSetBoostHrLp,
-                                    )
+                            if (state.scheduler.skipHeadroom == 0) {
+                                if (state.scheduler.hrScalingSupported) {
+                                    item {
+                                        SegmentedSwitchItem(
+                                            icon = Icons.Filled.TrendingUp,
+                                            title = stringResource(R.string.tuning_sched_hr_scaling),
+                                            summary = if (state.scheduler.hrScaling != 0) "On" else "Off",
+                                            checked = state.scheduler.hrScaling != 0,
+                                            enabled = true,
+                                            onCheckedChange = actions.onSetHrScaling,
+                                        )
+                                    }
+                                    if (state.scheduler.hrScaling != 0) {
+                                        if (state.scheduler.boostHrLpSupported) {
+                                            item {
+                                                IntSliderItem(
+                                                    title = stringResource(R.string.tuning_sched_boost_lp),
+                                                    value = state.scheduler.boostHrLp,
+                                                    range = -50..100,
+                                                    onValueChange = actions.onSetBoostHrLp,
+                                                )
+                                            }
+                                        }
+                                        if (state.scheduler.boostHrBigSupported) {
+                                            item {
+                                                IntSliderItem(
+                                                    title = stringResource(R.string.tuning_sched_boost_big),
+                                                    value = state.scheduler.boostHrBig,
+                                                    range = -50..100,
+                                                    onValueChange = actions.onSetBoostHrBig,
+                                                )
+                                            }
+                                        }
+                                        if (state.scheduler.boostHrPrimeSupported) {
+                                            item {
+                                                IntSliderItem(
+                                                    title = stringResource(R.string.tuning_sched_boost_prime),
+                                                    value = state.scheduler.boostHrPrime,
+                                                    range = -50..30,
+                                                    onValueChange = actions.onSetBoostHrPrime,
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
-                                item {
-                                    IntSliderItem(
-                                        title = stringResource(R.string.tuning_sched_boost_big),
-                                        value = state.scheduler.boostHrBig,
-                                        range = -50..100,
-                                        onValueChange = actions.onSetBoostHrBig,
-                                    )
-                                }
-                                item {
-                                    IntSliderItem(
-                                        title = stringResource(R.string.tuning_sched_boost_prime),
-                                        value = state.scheduler.boostHrPrime,
-                                        range = -50..30,
-                                        onValueChange = actions.onSetBoostHrPrime,
-                                    )
-                                }
+                            }
+                        } else {
+                            item {
+                                Text(
+                                    "Not Supported, this is not a FakeDreamer Kernel.",
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                )
                             }
                         }
                     }
                 }
 
+                // CGroup
                 if (state.cgroups.isNotEmpty()) {
                     item { SubHeader(stringResource(R.string.tuning_section_cgroup)) }
                     state.cgroups.forEach { cg ->
@@ -379,32 +399,56 @@ fun TuningScreenMaterial(
                                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                                     )
                                 }
-                                item {
-                                    IntInputItem(
-                                        title = stringResource(R.string.tuning_sched_uclamp_min),
-                                        value = cg.uclampMin,
-                                        range = 0..100,
-                                        onValueChange = { actions.onSetCgroupUclampMin(cg.name, it) },
-                                    )
+                                
+                                // UClamp Min & Max
+                                if (cg.uclampMinSupported && cg.uclampMaxSupported) {
+                                    item {
+                                        IntInputItem(
+                                            title = stringResource(R.string.tuning_sched_uclamp_min),
+                                            value = cg.uclampMin,
+                                            range = 0..100,
+                                            onValueChange = { actions.onSetCgroupUclampMin(cg.name, it) },
+                                        )
+                                    }
+                                    item {
+                                        IntInputItem(
+                                            title = stringResource(R.string.tuning_sched_uclamp_max),
+                                            value = cg.uclampMax,
+                                            range = 0..100,
+                                            onValueChange = { actions.onSetCgroupUclampMax(cg.name, it) },
+                                        )
+                                    }
+                                } else {
+                                    item {
+                                        Text(
+                                            "UClamp is not supported in this kernel.",
+                                            color = MaterialTheme.colorScheme.error,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                        )
+                                    }
                                 }
-                                item {
-                                    IntInputItem(
-                                        title = stringResource(R.string.tuning_sched_uclamp_max),
-                                        value = cg.uclampMax,
-                                        range = 0..100,
-                                        onValueChange = { actions.onSetCgroupUclampMax(cg.name, it) },
-                                    )
-                                }
-                                item {
-                                    IntSliderItem(
-                                        title = stringResource(R.string.tuning_sched_shares),
-                                        value = (cg.shares * 100 / 20480).coerceIn(5, 100),
-                                        range = 5..100,
-                                        step = 5,
-                                        onValueChange = { pct ->
-                                            actions.onSetCgroupShares(cg.name, pct * 20480 / 100)
-                                        },
-                                    )
+
+                                // CPU Shares
+                                if (cg.sharesSupported) {
+                                    item {
+                                        IntSliderItem(
+                                            title = stringResource(R.string.tuning_sched_shares),
+                                            value = (cg.shares * 100 / 20480).coerceIn(5, 100),
+                                            range = 5..100,
+                                            step = 5,
+                                            onValueChange = { pct -> actions.onSetCgroupShares(cg.name, pct * 20480 / 100) },
+                                        )
+                                    }
+                                } else {
+                                    item {
+                                        Text(
+                                            "Fair group CPU scheduling is disabled in this kernel.",
+                                            color = MaterialTheme.colorScheme.error,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                        )
+                                    }
                                 }
                             }
                         }
