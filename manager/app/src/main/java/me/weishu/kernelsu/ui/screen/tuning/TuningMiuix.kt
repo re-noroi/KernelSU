@@ -29,6 +29,7 @@ import androidx.compose.material.icons.rounded.BatteryChargingFull
 import androidx.compose.material.icons.rounded.Thermostat
 import androidx.compose.material.icons.rounded.NetworkCheck
 import androidx.compose.material.icons.rounded.Router
+import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
@@ -227,6 +228,92 @@ fun TuningScreenMiuix(
                     }
                 }
 
+                // ---- MEMORY ----
+                if (state.memory.supported) {
+                    item { SectionHeaderMiuix("Memory Management") }
+                    item {
+                        Card(modifier = Modifier.fillMaxWidth()) {
+                            Column {
+                                // Swappiness — always exists, just might be RO
+                                IntInputMiuix(
+                                    title = "Swappiness",
+                                    value = state.memory.swappiness,
+                                    range = 0..100,
+                                    enabled = !state.memory.swappinessRo,
+                                    onValueChange = actions.onSetSwappiness,
+                                )
+                                if (state.memory.swappinessRo) {
+                                    Text(
+                                        "Read-only in this kernel.",
+                                        color = colorScheme.error,
+                                        fontSize = 12.sp,
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                                    )
+                                }
+
+                                // VFS Cache Pressure
+                                if (state.memory.vfsSupported) {
+                                    IntInputMiuix(
+                                        title = "VFS Cache Pressure",
+                                        value = state.memory.vfsCache,
+                                        range = 0..1000,
+                                        onValueChange = actions.onSetVfsCache,
+                                    )
+                                } else {
+                                    Text(
+                                        "VFS Cache Pressure is not supported in this kernel.",
+                                        color = colorScheme.error,
+                                        fontSize = 12.sp,
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                    )
+                                }
+
+                                // kcompressd
+                                if (state.memory.kcompressdSupported) {
+                                    IntInputMiuix(
+                                        title = "kcompressd",
+                                        value = state.memory.kcompressd,
+                                        range = 0..256,
+                                        onValueChange = actions.onSetKcompressd,
+                                    )
+                                } else {
+                                    Text(
+                                        "kcompressd is not supported in this kernel.",
+                                        color = colorScheme.error,
+                                        fontSize = 12.sp,
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                    )
+                                }
+
+                                // MGLRU
+                                if (state.memory.mglruSupported) {
+                                    SwitchPreference(
+                                        title = "MGLRU",
+                                        summary = "Current: ${state.memory.mglruRaw}",
+                                        checked = state.memory.mglruEnabled,
+                                        onCheckedChange = actions.onSetMglru,
+                                    )
+                                    if (state.memory.mglruEnabled) {
+                                        IntInputMiuix(
+                                            title = "MGLRU min_ttl_ms",
+                                            value = state.memory.mglruTtl,
+                                            range = 0..10000,
+                                            onValueChange = actions.onSetMglruTtl,
+                                        )
+                                    }
+                                } else {
+                                    Text(
+                                        "MGLRU is not supported in this kernel.",
+                                        color = colorScheme.error,
+                                        fontSize = 12.sp,
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // ---- SCHEDULERS ----
                 if (state.scheduler.supported) {
                     item { SectionHeaderMiuix(stringResource(R.string.tuning_section_schedulers)) }
@@ -394,6 +481,7 @@ private fun IntSliderMiuix(
     value: Int,
     range: IntRange,
     step: Int = 1,
+    enabled: Boolean = true,
     onValueChange: (Int) -> Unit,
 ) {
     var dragValue by remember(value) { mutableFloatStateOf(value.toFloat()) }
@@ -411,6 +499,7 @@ private fun IntSliderMiuix(
             onValueChangeFinished = { onValueChange(dragValue.roundToInt()) },
             valueRange = range.first.toFloat()..range.last.toFloat(),
             steps = ((range.last - range.first) / step).coerceAtLeast(0) - 1,
+            enabled = enabled,
             // FORCE MIUIX COLORS
             colors = SliderDefaults.colors(
                 thumbColor = colorScheme.primary,
@@ -427,11 +516,13 @@ private fun IntInputMiuix(
     title: String,
     value: Int,
     range: IntRange,
+    enabled: Boolean = true, // <-- ADD THIS
     onValueChange: (Int) -> Unit,
 ) {
     var text by remember(value) { mutableStateOf(value.toString()) }
 
     fun commit() {
+        if (!enabled) return
         val parsed = text.toIntOrNull() ?: value
         val clamped = parsed.coerceIn(range.first, range.last)
         text = clamped.toString()
@@ -446,7 +537,11 @@ private fun IntInputMiuix(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, fontSize = 15.sp)
+            Text(
+                title, 
+                fontSize = 15.sp,
+                color = if (enabled) colorScheme.onBackground else colorScheme.onBackground.copy(alpha = 0.5f)
+            )
             Text(
                 "Current: $value  |  Range: ${range.first}–${range.last}",
                 fontSize = 12.sp,
@@ -457,9 +552,10 @@ private fun IntInputMiuix(
         OutlinedTextField(
             value = text,
             onValueChange = { new ->
-                if (new.length <= 3 && new.all { it.isDigit() }) text = new
+                if (enabled && new.length <= 4 && new.all { it.isDigit() }) text = new
             },
             singleLine = true,
+            enabled = enabled,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { commit() }),
             textStyle = LocalTextStyle.current.copy(color = colorScheme.onBackground),
@@ -471,7 +567,6 @@ private fun IntInputMiuix(
                 cursorColor = colorScheme.primary,
                 focusedIndicatorColor = colorScheme.primary
             ),
-            // NARROWER WIDTH
             modifier = Modifier
                 .width(60.dp)
                 .height(48.dp)
@@ -479,11 +574,11 @@ private fun IntInputMiuix(
         
         Button(
             onClick = { commit() },
+            enabled = enabled,
             colors = ButtonDefaults.buttonColors(
                 containerColor = colorScheme.primary,
                 contentColor = colorScheme.onPrimary
             ),
-            // SHORTER HEIGHT (40dp) & NARROWER WIDTH (52dp)
             modifier = Modifier
                 .width(52.dp)
                 .height(40.dp),

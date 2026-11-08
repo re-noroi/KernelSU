@@ -42,6 +42,12 @@ fun TuningScreen(isRootTab: Boolean = false, bottomInnerPadding: Dp = 0.dp) {
         // Networking
         onSetTcpCongestion = viewModel::setTcpCongestion,
         onSetQdisc = viewModel::setQdisc,
+        // Memory
+        onSetSwappiness = viewModel::setSwappiness,
+        onSetVfsCache = viewModel::setVfsCache,
+        onSetKcompressd = viewModel::setKcompressd,
+        onSetMglru = viewModel::setMglru,
+        onSetMglruTtl = viewModel::setMglruTtl,
     )
 
     when (LocalUiMode.current) {
