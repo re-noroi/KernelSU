@@ -206,7 +206,7 @@ fun TuningScreenMaterial(
                         modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
                     ) {
                         item {
-                            IntSliderItem(
+                            IntInputItem(
                                 title = "Swappiness",
                                 value = state.memory.swappiness,
                                 range = 0..100,
@@ -444,6 +444,7 @@ private fun IntSliderItem(
     value: Int,
     range: IntRange,
     step: Int = 1,
+    enabled: Boolean = true,
     onValueChange: (Int) -> Unit,
 ) {
     var dragValue by remember(value) { mutableFloatStateOf(value.toFloat()) }
@@ -461,6 +462,7 @@ private fun IntSliderItem(
             onValueChangeFinished = { onValueChange(dragValue.roundToInt()) },
             valueRange = range.first.toFloat()..range.last.toFloat(),
             steps = ((range.last - range.first) / step).coerceAtLeast(0) - 1,
+            enabled = enabled,
         )
     }
 }

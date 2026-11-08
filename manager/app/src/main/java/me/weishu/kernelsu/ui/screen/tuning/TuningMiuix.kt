@@ -234,7 +234,7 @@ fun TuningScreenMiuix(
                     item {
                         Card(modifier = Modifier.fillMaxWidth()) {
                             Column {
-                                IntSliderMiuix(
+                                IntInputMiuix(
                                     title = "Swappiness",
                                     value = state.memory.swappiness,
                                     range = 0..100,
@@ -448,6 +448,7 @@ private fun IntSliderMiuix(
     value: Int,
     range: IntRange,
     step: Int = 1,
+    enabled: Boolean = true,
     onValueChange: (Int) -> Unit,
 ) {
     var dragValue by remember(value) { mutableFloatStateOf(value.toFloat()) }
@@ -465,6 +466,7 @@ private fun IntSliderMiuix(
             onValueChangeFinished = { onValueChange(dragValue.roundToInt()) },
             valueRange = range.first.toFloat()..range.last.toFloat(),
             steps = ((range.last - range.first) / step).coerceAtLeast(0) - 1,
+            enabled = enabled,
             // FORCE MIUIX COLORS
             colors = SliderDefaults.colors(
                 thumbColor = colorScheme.primary,
