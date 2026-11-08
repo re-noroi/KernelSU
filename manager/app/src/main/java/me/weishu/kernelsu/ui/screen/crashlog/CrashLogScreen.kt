@@ -32,7 +32,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
@@ -47,7 +46,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -62,11 +60,6 @@ import me.weishu.kernelsu.ui.UiMode
 import me.weishu.kernelsu.ui.component.ListPopupDefaults
 import me.weishu.kernelsu.ui.component.ScrollToTopOnChange
 import me.weishu.kernelsu.ui.component.SearchStatus
-import me.weishu.kernelsu.ui.component.bottombar.KernelTool
-import me.weishu.kernelsu.ui.component.bottombar.KernelToolNavigationIconMaterial
-import me.weishu.kernelsu.ui.component.bottombar.KernelToolTitleDropdownMaterial
-import me.weishu.kernelsu.ui.component.bottombar.RegisterTabReselect
-import me.weishu.kernelsu.ui.component.bottombar.KernelToolTopAppBarMiuix
 import me.weishu.kernelsu.ui.component.dialog.rememberConfirmDialog
 import me.weishu.kernelsu.ui.component.material.ExpressiveScaffold
 import me.weishu.kernelsu.ui.component.material.SearchAppBar
@@ -107,7 +100,7 @@ import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 @Composable
-fun CrashLogScreen(isRootTab: Boolean = false) {
+fun CrashLogScreen() {
     val viewModel = viewModel<CrashLogViewModel>()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -122,7 +115,6 @@ fun CrashLogScreen(isRootTab: Boolean = false) {
             onClearAll = viewModel::clearAll,
             context = context,
             navigator = navigator,
-            isRootTab = isRootTab,
         )
 
         UiMode.Material -> CrashLogScreenMaterial(
@@ -133,7 +125,6 @@ fun CrashLogScreen(isRootTab: Boolean = false) {
             onClearAll = viewModel::clearAll,
             context = context,
             navigator = navigator,
-            isRootTab = isRootTab,
         )
     }
 }
@@ -147,7 +138,6 @@ fun CrashLogScreenMiuix(
     onClearAll: (() -> Unit) -> Unit,
     context: Context,
     navigator: Navigator,
-    isRootTab: Boolean = false,
 ) {
     val enableBlur = LocalEnableBlur.current
     val density = LocalDensity.current
@@ -162,12 +152,6 @@ fun CrashLogScreenMiuix(
     val searchListState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     var searchStatus by remember { mutableStateOf(SearchStatus(context.getString(R.string.crash_search))) }
-    if (isRootTab) {
-        RegisterTabReselect(2) {
-            val target = if (searchStatus.isExpanded()) searchListState else listState
-            target.animateScrollToItem(0)
-        }
-    }
 
     var pendingDeleteAction by remember { mutableStateOf<(() -> Unit)?>(null) }
     val confirmDialog = rememberConfirmDialog(onConfirm = {
@@ -199,13 +183,19 @@ fun CrashLogScreenMiuix(
         topBar = {
             BlurredBar(backdrop) {
                 searchStatus.TopAppBarAnim(backgroundColor = barColor) {
-                    KernelToolTopAppBarMiuix(
-                        currentTool = KernelTool.CrashLog,
-                        isRootTab = isRootTab,
-                        titleRes = R.string.crash_analyzer_title,
-                        navigator = navigator,
+                    MiuixTopAppBar(
+                        title = stringResource(R.string.crash_analyzer_title),
                         color = barColor,
                         scrollBehavior = scrollBehavior,
+                        navigationIcon = {
+                            MiuixIconButton(onClick = { navigator.pop() }) {
+                                MiuixIcon(
+                                    imageVector = MiuixIcons.Back,
+                                    contentDescription = null,
+                                    tint = colorScheme.onSurface,
+                                )
+                            }
+                        },
                         actions = {
                             if (uiState.availableSources.isNotEmpty()) {
                                 Box {
@@ -796,7 +786,6 @@ fun CrashLogScreenMaterial(
     onClearAll: (() -> Unit) -> Unit,
     context: Context,
     navigator: Navigator,
-    isRootTab: Boolean = false,
 ) {
     val haptic = LocalHapticFeedback.current
     val listState = rememberLazyListState()
@@ -805,12 +794,6 @@ fun CrashLogScreenMaterial(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     val snackbarHostState = remember { SnackbarHostState() }
     var localSearchText by remember { mutableStateOf(uiState.searchQuery) }
-    if (isRootTab) {
-        RegisterTabReselect(2) {
-            val target = if (localSearchText.isNotEmpty()) searchListState else listState
-            target.animateScrollToItem(0)
-        }
-    }
 
     var pendingDeleteAction by remember { mutableStateOf<(() -> Unit)?>(null) }
     val confirmDialog = rememberConfirmDialog(onConfirm = {
@@ -833,11 +816,7 @@ fun CrashLogScreenMaterial(
             SearchAppBar(
                 snackbarHostState = snackbarHostState,
                 title = {
-                    if (isRootTab) {
-                        KernelToolTitleDropdownMaterial(KernelTool.CrashLog, navigator)
-                    } else {
-                        Text(stringResource(R.string.crash_analyzer_title))
-                    }
+                    Text(stringResource(R.string.crash_analyzer_title))
                 },
                 searchText = localSearchText,
                 onSearchTextChange = {
@@ -849,11 +828,7 @@ fun CrashLogScreenMaterial(
                     onSearch("")
                 },
                 navigationIcon = {
-                    if (isRootTab) {
-                        KernelToolNavigationIconMaterial(KernelTool.CrashLog)
-                    } else {
-                        TopBarBackButton(onClick = { navigator.pop() })
-                    }
+                    TopBarBackButton(onClick = { navigator.pop() })
                 },
                 actions = {
                     if (uiState.availableSources.isNotEmpty()) {
