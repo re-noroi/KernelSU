@@ -2101,7 +2101,7 @@ private fun HomeScreenJailbreakPreview() {
 private fun BentoDashboardMiuixPreview() {
     CompositionLocalProvider(
         LocalUriHandler provides previewUriHandler,
-        LocalKernelTool provides KernelTool.Payload
+        LocalKernelTool provides KernelTool.Tuning
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),

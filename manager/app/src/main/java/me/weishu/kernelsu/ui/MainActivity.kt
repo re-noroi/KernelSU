@@ -275,7 +275,6 @@ open class MainActivity : ComponentActivity() {
                             entry<Route.About>(swipeDismiss = swipeDismiss) { AboutScreen() }
                             entry<Route.Kallsyms>(swipeDismiss = swipeDismiss) { KallsymsScreen() }
                             entry<Route.Sulog>(swipeDismiss = swipeDismiss) { SulogScreen() }
-                            entry<Route.Tuning>(swipeDismiss = swipeDismiss) { TuningScreen() }
                             entry<Route.Dmesg>(swipeDismiss = swipeDismiss) { DmesgScreen() }
                             entry<Route.Kconfig>(swipeDismiss = swipeDismiss) { KconfigScreen() }
                             entry<Route.KernelModule>(swipeDismiss = swipeDismiss) { KernelModuleScreen() }
@@ -346,7 +345,7 @@ open class MainActivity : ComponentActivity() {
     }
 }
 
-val LocalKernelTool = staticCompositionLocalOf { KernelTool.Payload }
+val LocalKernelTool = staticCompositionLocalOf { KernelTool.Tuning }
 val LocalMainPagerState = staticCompositionLocalOf<MainPagerState> { error("LocalMainPagerState not provided") }
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -587,6 +586,7 @@ fun MainPage(
         0 -> HomePager(navigator, bottomInnerPadding, isCurrentPage)
         1 -> SuperUserPager(navigator, bottomInnerPadding, isCurrentPage)
         2 -> when (LocalKernelTool.current) {
+            KernelTool.Tuning -> TuningScreen(isRootTab = true, bottomInnerPadding = bottomInnerPadding)
             KernelTool.Payload -> PayloadScreen(isRootTab = true, bottomInnerPadding = bottomInnerPadding)
             KernelTool.Kconfig -> KconfigScreen(isRootTab = true)
             KernelTool.Dmesg -> DmesgScreen(isRootTab = true)
