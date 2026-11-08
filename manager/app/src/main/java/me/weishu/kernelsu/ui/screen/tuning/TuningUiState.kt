@@ -55,6 +55,15 @@ data class MemoryState(
 )
 
 @Immutable
+data class ZramState(
+    val supported: Boolean = false,
+    val disksize: Long = 0L,
+    val compCurrent: String = "",
+    val compAvailable: List<String> = emptyList(),
+    val swapActive: Boolean = false,
+)
+
+@Immutable
 data class TuningActions(
     val onBack: () -> Unit,
     val onSelectThermal: (Int) -> Unit,
@@ -80,4 +89,7 @@ data class TuningActions(
     val onSetKcompressd: (Int) -> Unit,
     val onSetMglru: (Boolean) -> Unit,
     val onSetMglruTtl: (Int) -> Unit,
+    // zRAM
+    val onSetZramSize: (Long) -> Unit,
+    val onSetZramAlgorithm: (String) -> Unit,
 )

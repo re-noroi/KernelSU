@@ -48,6 +48,9 @@ fun TuningScreen(isRootTab: Boolean = false, bottomInnerPadding: Dp = 0.dp) {
         onSetKcompressd = viewModel::setKcompressd,
         onSetMglru = viewModel::setMglru,
         onSetMglruTtl = viewModel::setMglruTtl,
+        // zRAM
+        onSetZramSize = viewModel::setZramSize,
+        onSetZramAlgorithm = viewModel::setZramAlgorithm,
     )
 
     when (LocalUiMode.current) {
