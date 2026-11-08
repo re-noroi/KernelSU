@@ -572,6 +572,17 @@ enum TuningCmd {
     /// Set Queueing Discipline
     Qdisc { value: String },
 
+    /// Memory: Set swappiness (0-100)
+    Swappiness { value: i32 },
+    /// Memory: Set vfs_cache_pressure
+    VfsCache { value: i32 },
+    /// Memory: Set kcompressd
+    Kcompressd { value: i32 },
+    /// Memory: Enable/disable MGLRU (1/0)
+    Mglru { value: u8 },
+    /// Memory: Set MGLRU min_ttl_ms
+    MglruTtl { value: i32 },
+
     /// Reapply the persisted tuning settings
     Apply,
 }
@@ -940,8 +951,15 @@ pub fn run() -> Result<()> {
                 crate::tuning::set_cgroup_value(&name, &key, value)
             }
             TuningCmd::Persist { value } => crate::tuning::set_persist(value != 0),
+
             TuningCmd::TcpCongestion { value } => crate::tuning::set_tcp_congestion(&value),
             TuningCmd::Qdisc { value } => crate::tuning::set_qdisc(&value),
+
+            TuningCmd::Swappiness { value } => crate::tuning::set_swappiness(value),
+            TuningCmd::VfsCache { value } => crate::tuning::set_vfs_cache_pressure(value),
+            TuningCmd::Kcompressd { value } => crate::tuning::set_kcompressd(value),
+            TuningCmd::Mglru { value } => crate::tuning::set_mglru(value != 0),
+            TuningCmd::MglruTtl { value } => crate::tuning::set_mglru_ttl(value),
             TuningCmd::Apply => {
                 crate::tuning::apply_persisted();
                 Ok(())
