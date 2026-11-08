@@ -3,8 +3,38 @@ package me.weishu.kernelsu.ui.screen.tuning
 import androidx.compose.runtime.Immutable
 
 @Immutable
+data class SchedulerState(
+    val supported: Boolean = false,
+    val skipHeadroom: Int = 1,
+    val hrScaling: Int = 0,
+    val boostHrLp: Int = 0,
+    val boostHrBig: Int = 0,
+    val boostHrPrime: Int = 0,
+)
+
+@Immutable
+data class CgroupState(
+    val name: String,
+    val uclampMin: Int = 0,
+    val uclampMax: Int = 100,
+    val shares: Int = 1024,
+)
+
+@Immutable
 data class TuningActions(
     val onBack: () -> Unit,
     val onSelectThermal: (Int) -> Unit,
     val onSetBypass: (Boolean) -> Unit,
+    // Persistence
+    val onSetPersist: (Boolean) -> Unit,
+    // Scheduler — FakeDreamers
+    val onSetSkipHeadroom: (Boolean) -> Unit,
+    val onSetHrScaling: (Boolean) -> Unit,
+    val onSetBoostHrLp: (Int) -> Unit,
+    val onSetBoostHrBig: (Int) -> Unit,
+    val onSetBoostHrPrime: (Int) -> Unit,
+    // Scheduler — CGroup
+    val onSetCgroupUclampMin: (String, Int) -> Unit,
+    val onSetCgroupUclampMax: (String, Int) -> Unit,
+    val onSetCgroupShares: (String, Int) -> Unit,
 )

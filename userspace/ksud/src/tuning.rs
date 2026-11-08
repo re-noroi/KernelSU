@@ -16,7 +16,6 @@ use std::time::Duration;
 
 use crate::defs;
 
-/// Same profile table that the N0Kontzzz kernel manager exposes.
 pub const THERMAL_PROFILES: &[(i32, &str)] = &[
     (10, "Dynamic"),
     (11, "Class 0"),
@@ -39,6 +38,17 @@ const BYPASS_NODES: &[&str] = &[
 ];
 
 const THERMAL_CONTEXT: &str = "u:object_r:sysfs_thermal:s0";
+
+// Scheduler sysfs nodes (FakeDreamers)
+const SCHED_SKIP_HEADROOM: &str = "/proc/sys/kernel/sched_skip_headroom";
+const SCHED_HR_SCALING: &str = "/proc/sys/kernel/sched_hr_scaling";
+const SCHED_BOOST_HR_LP: &str = "/proc/sys/kernel/sched_boost_hr_lp";
+const SCHED_BOOST_HR_BIG: &str = "/proc/sys/kernel/sched_boost_hr_big";
+const SCHED_BOOST_HR_PRIME: &str = "/proc/sys/kernel/sched_boost_hr_prime";
+
+// CGroup tunables
+const CGROUP_NAMES: &[&str] = &["background", "top-app", "foreground"];
+const CGROUP_BASE: &str = "/dev/cpuctl";
 
 fn config_path() -> PathBuf {
     PathBuf::from(defs::TUNING_CONFIG_PATH)
@@ -76,6 +86,20 @@ fn read_node(path: &Path) -> Option<String> {
 
 fn read_i32(path: &Path) -> Option<i32> {
     read_node(path)?.parse().ok()
+}
+
+fn read_i32_str(path: &str) -> Option<i32> {
+    fs::read_to_string(path).ok()?.trim().parse().ok()
+}
+
+fn write_i32_str(path: &str, value: i32) -> Result<()> {
+    fs::write(path, value.to_string())
+        .with_context(|| format!("failed to write {path}"))?;
+    Ok(())
+}
+
+fn cgroup_path(name: &str, file: &str) -> PathBuf {
+    PathBuf::from(format!("{CGROUP_BASE}/{name}/{file}"))
 }
 
 fn run_helper(program: &str, args: &[&std::ffi::OsStr]) {
@@ -176,6 +200,12 @@ fn wait_for_node(
 pub fn print_status() {
     let config = load_config();
 
+    let persist = config
+        .get("persist")
+        .map(|v| v != "0")
+        .unwrap_or(true);
+    println!("persist={}", i32::from(persist));
+
     let thermal = thermal_node(&config);
     let thermal_current = thermal.as_deref().and_then(read_i32).unwrap_or(-1);
     let thermal_saved = config
@@ -211,6 +241,31 @@ pub fn print_status() {
     );
     println!("bypass_current={}", i32::from(bypass_current));
     println!("bypass_saved={bypass_saved}");
+
+    // --- Scheduler ---
+    let skip = read_i32_str(SCHED_SKIP_HEADROOM);
+    let hr = read_i32_str(SCHED_HR_SCALING);
+    let lp = read_i32_str(SCHED_BOOST_HR_LP);
+    let big = read_i32_str(SCHED_BOOST_HR_BIG);
+    let prime = read_i32_str(SCHED_BOOST_HR_PRIME);
+
+    println!("sched_supported={}", i32::from(skip.is_some()));
+    println!("sched_skip_headroom={}", skip.unwrap_or(1));
+    println!("sched_hr_scaling={}", hr.unwrap_or(0));
+    println!("sched_boost_hr_lp={}", lp.unwrap_or(0));
+    println!("sched_boost_hr_big={}", big.unwrap_or(0));
+    println!("sched_boost_hr_prime={}", prime.unwrap_or(0));
+
+    // --- CGroup ---
+    for name in CGROUP_NAMES {
+        let min = read_i32_str(&cgroup_path(name, "cpu.uclamp.min").to_string_lossy());
+        let max = read_i32_str(&cgroup_path(name, "cpu.uclamp.max").to_string_lossy());
+        let shares = read_i32_str(&cgroup_path(name, "cpu.shares").to_string_lossy());
+        println!("cgroup_{name}_supported={}", i32::from(min.is_some()));
+        println!("cgroup_{name}_uclamp_min={}", min.unwrap_or(0));
+        println!("cgroup_{name}_uclamp_max={}", max.unwrap_or(100));
+        println!("cgroup_{name}_shares={}", shares.unwrap_or(1024));
+    }
 }
 
 /// Print the supported thermal profiles as `index=name` lines.
@@ -270,6 +325,79 @@ pub fn set_bypass(enabled: bool) -> Result<()> {
     Ok(())
 }
 
+/// Enable (0) / disable (1) DVFS headroom via sched_skip_headroom.
+///
+/// Note the *reverse* convention: 0 = enabled, 1 = disabled.
+pub fn set_sched_skip_headroom(value: u8) -> Result<()> {
+    let raw = if value != 0 { 0 } else { 1 };
+    write_i32_str(SCHED_SKIP_HEADROOM, raw)?;
+    update_config("sched_skip_headroom", &raw.to_string())?;
+    println!("ok");
+    Ok(())
+}
+
+pub fn set_sched_hr_scaling(value: u8) -> Result<()> {
+    let raw = i32::from(value != 0);
+    write_i32_str(SCHED_HR_SCALING, raw)?;
+    update_config("sched_hr_scaling", &raw.to_string())?;
+    println!("ok");
+    Ok(())
+}
+
+pub fn set_sched_boost_hr_lp(value: i32) -> Result<()> {
+    let v = value.clamp(-50, 100);
+    write_i32_str(SCHED_BOOST_HR_LP, v)?;
+    update_config("sched_boost_hr_lp", &v.to_string())?;
+    println!("ok");
+    Ok(())
+}
+
+pub fn set_sched_boost_hr_big(value: i32) -> Result<()> {
+    let v = value.clamp(-50, 100);
+    write_i32_str(SCHED_BOOST_HR_BIG, v)?;
+    update_config("sched_boost_hr_big", &v.to_string())?;
+    println!("ok");
+    Ok(())
+}
+
+pub fn set_sched_boost_hr_prime(value: i32) -> Result<()> {
+    let v = value.clamp(-50, 30);
+    write_i32_str(SCHED_BOOST_HR_PRIME, v)?;
+    update_config("sched_boost_hr_prime", &v.to_string())?;
+    println!("ok");
+    Ok(())
+}
+
+/// Set one cgroup tunable. `key` is one of `uclamp_min`, `uclamp_max`, `shares`.
+pub fn set_cgroup_value(name: &str, key: &str, value: i32) -> Result<()> {
+    if !CGROUP_NAMES.contains(&name) {
+        bail!("unknown cgroup {name}");
+    }
+    let (file, clamped) = match key {
+        "uclamp_min" => ("cpu.uclamp.min", value.clamp(0, 100)),
+        "uclamp_max" => ("cpu.uclamp.max", value.clamp(0, 100)),
+        "shares"      => ("cpu.shares",      value.clamp(1024, 20480)),
+        _ => bail!("unknown cgroup key {key}"),
+    };
+    let path = cgroup_path(name, file);
+    if !path.exists() {
+        bail!("{} not found", path.display());
+    }
+    write_i32_str(path.to_str().unwrap_or_default(), clamped)?;
+    update_config(&format!("cgroup_{name}_{key}"), &clamped.to_string())?;
+    println!("ok");
+    Ok(())
+}
+
+/// Enable or disable restoring tuning values on boot.
+pub fn set_persist(enabled: bool) -> Result<()> {
+    let value = if enabled { "1" } else { "0" };
+    update_config("persist", value)?;
+    info!("ktune persistence set to {value}");
+    println!("ok");
+    Ok(())
+}
+
 /// Restore the persisted tuning settings. Called from the boot service stage.
 ///
 /// Individual node failures are logged and skipped so a single missing vendor
@@ -277,6 +405,16 @@ pub fn set_bypass(enabled: bool) -> Result<()> {
 pub fn apply_persisted() {
     let config = load_config();
     if config.is_empty() {
+        return;
+    }
+
+    // If persistence is disabled, do nothing — kernel defaults apply.
+    let persist = config
+        .get("persist")
+        .map(|v| v != "0")
+        .unwrap_or(true);
+    if !persist {
+        info!("ktune persistence disabled, using kernel defaults");
         return;
     }
 
@@ -331,6 +469,37 @@ pub fn apply_persisted() {
             }
         } else {
             warn!("bypass charging node not found, cannot restore state");
+        }
+    }
+
+    // --- Restore scheduler ---
+    if let Some(v) = config.get("sched_skip_headroom") {
+        let _ = write_i32_str(SCHED_SKIP_HEADROOM, v.parse().unwrap_or(1));
+    }
+    if let Some(v) = config.get("sched_hr_scaling") {
+        let _ = write_i32_str(SCHED_HR_SCALING, v.parse().unwrap_or(0));
+    }
+    for (key, path) in [
+        ("sched_boost_hr_lp", SCHED_BOOST_HR_LP),
+        ("sched_boost_hr_big", SCHED_BOOST_HR_BIG),
+        ("sched_boost_hr_prime", SCHED_BOOST_HR_PRIME),
+    ] {
+        if let Some(v) = config.get(key) {
+            let _ = write_i32_str(path, v.parse().unwrap_or(0));
+        }
+    }
+
+    // --- Restore cgroup tunables ---
+    for name in CGROUP_NAMES {
+        for (key, file) in [
+            ("uclamp_min", "cpu.uclamp.min"),
+            ("uclamp_max", "cpu.uclamp.max"),
+            ("shares", "cpu.shares"),
+        ] {
+            if let Some(v) = config.get(&format!("cgroup_{name}_{key}")) {
+                let path = cgroup_path(name, file);
+                let _ = write_i32_str(path.to_string_lossy().as_ref(), v.parse().unwrap_or(0));
+            }
         }
     }
 }

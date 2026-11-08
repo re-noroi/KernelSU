@@ -10,10 +10,24 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.BufferedReader
 import java.io.InputStreamReader
+import me.weishu.kernelsu.ui.util.execKsudCommand
 
-data class ThermalProfile(
-    val index: Int,
+data class ThermalProfile(val index: Int, val name: String)
+
+data class SchedulerState(
+    val supported: Boolean = false,
+    val skipHeadroom: Int = 1,
+    val hrScaling: Int = 0,
+    val boostHrLp: Int = 0,
+    val boostHrBig: Int = 0,
+    val boostHrPrime: Int = 0,
+)
+
+data class CgroupState(
     val name: String,
+    val uclampMin: Int = 0,
+    val uclampMax: Int = 100,
+    val shares: Int = 1024,
 )
 
 data class TuningUiState(
@@ -26,6 +40,9 @@ data class TuningUiState(
     val bypassCurrent: Boolean = false,
     val bypassEnabled: Boolean = false,
     val profiles: List<ThermalProfile> = emptyList(),
+    val scheduler: SchedulerState = SchedulerState(),
+    val cgroups: List<CgroupState> = emptyList(),
+    val persist: Boolean = true,
     val errorMessage: String? = null,
 )
 
@@ -44,19 +61,19 @@ class TuningViewModel : ViewModel() {
         ThermalProfile(12, "Pubg"),
         ThermalProfile(13, "Camera"),
         ThermalProfile(14, "Youtube"),
-        ThermalProfile(0, "Disabled")
+        ThermalProfile(0, "Disabled"),
     )
 
     private val thermalNode = "/sys/class/thermal/thermal_message/sconfig"
     private val bypassNodes = listOf(
         "/sys/class/power_supply/battery/input_suspend",
-        "/sys/class/power_supply/bms/input_suspend"
+        "/sys/class/power_supply/bms/input_suspend",
     )
-    
-    // Store the active bypass node here instead of in the UI state
+    private val cgroupNames = listOf("background", "top-app", "foreground")
+    private val configPath = "/data/adb/ksu/tuning.conf"
+
     private var activeBypassNode = ""
 
-    // Helper to run raw root commands reliably without libsu namespace bugs
     private fun execRootCommand(cmd: String): String {
         return try {
             val process = Runtime.getRuntime().exec(arrayOf("su", "-c", cmd))
@@ -69,77 +86,176 @@ class TuningViewModel : ViewModel() {
     }
 
     fun refresh() {
-        viewModelScope.launch(Dispatchers.IO) {
-            _uiState.update { it.copy(isLoading = true) }
+        viewModelScope.launch(Dispatchers.IO) { refreshInternal() }
+    }
 
-            // 1. Read Thermal directly
-            val thermalOut = execRootCommand("cat $thermalNode")
-            val thermalSupported = thermalOut.isNotEmpty()
-            val thermalCurrent = thermalOut.toIntOrNull() ?: -1
+    private fun refreshInternal() {
+        val thermalOut = execRootCommand("cat $thermalNode")
+        val thermalSupported = thermalOut.isNotEmpty()
+        val thermalCurrent = thermalOut.toIntOrNull() ?: -1
 
-            // 2. Read Bypass directly
-            var bypassSupported = false
-            var bypassCurrent = false
-            activeBypassNode = ""
-
-            for (node in bypassNodes) {
-                val bypassOut = execRootCommand("cat $node")
-                if (bypassOut.isNotEmpty()) {
-                    bypassSupported = true
-                    activeBypassNode = node
-                    bypassCurrent = bypassOut != "0"
-                    break
-                }
+        var bypassSupported = false
+        var bypassCurrent = false
+        activeBypassNode = ""
+        for (node in bypassNodes) {
+            val out = execRootCommand("cat $node")
+            if (out.isNotEmpty()) {
+                bypassSupported = true
+                activeBypassNode = node
+                bypassCurrent = out != "0"
+                break
             }
+        }
 
-            // 3. Update UI
-            _uiState.update {
-                it.copy(
-                    isLoading = false,
-                    thermalSupported = thermalSupported,
-                    thermalCurrent = thermalCurrent,
-                    thermalIndex = if (thermalCurrent >= 0) thermalCurrent else -1,
-                    bypassSupported = bypassSupported,
-                    bypassCurrent = bypassCurrent,
-                    bypassEnabled = bypassCurrent,
-                    profiles = thermalProfiles,
-                    errorMessage = null
-                )
-            }
+        val skipRaw = execRootCommand("cat /proc/sys/kernel/sched_skip_headroom")
+        val scheduler = SchedulerState(
+            supported = skipRaw.isNotEmpty(),
+            skipHeadroom = skipRaw.toIntOrNull() ?: 1,
+            hrScaling = execRootCommand("cat /proc/sys/kernel/sched_hr_scaling").toIntOrNull() ?: 0,
+            boostHrLp = execRootCommand("cat /proc/sys/kernel/sched_boost_hr_lp").toIntOrNull() ?: 0,
+            boostHrBig = execRootCommand("cat /proc/sys/kernel/sched_boost_hr_big").toIntOrNull() ?: 0,
+            boostHrPrime = execRootCommand("cat /proc/sys/kernel/sched_boost_hr_prime").toIntOrNull() ?: 0,
+        )
+
+        val cgroups = cgroupNames.mapNotNull { name ->
+            val base = "/dev/cpuctl/$name"
+            val minStr = execRootCommand("cat $base/cpu.uclamp.min")
+            if (minStr.isEmpty()) return@mapNotNull null
+            CgroupState(
+                name = name,
+                uclampMin = minStr.toFloatOrNull()?.toInt() ?: 0,
+                uclampMax = execRootCommand("cat $base/cpu.uclamp.max").toFloatOrNull()?.toInt() ?: 100,
+                shares = execRootCommand("cat $base/cpu.shares").toIntOrNull() ?: 1024,
+            )
+        }
+
+        val persistStr = execRootCommand(
+            "grep '^persist=' $configPath 2>/dev/null | cut -d= -f2"
+        )
+        val persist = persistStr.isEmpty() || persistStr != "0"
+
+        _uiState.update {
+            it.copy(
+                isLoading = false,
+                thermalSupported = thermalSupported,
+                thermalCurrent = thermalCurrent,
+                thermalIndex = if (thermalCurrent >= 0) thermalCurrent else -1,
+                bypassSupported = bypassSupported,
+                bypassCurrent = bypassCurrent,
+                bypassEnabled = bypassCurrent,
+                profiles = thermalProfiles,
+                scheduler = scheduler,
+                cgroups = cgroups,
+                persist = persist,
+                errorMessage = null,
+            )
         }
     }
 
     fun selectThermal(index: Int) {
         if (index < 0) return
+        _uiState.update { it.copy(thermalIndex = index) }
         apply("thermal", index.toString())
     }
 
     fun setBypass(enabled: Boolean) {
+        _uiState.update { it.copy(bypassEnabled = enabled) }
         apply("bypass", if (enabled) "1" else "0")
+    }
+
+    fun setPersist(enabled: Boolean) {
+        _uiState.update { it.copy(persist = enabled) }
+        apply("persist", if (enabled) "1" else "0")
+    }
+
+    fun setSkipHeadroom(enabled: Boolean) {
+        val v = if (enabled) 0 else 1
+        _uiState.update { it.copy(scheduler = it.scheduler.copy(skipHeadroom = v)) }
+        apply("sched_skip_headroom", v.toString())
+    }
+
+    fun setHrScaling(enabled: Boolean) {
+        val v = if (enabled) 1 else 0
+        _uiState.update { it.copy(scheduler = it.scheduler.copy(hrScaling = v)) }
+        apply("sched_hr_scaling", v.toString())
+    }
+
+    fun setBoostHrLp(value: Int) {
+        val v = value.coerceIn(-50, 100)
+        _uiState.update { it.copy(scheduler = it.scheduler.copy(boostHrLp = v)) }
+        apply("sched_boost_hr_lp", v.toString())
+    }
+
+    fun setBoostHrBig(value: Int) {
+        val v = value.coerceIn(-50, 100)
+        _uiState.update { it.copy(scheduler = it.scheduler.copy(boostHrBig = v)) }
+        apply("sched_boost_hr_big", v.toString())
+    }
+
+    fun setBoostHrPrime(value: Int) {
+        val v = value.coerceIn(-50, 30)
+        _uiState.update { it.copy(scheduler = it.scheduler.copy(boostHrPrime = v)) }
+        apply("sched_boost_hr_prime", v.toString())
+    }
+
+    fun setCgroupUclampMin(name: String, value: Int) {
+        val v = value.coerceIn(0, 100)
+        _uiState.update { it.copy(cgroups = it.cgroups.map { cg -> if (cg.name == name) cg.copy(uclampMin = v) else cg }) }
+        apply("cgroup_${name}_uclamp_min", v.toString())
+    }
+
+    fun setCgroupUclampMax(name: String, value: Int) {
+        val v = value.coerceIn(0, 100)
+        _uiState.update { it.copy(cgroups = it.cgroups.map { cg -> if (cg.name == name) cg.copy(uclampMax = v) else cg }) }
+        apply("cgroup_${name}_uclamp_max", v.toString())
+    }
+
+    fun setCgroupShares(name: String, value: Int) {
+        val v = value.coerceIn(1024, 20480)
+        _uiState.update { it.copy(cgroups = it.cgroups.map { cg -> if (cg.name == name) cg.copy(shares = v) else cg }) }
+        apply("cgroup_${name}_shares", v.toString())
     }
 
     private fun apply(type: String, value: String) {
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update { it.copy(isApplying = true, errorMessage = null) }
 
-            val success = if (type == "thermal") {
-                // Force write and reset permissions
-                val cmd = "chmod 644 $thermalNode; echo $value > $thermalNode; chmod 444 $thermalNode"
-                execRootCommand(cmd).isEmpty() // No error output means success
-            } else {
-                // Use the private activeBypassNode variable
-                if (activeBypassNode.isNotEmpty()) {
-                    execRootCommand("echo $value > $activeBypassNode").isEmpty()
-                } else false
+            // Route every write through ksud. It handles SELinux, sysfs formatting, 
+            // and saving to tuning.conf automatically.
+            val args = when {
+                type == "thermal" -> "tuning thermal $value"
+                type == "bypass" -> "tuning bypass $value"
+                type == "persist" -> "tuning persist $value"
+                type == "sched_skip_headroom" -> "tuning sched-skip-headroom $value"
+                type == "sched_hr_scaling" -> "tuning sched-hr-scaling $value"
+                type == "sched_boost_hr_lp" -> "tuning sched-boost-hr-lp $value"
+                type == "sched_boost_hr_big" -> "tuning sched-boost-hr-big $value"
+                type == "sched_boost_hr_prime" -> "tuning sched-boost-hr-prime $value"
+                type.startsWith("cgroup_") -> {
+                    val rest = type.removePrefix("cgroup_")
+                    val sep = rest.indexOf('_')
+                    if (sep == -1) null else {
+                        val name = rest.substring(0, sep)
+                        val key = rest.substring(sep + 1)
+                        "tuning cgroup $name $key $value"
+                    }
+                }
+                else -> null
             }
 
-            _uiState.update {
-                it.copy(
-                    isApplying = false,
-                    errorMessage = if (!success) "Failed to write to sysfs node" else null,
-                )
+            val success = args != null && execKsudCommand(args).isSuccess
+
+            _uiState.update { it.copy(isApplying = false) }
+            refreshInternal()
+
+            if (!success) {
+                _uiState.update { it.copy(errorMessage = "Failed: $type") }
             }
-            if (success) refresh()
         }
+    }
+
+    private fun writeNodeAndVerify(path: String, value: String): Boolean {
+        execRootCommand("echo $value > $path")
+        return execRootCommand("cat $path") == value
     }
 }
