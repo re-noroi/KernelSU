@@ -368,6 +368,7 @@
     <string name="tuning_mem_kcompressd">kcompressd</string>
     <string name="tuning_mem_mglru">MGLRU</string>
     <string name="tuning_mem_mglru_ttl">MGLRU min_ttl_ms</string>
+    <string name="tuning_section_zram">zRAM</string>
     <string name="tuning_persist_title">Persist on boot</string>
     <string name="tuning_persist_summary_on">Values are restored after reboot.</string>
     <string name="tuning_persist_summary_off">Kernel defaults are used on reboot.</string>

@@ -583,6 +583,12 @@ enum TuningCmd {
     /// Memory: Set MGLRU min_ttl_ms
     MglruTtl { value: i32 },
 
+    /// zRAM: set size in GB (2, 3, 4, 6, 8)
+    ZramSize { gb: u64 },
+
+    /// zRAM: set compression algorithm (lzo, lz4, lz4hc, zstd, deflate, 842)
+    ZramAlgorithm { algorithm: String },
+
     /// Reapply the persisted tuning settings
     Apply,
 }
@@ -960,6 +966,12 @@ pub fn run() -> Result<()> {
             TuningCmd::Kcompressd { value } => crate::tuning::set_kcompressd(value),
             TuningCmd::Mglru { value } => crate::tuning::set_mglru(value != 0),
             TuningCmd::MglruTtl { value } => crate::tuning::set_mglru_ttl(value),
+
+            TuningCmd::ZramSize { gb } => crate::tuning::set_zram_size(gb),
+            TuningCmd::ZramAlgorithm { algorithm } => {
+                crate::tuning::set_zram_algorithm(&algorithm)
+            }
+
             TuningCmd::Apply => {
                 crate::tuning::apply_persisted();
                 Ok(())
