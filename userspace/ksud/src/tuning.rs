@@ -55,6 +55,13 @@ const TCP_AVAILABLE: &str = "/proc/sys/net/ipv4/tcp_available_congestion_control
 const TCP_CURRENT: &str = "/proc/sys/net/ipv4/tcp_congestion_control";
 const QDISC_CURRENT: &str = "/proc/sys/net/core/default_qdisc";
 
+// Memory tunables
+const SWAPPINESS: &str = "/proc/sys/vm/swappiness";
+const VFS_CACHE_PRESSURE: &str = "/proc/sys/vm/vfs_cache_pressure";
+const KCOMPRESSD: &str = "/proc/sys/vm/kcompressd";
+const MGLRU_ENABLED: &str = "/sys/kernel/mm/lru_gen/enabled";
+const MGLRU_MIN_TTL: &str = "/sys/kernel/mm/lru_gen/min_ttl_ms";
+
 fn config_path() -> PathBuf {
     PathBuf::from(defs::TUNING_CONFIG_PATH)
 }
@@ -281,6 +288,26 @@ pub fn print_status() {
     println!("tcp_available={}", tcp_avail.trim().replace(' ', ","));
     println!("tcp_current={tcp_cur}");
     println!("qdisc_current={qdisc_cur}");
+
+    // --- Memory Management ---
+    let swappiness_ro = fs::metadata(SWAPPINESS)
+        .map(|m| m.permissions().readonly())
+        .unwrap_or(true);
+    let swappiness = read_i32_str(SWAPPINESS).unwrap_or(60);
+    let vfs_cache = read_i32_str(VFS_CACHE_PRESSURE).unwrap_or(100);
+    let kcompressd = read_i32_str(KCOMPRESSD).unwrap_or(24);
+
+    let mglru_raw = fs::read_to_string(MGLRU_ENABLED).unwrap_or_default().trim().to_string();
+    let mglru_enabled = mglru_raw != "0x0000" && !mglru_raw.is_empty();
+    let mglru_ttl = read_i32_str(MGLRU_MIN_TTL).unwrap_or(1000);
+
+    println!("mem_swappiness_ro={}", i32::from(swappiness_ro));
+    println!("mem_swappiness={swappiness}");
+    println!("mem_vfs_cache={vfs_cache}");
+    println!("mem_kcompressd={kcompressd}");
+    println!("mem_mglru_raw={mglru_raw}");
+    println!("mem_mglru_enabled={}", i32::from(mglru_enabled));
+    println!("mem_mglru_ttl={mglru_ttl}");
 }
 
 /// Print the supported thermal profiles as `index=name` lines.
@@ -427,6 +454,47 @@ pub fn set_qdisc(value: &str) -> Result<()> {
     Ok(())
 }
 
+pub fn set_swappiness(value: i32) -> Result<()> {
+    let v = value.clamp(0, 100);
+    fs::write(SWAPPINESS, v.to_string()).with_context(|| "failed to write swappiness")?;
+    update_config("vm_swappiness", &v.to_string())?;
+    println!("ok");
+    Ok(())
+}
+
+pub fn set_vfs_cache_pressure(value: i32) -> Result<()> {
+    let v = value.clamp(0, 1000);
+    fs::write(VFS_CACHE_PRESSURE, v.to_string()).with_context(|| "failed to write vfs_cache_pressure")?;
+    update_config("vm_vfs_cache", &v.to_string())?;
+    println!("ok");
+    Ok(())
+}
+
+pub fn set_kcompressd(value: i32) -> Result<()> {
+    // Kernel enforces its own max, we just avoid negative numbers
+    let v = value.max(0);
+    fs::write(KCOMPRESSD, v.to_string()).with_context(|| "failed to write kcompressd")?;
+    update_config("vm_kcompressd", &v.to_string())?;
+    println!("ok");
+    Ok(())
+}
+
+pub fn set_mglru(enabled: bool) -> Result<()> {
+    let val = if enabled { "y" } else { "n" };
+    fs::write(MGLRU_ENABLED, val).with_context(|| "failed to write lru_gen/enabled")?;
+    update_config("vm_mglru", if enabled { "1" } else { "0" })?;
+    println!("ok");
+    Ok(())
+}
+
+pub fn set_mglru_ttl(value: i32) -> Result<()> {
+    let v = value.clamp(0, 10000);
+    fs::write(MGLRU_MIN_TTL, v.to_string()).with_context(|| "failed to write lru_gen/min_ttl_ms")?;
+    update_config("vm_mglru_ttl", &v.to_string())?;
+    println!("ok");
+    Ok(())
+}
+
 /// Restore the persisted tuning settings. Called from the boot service stage.
 ///
 /// Individual node failures are logged and skipped so a single missing vendor
@@ -538,5 +606,22 @@ pub fn apply_persisted() {
     }
     if let Some(v) = config.get("default_qdisc") {
         let _ = fs::write(QDISC_CURRENT, v);
+    }
+
+    // --- Restore memory tuning ---
+    if let Some(v) = config.get("vm_swappiness") {
+        let _ = fs::write(SWAPPINESS, v);
+    }
+    if let Some(v) = config.get("vm_vfs_cache") {
+        let _ = fs::write(VFS_CACHE_PRESSURE, v);
+    }
+    if let Some(v) = config.get("vm_kcompressd") {
+        let _ = fs::write(KCOMPRESSD, v);
+    }
+    if let Some(v) = config.get("vm_mglru") {
+        let _ = fs::write(MGLRU_ENABLED, if v == "1" { "y" } else { "n" });
+    }
+    if let Some(v) = config.get("vm_mglru_ttl") {
+        let _ = fs::write(MGLRU_MIN_TTL, v);
     }
 }

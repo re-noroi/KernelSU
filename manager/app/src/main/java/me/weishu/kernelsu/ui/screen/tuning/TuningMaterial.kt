@@ -29,6 +29,8 @@ import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.NetworkCheck
 import androidx.compose.material.icons.filled.Router
+import androidx.compose.material.icons.filled.Memory
+import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.Button
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
@@ -192,6 +194,109 @@ fun TuningScreenMaterial(
                             enabled = state.bypassSupported,
                             onCheckedChange = actions.onSetBypass,
                         )
+                    }
+                }
+            }
+
+            // ---- MEMORY ----
+            if (state.memory.supported) {
+                item { SectionHeader("Memory Management") }
+                item {
+                    SegmentedColumn(
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
+                    ) {
+                        // Swappiness — always exists, just might be RO
+                        item {
+                            IntInputItem(
+                                title = "Swappiness",
+                                value = state.memory.swappiness,
+                                range = 0..100,
+                                enabled = !state.memory.swappinessRo,
+                                onValueChange = actions.onSetSwappiness,
+                            )
+                            if (state.memory.swappinessRo) {
+                                Text(
+                                    "Read-only in this kernel.",
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                                )
+                            }
+                        }
+
+                        // VFS Cache Pressure
+                        if (state.memory.vfsSupported) {
+                            item {
+                                IntInputItem(
+                                    title = "VFS Cache Pressure",
+                                    value = state.memory.vfsCache,
+                                    range = 0..1000,
+                                    onValueChange = actions.onSetVfsCache,
+                                )
+                            }
+                        } else {
+                            item {
+                                Text(
+                                    "VFS Cache Pressure is not supported in this kernel.",
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                )
+                            }
+                        }
+
+                        // kcompressd
+                        if (state.memory.kcompressdSupported) {
+                            item {
+                                IntInputItem(
+                                    title = "kcompressd",
+                                    value = state.memory.kcompressd,
+                                    range = 0..256,
+                                    onValueChange = actions.onSetKcompressd,
+                                )
+                            }
+                        } else {
+                            item {
+                                Text(
+                                    "kcompressd is not supported in this kernel.",
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                )
+                            }
+                        }
+
+                        // MGLRU
+                        if (state.memory.mglruSupported) {
+                            item {
+                                SegmentedSwitchItem(
+                                    icon = Icons.Filled.Memory,
+                                    title = "MGLRU",
+                                    summary = "Current: ${state.memory.mglruRaw}",
+                                    checked = state.memory.mglruEnabled,
+                                    onCheckedChange = actions.onSetMglru,
+                                )
+                            }
+                            if (state.memory.mglruEnabled) {
+                                item {
+                                    IntInputItem(
+                                        title = "MGLRU min_ttl_ms",
+                                        value = state.memory.mglruTtl,
+                                        range = 0..10000,
+                                        onValueChange = actions.onSetMglruTtl,
+                                    )
+                                }
+                            }
+                        } else {
+                            item {
+                                Text(
+                                    "MGLRU is not supported in this kernel.",
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -378,6 +483,7 @@ private fun IntSliderItem(
     value: Int,
     range: IntRange,
     step: Int = 1,
+    enabled: Boolean = true,
     onValueChange: (Int) -> Unit,
 ) {
     var dragValue by remember(value) { mutableFloatStateOf(value.toFloat()) }
@@ -395,6 +501,7 @@ private fun IntSliderItem(
             onValueChangeFinished = { onValueChange(dragValue.roundToInt()) },
             valueRange = range.first.toFloat()..range.last.toFloat(),
             steps = ((range.last - range.first) / step).coerceAtLeast(0) - 1,
+            enabled = enabled,
         )
     }
 }
@@ -404,11 +511,13 @@ private fun IntInputItem(
     title: String,
     value: Int,
     range: IntRange,
+    enabled: Boolean = true, // <-- ADD THIS
     onValueChange: (Int) -> Unit,
 ) {
     var text by remember(value) { mutableStateOf(value.toString()) }
 
     fun commit() {
+        if (!enabled) return
         val parsed = text.toIntOrNull() ?: value
         val clamped = parsed.coerceIn(range.first, range.last)
         text = clamped.toString()
@@ -423,7 +532,11 @@ private fun IntInputItem(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                title, 
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+            )
             Text(
                 "Current: $value  |  Range: ${range.first}–${range.last}",
                 style = MaterialTheme.typography.bodySmall,
@@ -434,20 +547,20 @@ private fun IntInputItem(
         OutlinedTextField(
             value = text,
             onValueChange = { new ->
-                if (new.length <= 3 && new.all { it.isDigit() }) text = new
+                if (enabled && new.length <= 4 && new.all { it.isDigit() }) text = new
             },
             singleLine = true,
+            enabled = enabled,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { commit() }),
-            // NARROWER WIDTH
             modifier = Modifier
                 .width(60.dp)
-                .height(48.dp) // TextField keeps standard 48dp height for touch targets
+                .height(48.dp)
         )
         
         Button(
             onClick = { commit() },
-            // SHORTER HEIGHT (40dp) & NARROWER WIDTH (52dp)
+            enabled = enabled,
             modifier = Modifier
                 .width(52.dp)
                 .height(40.dp),
