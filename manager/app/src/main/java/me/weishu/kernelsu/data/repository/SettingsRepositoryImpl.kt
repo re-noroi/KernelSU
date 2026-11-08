@@ -229,7 +229,7 @@ class SettingsRepositoryImpl : SettingsRepository {
         set(value) = prefs.edit { putBoolean(KEY_MODULE_AUTO_HOT_INSTALL, value) }
 
     override var bottomBarKernelTool: String
-        get() = prefs.getString(KernelTool.PREF_KEY, KernelTool.Payload.id) ?: KernelTool.Payload.id
+        get() = prefs.getString(KernelTool.PREF_KEY, KernelTool.Tuning.id) ?: KernelTool.Tuning.id
         set(value) = prefs.edit { putString(KernelTool.PREF_KEY, value) }
 
     override var bottomBarToolTipsShown: Boolean
