@@ -215,7 +215,7 @@ fun TuningScreenMaterial(
                             )
                             if (state.memory.swappinessRo) {
                                 Text(
-                                    "Read-only in kernel (CONFIG_RW_SWAPPINESS=n)",
+                                    "Read-only in this kernel.",
                                     color = MaterialTheme.colorScheme.error,
                                     style = MaterialTheme.typography.bodySmall,
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
@@ -242,13 +242,21 @@ fun TuningScreenMaterial(
                             SegmentedSwitchItem(
                                 icon = Icons.Filled.Memory,
                                 title = "MGLRU",
-                                summary = "Current: ${state.memory.mglruRaw}",
+                                summary = if (state.memory.mglruSupported) "Current: ${state.memory.mglruRaw}" else "Not supported",
                                 checked = state.memory.mglruEnabled,
-                                enabled = true,
+                                enabled = state.memory.mglruSupported, // <-- Grayed out if missing
                                 onCheckedChange = actions.onSetMglru,
                             )
+                            if (!state.memory.mglruSupported) {
+                                Text(
+                                    "MGLRU is not supported in this kernel.",
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                                )
+                            }
                         }
-                        if (state.memory.mglruEnabled) {
+                        if (state.memory.mglruSupported && state.memory.mglruEnabled) {
                             item {
                                 IntInputItem(
                                     title = "MGLRU min_ttl_ms",

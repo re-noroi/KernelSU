@@ -243,7 +243,7 @@ fun TuningScreenMiuix(
                                 )
                                 if (state.memory.swappinessRo) {
                                     Text(
-                                        "Read-only in kernel (CONFIG_RW_SWAPPINESS=n)",
+                                        "Read-only in this kernel.",
                                         color = colorScheme.error,
                                         fontSize = 12.sp,
                                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
@@ -263,12 +263,20 @@ fun TuningScreenMiuix(
                                 )
                                 SwitchPreference(
                                     title = "MGLRU",
-                                    summary = "Current: ${state.memory.mglruRaw}",
-                                    enabled = true,
+                                    summary = if (state.memory.mglruSupported) "Current: ${state.memory.mglruRaw}" else "Not supported",
+                                    enabled = state.memory.mglruSupported, // <-- Grayed out if missing
                                     checked = state.memory.mglruEnabled,
                                     onCheckedChange = actions.onSetMglru,
                                 )
-                                if (state.memory.mglruEnabled) {
+                                if (!state.memory.mglruSupported) {
+                                    Text(
+                                        "MGLRU is not supported in this kernel.",
+                                        color = colorScheme.error,
+                                        fontSize = 12.sp,
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                                    )
+                                }
+                                if (state.memory.mglruSupported && state.memory.mglruEnabled) {
                                     IntInputMiuix(
                                         title = "MGLRU min_ttl_ms",
                                         value = state.memory.mglruTtl,

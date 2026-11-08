@@ -159,7 +159,9 @@ class TuningViewModel : ViewModel() {
             swappinessRo = memSwappinessRo,
             swappiness = memSwappiness,
             vfsCache = memVfsCache,
+            kcompressdSupported = kcompOut.isNotEmpty(),
             kcompressd = memKcompressd,
+            mglruSupported = mglruSupported,
             mglruRaw = if (mglruRaw.isEmpty()) "0x0000" else mglruRaw,
             mglruEnabled = mglruEnabled,
             mglruTtl = mglruTtl
