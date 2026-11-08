@@ -29,6 +29,8 @@ import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.NetworkCheck
 import androidx.compose.material.icons.filled.Router
+import androidx.compose.material.icons.filled.Memory
+import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.Button
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
@@ -192,6 +194,70 @@ fun TuningScreenMaterial(
                             enabled = state.bypassSupported,
                             onCheckedChange = actions.onSetBypass,
                         )
+                    }
+                }
+            }
+
+            // ---- MEMORY ----
+            if (state.memory.supported) {
+                item { SectionHeader("Memory Management") }
+                item {
+                    SegmentedColumn(
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
+                    ) {
+                        item {
+                            IntSliderItem(
+                                title = "Swappiness",
+                                value = state.memory.swappiness,
+                                range = 0..100,
+                                enabled = !state.memory.swappinessRo,
+                                onValueChange = actions.onSetSwappiness,
+                            )
+                            if (state.memory.swappinessRo) {
+                                Text(
+                                    "Read-only in kernel (CONFIG_RW_SWAPPINESS=n)",
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+                        item {
+                            IntInputItem(
+                                title = "VFS Cache Pressure",
+                                value = state.memory.vfsCache,
+                                range = 0..1000,
+                                onValueChange = actions.onSetVfsCache,
+                            )
+                        }
+                        item {
+                            IntInputItem(
+                                title = "kcompressd",
+                                value = state.memory.kcompressd,
+                                range = 0..256,
+                                onValueChange = actions.onSetKcompressd,
+                            )
+                        }
+                        item {
+                            SegmentedSwitchItem(
+                                icon = Icons.Filled.Memory,
+                                title = "MGLRU",
+                                summary = "Current: ${state.memory.mglruRaw}",
+                                checked = state.memory.mglruEnabled,
+                                enabled = true,
+                                onCheckedChange = actions.onSetMglru,
+                            )
+                        }
+                        if (state.memory.mglruEnabled) {
+                            item {
+                                IntInputItem(
+                                    title = "MGLRU min_ttl_ms",
+                                    value = state.memory.mglruTtl,
+                                    range = 0..10000,
+                                    onValueChange = actions.onSetMglruTtl,
+                                )
+                            }
+                        }
                     }
                 }
             }

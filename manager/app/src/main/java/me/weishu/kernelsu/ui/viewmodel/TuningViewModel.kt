@@ -12,6 +12,7 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import me.weishu.kernelsu.ui.util.execKsudCommand
 import me.weishu.kernelsu.ui.screen.tuning.NetworkState
+import me.weishu.kernelsu.ui.screen.tuning.MemoryState
 
 data class ThermalProfile(val index: Int, val name: String)
 
@@ -45,6 +46,7 @@ data class TuningUiState(
     val cgroups: List<CgroupState> = emptyList(),
     val persist: Boolean = true,
     val network: NetworkState = NetworkState(),
+    val memory: MemoryState = MemoryState(),
     val errorMessage: String? = null,
 )
 
@@ -142,6 +144,27 @@ class TuningViewModel : ViewModel() {
             qdiscCurrent = qdiscCur
         )
 
+        val memSwappinessRo = execRootCommand("cat /proc/sys/vm/swappiness").isEmpty() || 
+                              execRootCommand("test -w /proc/sys/vm/swappiness && echo 1").isEmpty()
+        val memSwappiness = execRootCommand("cat /proc/sys/vm/swappiness").toIntOrNull() ?: 60
+        val memVfsCache = execRootCommand("cat /proc/sys/vm/vfs_cache_pressure").toIntOrNull() ?: 100
+        val memKcompressd = execRootCommand("cat /proc/sys/vm/kcompressd").toIntOrNull() ?: 24
+        
+        val mglruRaw = execRootCommand("cat /sys/kernel/mm/lru_gen/enabled").trim()
+        val mglruEnabled = mglruRaw.isNotEmpty() && mglruRaw != "0x0000"
+        val mglruTtl = execRootCommand("cat /sys/kernel/mm/lru_gen/min_ttl_ms").toIntOrNull() ?: 1000
+
+        val memory = MemoryState(
+            supported = memSwappiness > 0 || memVfsCache > 0 || mglruRaw.isNotEmpty(),
+            swappinessRo = memSwappinessRo,
+            swappiness = memSwappiness,
+            vfsCache = memVfsCache,
+            kcompressd = memKcompressd,
+            mglruRaw = if (mglruRaw.isEmpty()) "0x0000" else mglruRaw,
+            mglruEnabled = mglruEnabled,
+            mglruTtl = mglruTtl
+        )
+
         val persistStr = execRootCommand(
             "grep '^persist=' $configPath 2>/dev/null | cut -d= -f2"
         )
@@ -161,6 +184,7 @@ class TuningViewModel : ViewModel() {
                 cgroups = cgroups,
                 persist = persist,
                 network = network,
+                memory = memory,
                 errorMessage = null,
             )
         }
@@ -240,6 +264,27 @@ class TuningViewModel : ViewModel() {
         apply("qdisc", value)
     }
 
+    fun setSwappiness(value: Int) {
+        _uiState.update { it.copy(memory = it.memory.copy(swappiness = value)) }
+        apply("mem_swappiness", value.toString())
+    }
+    fun setVfsCache(value: Int) {
+        _uiState.update { it.copy(memory = it.memory.copy(vfsCache = value)) }
+        apply("mem_vfs", value.toString())
+    }
+    fun setKcompressd(value: Int) {
+        _uiState.update { it.copy(memory = it.memory.copy(kcompressd = value)) }
+        apply("mem_kcompressd", value.toString())
+    }
+    fun setMglru(enabled: Boolean) {
+        _uiState.update { it.copy(memory = it.memory.copy(mglruEnabled = enabled)) }
+        apply("mem_mglru", if (enabled) "1" else "0")
+    }
+    fun setMglruTtl(value: Int) {
+        _uiState.update { it.copy(memory = it.memory.copy(mglruTtl = value)) }
+        apply("mem_mglru_ttl", value.toString())
+    }
+
     private fun apply(type: String, value: String) {
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update { it.copy(isApplying = true, errorMessage = null) }
@@ -266,6 +311,11 @@ class TuningViewModel : ViewModel() {
                 }
                 type == "tcp_congestion" -> "tuning tcp-congestion $value"
                 type == "qdisc" -> "tuning qdisc $value"
+                type == "mem_swappiness" -> "tuning swappiness $value"
+                type == "mem_vfs" -> "tuning vfs-cache $value"
+                type == "mem_kcompressd" -> "tuning kcompressd $value"
+                type == "mem_mglru" -> "tuning mglru $value"
+                type == "mem_mglru_ttl" -> "tuning mglru-ttl $value"
                 else -> null
             }
 

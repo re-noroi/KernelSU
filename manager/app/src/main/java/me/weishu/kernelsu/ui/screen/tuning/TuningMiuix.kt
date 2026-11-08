@@ -29,6 +29,7 @@ import androidx.compose.material.icons.rounded.BatteryChargingFull
 import androidx.compose.material.icons.rounded.Thermostat
 import androidx.compose.material.icons.rounded.NetworkCheck
 import androidx.compose.material.icons.rounded.Router
+import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
@@ -224,6 +225,59 @@ fun TuningScreenMiuix(
                             checked = state.bypassEnabled,
                             onCheckedChange = actions.onSetBypass,
                         )
+                    }
+                }
+
+                // ---- MEMORY ----
+                if (state.memory.supported) {
+                    item { SectionHeaderMiuix("Memory Management") }
+                    item {
+                        Card(modifier = Modifier.fillMaxWidth()) {
+                            Column {
+                                IntSliderMiuix(
+                                    title = "Swappiness",
+                                    value = state.memory.swappiness,
+                                    range = 0..100,
+                                    enabled = !state.memory.swappinessRo,
+                                    onValueChange = actions.onSetSwappiness,
+                                )
+                                if (state.memory.swappinessRo) {
+                                    Text(
+                                        "Read-only in kernel (CONFIG_RW_SWAPPINESS=n)",
+                                        color = colorScheme.error,
+                                        fontSize = 12.sp,
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                                    )
+                                }
+                                IntInputMiuix(
+                                    title = "VFS Cache Pressure",
+                                    value = state.memory.vfsCache,
+                                    range = 0..1000,
+                                    onValueChange = actions.onSetVfsCache,
+                                )
+                                IntInputMiuix(
+                                    title = "kcompressd",
+                                    value = state.memory.kcompressd,
+                                    range = 0..256,
+                                    onValueChange = actions.onSetKcompressd,
+                                )
+                                SwitchPreference(
+                                    title = "MGLRU",
+                                    summary = "Current: ${state.memory.mglruRaw}",
+                                    enabled = true,
+                                    checked = state.memory.mglruEnabled,
+                                    onCheckedChange = actions.onSetMglru,
+                                )
+                                if (state.memory.mglruEnabled) {
+                                    IntInputMiuix(
+                                        title = "MGLRU min_ttl_ms",
+                                        value = state.memory.mglruTtl,
+                                        range = 0..10000,
+                                        onValueChange = actions.onSetMglruTtl,
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
 

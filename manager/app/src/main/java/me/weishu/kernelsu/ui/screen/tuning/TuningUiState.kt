@@ -29,6 +29,18 @@ data class NetworkState(
 )
 
 @Immutable
+data class MemoryState(
+    val supported: Boolean = false,
+    val swappinessRo: Boolean = false,
+    val swappiness: Int = 60,
+    val vfsCache: Int = 100,
+    val kcompressd: Int = 24,
+    val mglruRaw: String = "0x0000",
+    val mglruEnabled: Boolean = false,
+    val mglruTtl: Int = 1000,
+)
+
+@Immutable
 data class TuningActions(
     val onBack: () -> Unit,
     val onSelectThermal: (Int) -> Unit,
@@ -48,4 +60,10 @@ data class TuningActions(
     // Networking
     val onSetTcpCongestion: (String) -> Unit,
     val onSetQdisc: (String) -> Unit,
+    // Memory
+    val onSetSwappiness: (Int) -> Unit,
+    val onSetVfsCache: (Int) -> Unit,
+    val onSetKcompressd: (Int) -> Unit,
+    val onSetMglru: (Boolean) -> Unit,
+    val onSetMglruTtl: (Int) -> Unit,
 )
