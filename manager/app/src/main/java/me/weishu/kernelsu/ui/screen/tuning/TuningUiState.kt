@@ -31,12 +31,16 @@ data class NetworkState(
 @Immutable
 data class MemoryState(
     val supported: Boolean = false,
+    // Swappiness — always exists, just track RO state
     val swappinessRo: Boolean = false,
     val swappiness: Int = 60,
+    // VFS
     val vfsSupported: Boolean = false,
     val vfsCache: Int = 100,
+    // kcompressd
     val kcompressdSupported: Boolean = false,
     val kcompressd: Int = 24,
+    // MGLRU
     val mglruSupported: Boolean = false,
     val mglruRaw: String = "0x0000",
     val mglruEnabled: Boolean = false,

@@ -144,27 +144,31 @@ class TuningViewModel : ViewModel() {
             qdiscCurrent = qdiscCur
         )
 
-        val memSwappinessRo = execRootCommand("cat /proc/sys/vm/swappiness").isEmpty() || 
-                              execRootCommand("test -w /proc/sys/vm/swappiness && echo 1").isEmpty()
-        val memSwappiness = execRootCommand("cat /proc/sys/vm/swappiness").toIntOrNull() ?: 60
-        val memVfsCache = execRootCommand("cat /proc/sys/vm/vfs_cache_pressure").toIntOrNull() ?: 100
-        val memKcompressd = execRootCommand("cat /proc/sys/vm/kcompressd").toIntOrNull() ?: 24
-        
-        val mglruRaw = execRootCommand("cat /sys/kernel/mm/lru_gen/enabled").trim()
-        val mglruEnabled = mglruRaw.isNotEmpty() && mglruRaw != "0x0000"
-        val mglruTtl = execRootCommand("cat /sys/kernel/mm/lru_gen/min_ttl_ms").toIntOrNull() ?: 1000
+        val swappOut = execRootCommand("cat /proc/sys/vm/swappiness")
+        val vfsOut = execRootCommand("cat /proc/sys/vm/vfs_cache_pressure")
+        val kcompOut = execRootCommand("cat /proc/sys/vm/kcompressd")
+        val mglruOut = execRootCommand("cat /sys/kernel/mm/lru_gen/enabled").trim()
+        val mglruTtlOut = execRootCommand("cat /sys/kernel/mm/lru_gen/min_ttl_ms")
+
+        // Swappiness always exists, we just check if it's writable
+        val memSwappinessRo = execRootCommand("test -w /proc/sys/vm/swappiness && echo 1").isEmpty()
+
+        val vfsSupported = vfsOut.isNotEmpty()
+        val kcompSupported = kcompOut.isNotEmpty()
+        val mglruSupported = mglruOut.isNotEmpty()
 
         val memory = MemoryState(
-            supported = memSwappiness > 0 || memVfsCache > 0 || mglruRaw.isNotEmpty(),
+            supported = swappOut.isNotEmpty() || vfsSupported || kcompSupported || mglruSupported,
             swappinessRo = memSwappinessRo,
-            swappiness = memSwappiness,
-            vfsCache = memVfsCache,
-            kcompressdSupported = kcompOut.isNotEmpty(),
-            kcompressd = memKcompressd,
+            swappiness = swappOut.toIntOrNull() ?: 60,
+            vfsSupported = vfsSupported,
+            vfsCache = vfsOut.toIntOrNull() ?: 100,
+            kcompressdSupported = kcompSupported,
+            kcompressd = kcompOut.toIntOrNull() ?: 24,
             mglruSupported = mglruSupported,
-            mglruRaw = if (mglruRaw.isEmpty()) "0x0000" else mglruRaw,
-            mglruEnabled = mglruEnabled,
-            mglruTtl = mglruTtl
+            mglruRaw = if (mglruOut.isEmpty()) "0x0000" else mglruOut,
+            mglruEnabled = mglruSupported && mglruOut != "0x0000",
+            mglruTtl = mglruTtlOut.toIntOrNull() ?: 1000
         )
 
         val persistStr = execRootCommand(

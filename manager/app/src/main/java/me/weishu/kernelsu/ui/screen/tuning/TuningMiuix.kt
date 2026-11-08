@@ -234,6 +234,7 @@ fun TuningScreenMiuix(
                     item {
                         Card(modifier = Modifier.fillMaxWidth()) {
                             Column {
+                                // Swappiness — always exists, just might be RO
                                 IntInputMiuix(
                                     title = "Swappiness",
                                     value = state.memory.swappiness,
@@ -246,42 +247,66 @@ fun TuningScreenMiuix(
                                         "Read-only in this kernel.",
                                         color = colorScheme.error,
                                         fontSize = 12.sp,
-                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                                     )
                                 }
-                                IntInputMiuix(
-                                    title = "VFS Cache Pressure",
-                                    value = state.memory.vfsCache,
-                                    range = 0..1000,
-                                    onValueChange = actions.onSetVfsCache,
-                                )
-                                IntInputMiuix(
-                                    title = "kcompressd",
-                                    value = state.memory.kcompressd,
-                                    range = 0..256,
-                                    onValueChange = actions.onSetKcompressd,
-                                )
-                                SwitchPreference(
-                                    title = "MGLRU",
-                                    summary = if (state.memory.mglruSupported) "Current: ${state.memory.mglruRaw}" else "Not supported",
-                                    enabled = state.memory.mglruSupported, // <-- Grayed out if missing
-                                    checked = state.memory.mglruEnabled,
-                                    onCheckedChange = actions.onSetMglru,
-                                )
-                                if (!state.memory.mglruSupported) {
+
+                                // VFS Cache Pressure
+                                if (state.memory.vfsSupported) {
+                                    IntInputMiuix(
+                                        title = "VFS Cache Pressure",
+                                        value = state.memory.vfsCache,
+                                        range = 0..1000,
+                                        onValueChange = actions.onSetVfsCache,
+                                    )
+                                } else {
+                                    Text(
+                                        "VFS Cache Pressure is not supported in this kernel.",
+                                        color = colorScheme.error,
+                                        fontSize = 12.sp,
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                    )
+                                }
+
+                                // kcompressd
+                                if (state.memory.kcompressdSupported) {
+                                    IntInputMiuix(
+                                        title = "kcompressd",
+                                        value = state.memory.kcompressd,
+                                        range = 0..256,
+                                        onValueChange = actions.onSetKcompressd,
+                                    )
+                                } else {
+                                    Text(
+                                        "kcompressd is not supported in this kernel.",
+                                        color = colorScheme.error,
+                                        fontSize = 12.sp,
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                    )
+                                }
+
+                                // MGLRU
+                                if (state.memory.mglruSupported) {
+                                    SwitchPreference(
+                                        title = "MGLRU",
+                                        summary = "Current: ${state.memory.mglruRaw}",
+                                        checked = state.memory.mglruEnabled,
+                                        onCheckedChange = actions.onSetMglru,
+                                    )
+                                    if (state.memory.mglruEnabled) {
+                                        IntInputMiuix(
+                                            title = "MGLRU min_ttl_ms",
+                                            value = state.memory.mglruTtl,
+                                            range = 0..10000,
+                                            onValueChange = actions.onSetMglruTtl,
+                                        )
+                                    }
+                                } else {
                                     Text(
                                         "MGLRU is not supported in this kernel.",
                                         color = colorScheme.error,
                                         fontSize = 12.sp,
-                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                                    )
-                                }
-                                if (state.memory.mglruSupported && state.memory.mglruEnabled) {
-                                    IntInputMiuix(
-                                        title = "MGLRU min_ttl_ms",
-                                        value = state.memory.mglruTtl,
-                                        range = 0..10000,
-                                        onValueChange = actions.onSetMglruTtl,
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                                     )
                                 }
                             }

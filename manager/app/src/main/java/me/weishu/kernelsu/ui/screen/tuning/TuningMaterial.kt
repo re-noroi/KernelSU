@@ -205,6 +205,7 @@ fun TuningScreenMaterial(
                     SegmentedColumn(
                         modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
                     ) {
+                        // Swappiness — always exists, just might be RO
                         item {
                             IntInputItem(
                                 title = "Swappiness",
@@ -218,51 +219,81 @@ fun TuningScreenMaterial(
                                     "Read-only in this kernel.",
                                     color = MaterialTheme.colorScheme.error,
                                     style = MaterialTheme.typography.bodySmall,
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                                 )
                             }
                         }
-                        item {
-                            IntInputItem(
-                                title = "VFS Cache Pressure",
-                                value = state.memory.vfsCache,
-                                range = 0..1000,
-                                onValueChange = actions.onSetVfsCache,
-                            )
+
+                        // VFS Cache Pressure
+                        if (state.memory.vfsSupported) {
+                            item {
+                                IntInputItem(
+                                    title = "VFS Cache Pressure",
+                                    value = state.memory.vfsCache,
+                                    range = 0..1000,
+                                    onValueChange = actions.onSetVfsCache,
+                                )
+                            }
+                        } else {
+                            item {
+                                Text(
+                                    "VFS Cache Pressure is not supported in this kernel.",
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                )
+                            }
                         }
-                        item {
-                            IntInputItem(
-                                title = "kcompressd",
-                                value = state.memory.kcompressd,
-                                range = 0..256,
-                                onValueChange = actions.onSetKcompressd,
-                            )
+
+                        // kcompressd
+                        if (state.memory.kcompressdSupported) {
+                            item {
+                                IntInputItem(
+                                    title = "kcompressd",
+                                    value = state.memory.kcompressd,
+                                    range = 0..256,
+                                    onValueChange = actions.onSetKcompressd,
+                                )
+                            }
+                        } else {
+                            item {
+                                Text(
+                                    "kcompressd is not supported in this kernel.",
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                )
+                            }
                         }
-                        item {
-                            SegmentedSwitchItem(
-                                icon = Icons.Filled.Memory,
-                                title = "MGLRU",
-                                summary = if (state.memory.mglruSupported) "Current: ${state.memory.mglruRaw}" else "Not supported",
-                                checked = state.memory.mglruEnabled,
-                                enabled = state.memory.mglruSupported, // <-- Grayed out if missing
-                                onCheckedChange = actions.onSetMglru,
-                            )
-                            if (!state.memory.mglruSupported) {
+
+                        // MGLRU
+                        if (state.memory.mglruSupported) {
+                            item {
+                                SegmentedSwitchItem(
+                                    icon = Icons.Filled.Memory,
+                                    title = "MGLRU",
+                                    summary = "Current: ${state.memory.mglruRaw}",
+                                    checked = state.memory.mglruEnabled,
+                                    onCheckedChange = actions.onSetMglru,
+                                )
+                            }
+                            if (state.memory.mglruEnabled) {
+                                item {
+                                    IntInputItem(
+                                        title = "MGLRU min_ttl_ms",
+                                        value = state.memory.mglruTtl,
+                                        range = 0..10000,
+                                        onValueChange = actions.onSetMglruTtl,
+                                    )
+                                }
+                            }
+                        } else {
+                            item {
                                 Text(
                                     "MGLRU is not supported in this kernel.",
                                     color = MaterialTheme.colorScheme.error,
                                     style = MaterialTheme.typography.bodySmall,
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                                )
-                            }
-                        }
-                        if (state.memory.mglruSupported && state.memory.mglruEnabled) {
-                            item {
-                                IntInputItem(
-                                    title = "MGLRU min_ttl_ms",
-                                    value = state.memory.mglruTtl,
-                                    range = 0..10000,
-                                    onValueChange = actions.onSetMglruTtl,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                                 )
                             }
                         }
