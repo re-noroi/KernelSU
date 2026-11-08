@@ -112,6 +112,10 @@ fn read_i32_str(path: &str) -> Option<i32> {
     fs::read_to_string(path).ok()?.trim().parse().ok()
 }
 
+fn read_u64_str(path: &str) -> Option<u64> {
+    fs::read_to_string(path).ok()?.trim().parse().ok()
+}
+
 fn write_i32_str(path: &str, value: i32) -> Result<()> {
     fs::write(path, value.to_string())
         .with_context(|| format!("failed to write {path}"))?;
