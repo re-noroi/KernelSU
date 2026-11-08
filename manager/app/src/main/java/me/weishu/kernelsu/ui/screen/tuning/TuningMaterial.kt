@@ -1,9 +1,16 @@
 package me.weishu.kernelsu.ui.screen.tuning
 
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.Thermostat
@@ -15,42 +22,86 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import me.weishu.kernelsu.R
+import me.weishu.kernelsu.ui.component.bottombar.KernelTool
+import me.weishu.kernelsu.ui.component.bottombar.KernelToolNavigationIconMaterial
+import me.weishu.kernelsu.ui.component.bottombar.KernelToolTitleDropdownMaterial
+import me.weishu.kernelsu.ui.component.bottombar.RegisterTabReselect
 import me.weishu.kernelsu.ui.component.material.ExpressiveScaffold
 import me.weishu.kernelsu.ui.component.material.SegmentedColumn
 import me.weishu.kernelsu.ui.component.material.SegmentedDropdownItem
 import me.weishu.kernelsu.ui.component.material.SegmentedSwitchItem
 import me.weishu.kernelsu.ui.component.material.TopBarBackButton
 import me.weishu.kernelsu.ui.component.material.expressiveTopAppBarColors
+import me.weishu.kernelsu.ui.navigation3.LocalNavigator
 import me.weishu.kernelsu.ui.viewmodel.TuningUiState
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.calculateEndPadding
 
 @Composable
 fun TuningScreenMaterial(
     state: TuningUiState,
     actions: TuningActions,
+    isRootTab: Boolean = false,
+    bottomInnerPadding: Dp = 0.dp,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+    val navigator = LocalNavigator.current
+    val layoutDirection = LocalLayoutDirection.current
+    val listState = rememberLazyListState()
+
+    if (isRootTab) {
+        RegisterTabReselect(2) {
+            listState.animateScrollToItem(0)
+        }
+    }
 
     ExpressiveScaffold(
         topBar = {
             LargeFlexibleTopAppBar(
-                title = { Text(stringResource(R.string.tuning_title)) },
+                title = {
+                    if (isRootTab) {
+                        KernelToolTitleDropdownMaterial(KernelTool.Tuning, navigator)
+                    } else {
+                        Text(
+                            text = stringResource(R.string.tuning_title),
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                },
                 navigationIcon = {
-                    TopBarBackButton(onClick = actions.onBack)
+                    if (isRootTab) {
+                        KernelToolNavigationIconMaterial(KernelTool.Tuning)
+                    } else {
+                        TopBarBackButton(onClick = actions.onBack)
+                    }
                 },
                 colors = expressiveTopAppBarColors(),
+                windowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
                 scrollBehavior = scrollBehavior,
             )
         },
+        contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
     ) { innerPadding ->
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
                 .nestedScroll(scrollBehavior.nestedScrollConnection),
-            contentPadding = PaddingValues(bottom = 16.dp),
+            contentPadding = PaddingValues(
+                top = innerPadding.calculateTopPadding(),
+                start = innerPadding.calculateStartPadding(layoutDirection),
+                end = innerPadding.calculateEndPadding(layoutDirection),
+                bottom = maxOf(
+                    bottomInnerPadding,
+                    WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding(),
+                ) + 24.dp,
+            ),
         ) {
             val errorMessage = state.errorMessage
             if (errorMessage != null) {

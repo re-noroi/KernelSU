@@ -5,18 +5,21 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.DataObject
 import androidx.compose.material.icons.filled.Terminal
+import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material.icons.outlined.BugReport
 import androidx.compose.material.icons.outlined.DataObject
 import androidx.compose.material.icons.outlined.Terminal
+import androidx.compose.material.icons.outlined.Thermostat
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.Unarchive
 import androidx.compose.material.icons.outlined.ViewModule
 import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.DataObject
 import androidx.compose.material.icons.rounded.Terminal
+import androidx.compose.material.icons.rounded.Thermostat
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.Unarchive
 import androidx.compose.material.icons.rounded.ViewModule
@@ -52,6 +55,14 @@ enum class KernelTool(
     val roundedIcon: ImageVector,
     val route: Route,
 ) {
+    Tuning(
+        id = "tuning",
+        label = R.string.tuning_title,
+        outlinedIcon = Icons.Outlined.Thermostat,
+        filledIcon = Icons.Filled.Thermostat,
+        roundedIcon = Icons.Rounded.Thermostat,
+        route = Route.Tuning,
+    ),
     Payload(
         id = "payload",
         label = R.string.payload_extract_title,
@@ -113,6 +124,6 @@ enum class KernelTool(
         const val PREF_KEY = "bottom_bar_kernel_tool"
 
         fun fromId(id: String?): KernelTool =
-            entries.firstOrNull { it.id == id } ?: Payload
+            entries.firstOrNull { it.id == id } ?: Tuning
     }
 }
