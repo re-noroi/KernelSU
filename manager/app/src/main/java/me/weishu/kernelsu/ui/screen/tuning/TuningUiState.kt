@@ -4,19 +4,26 @@ import androidx.compose.runtime.Immutable
 
 @Immutable
 data class SchedulerState(
-    val supported: Boolean = false,
+    val skipHeadroomSupported: Boolean = false,
     val skipHeadroom: Int = 1,
+    val hrScalingSupported: Boolean = false,
     val hrScaling: Int = 0,
+    val boostHrLpSupported: Boolean = false,
     val boostHrLp: Int = 0,
+    val boostHrBigSupported: Boolean = false,
     val boostHrBig: Int = 0,
+    val boostHrPrimeSupported: Boolean = false,
     val boostHrPrime: Int = 0,
 )
 
 @Immutable
 data class CgroupState(
     val name: String,
+    val uclampMinSupported: Boolean = false,
     val uclampMin: Int = 0,
+    val uclampMaxSupported: Boolean = false,
     val uclampMax: Int = 100,
+    val sharesSupported: Boolean = false,
     val shares: Int = 1024,
 )
 
