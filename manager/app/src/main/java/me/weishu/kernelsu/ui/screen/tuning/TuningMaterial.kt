@@ -27,6 +27,8 @@ import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.filled.NetworkCheck
+import androidx.compose.material.icons.filled.Router
 import androidx.compose.material3.Button
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
@@ -300,6 +302,44 @@ fun TuningScreenMaterial(
                                     )
                                 }
                             }
+                        }
+                    }
+                }
+            }
+
+            // ---- NETWORKING ----
+            if (state.network.supported) {
+                item { SectionHeader("Networking") }
+                item {
+                    SegmentedColumn(
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
+                    ) {
+                        item {
+                            SegmentedDropdownItem(
+                                icon = Icons.Filled.NetworkCheck,
+                                title = "TCP Cong. Alg.",
+                                summary = "Current: ${state.network.tcpCurrent}",
+                                items = state.network.tcpAvailable,
+                                enabled = state.network.tcpAvailable.isNotEmpty(),
+                                selectedIndex = state.network.tcpAvailable.indexOf(state.network.tcpCurrent).coerceAtLeast(0),
+                                onItemSelected = { pos -> 
+                                    state.network.tcpAvailable.getOrNull(pos)?.let { actions.onSetTcpCongestion(it) }
+                                },
+                            )
+                        }
+                        item {
+                            val qdiscs = listOf("fq_codel", "cake")
+                            SegmentedDropdownItem(
+                                icon = Icons.Filled.Router,
+                                title = "Queueing Discipline",
+                                summary = "Current: ${state.network.qdiscCurrent}",
+                                items = qdiscs,
+                                enabled = true,
+                                selectedIndex = qdiscs.indexOf(state.network.qdiscCurrent).coerceAtLeast(0),
+                                onItemSelected = { pos -> 
+                                    qdiscs.getOrNull(pos)?.let { actions.onSetQdisc(it) }
+                                },
+                            )
                         }
                     }
                 }

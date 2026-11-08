@@ -50,6 +50,11 @@ const SCHED_BOOST_HR_PRIME: &str = "/proc/sys/kernel/sched_boost_hr_prime";
 const CGROUP_NAMES: &[&str] = &["background", "top-app", "foreground"];
 const CGROUP_BASE: &str = "/dev/cpuctl";
 
+// Networking tunables
+const TCP_AVAILABLE: &str = "/proc/sys/net/ipv4/tcp_available_congestion_control";
+const TCP_CURRENT: &str = "/proc/sys/net/ipv4/tcp_congestion_control";
+const QDISC_CURRENT: &str = "/proc/sys/net/core/default_qdisc";
+
 fn config_path() -> PathBuf {
     PathBuf::from(defs::TUNING_CONFIG_PATH)
 }
@@ -266,6 +271,16 @@ pub fn print_status() {
         println!("cgroup_{name}_uclamp_max={}", max.unwrap_or(100));
         println!("cgroup_{name}_shares={}", shares.unwrap_or(1024));
     }
+
+    // --- Networking ---
+    let tcp_avail = fs::read_to_string(TCP_AVAILABLE).unwrap_or_default();
+    let tcp_cur = fs::read_to_string(TCP_CURRENT).unwrap_or_default().trim().to_string();
+    let qdisc_cur = fs::read_to_string(QDISC_CURRENT).unwrap_or_default().trim().to_string();
+    
+    // Comma-separated so Kotlin can split it easily
+    println!("tcp_available={}", tcp_avail.trim().replace(' ', ","));
+    println!("tcp_current={tcp_cur}");
+    println!("qdisc_current={qdisc_cur}");
 }
 
 /// Print the supported thermal profiles as `index=name` lines.
@@ -398,6 +413,20 @@ pub fn set_persist(enabled: bool) -> Result<()> {
     Ok(())
 }
 
+pub fn set_tcp_congestion(value: &str) -> Result<()> {
+    fs::write(TCP_CURRENT, value).with_context(|| "failed to write tcp_congestion_control")?;
+    update_config("tcp_congestion_control", value)?;
+    println!("ok");
+    Ok(())
+}
+
+pub fn set_qdisc(value: &str) -> Result<()> {
+    fs::write(QDISC_CURRENT, value).with_context(|| "failed to write default_qdisc")?;
+    update_config("default_qdisc", value)?;
+    println!("ok");
+    Ok(())
+}
+
 /// Restore the persisted tuning settings. Called from the boot service stage.
 ///
 /// Individual node failures are logged and skipped so a single missing vendor
@@ -501,5 +530,13 @@ pub fn apply_persisted() {
                 let _ = write_i32_str(path.to_string_lossy().as_ref(), v.parse().unwrap_or(0));
             }
         }
+    }
+
+    // --- Restore networking tunables ---
+    if let Some(v) = config.get("tcp_congestion_control") {
+        let _ = fs::write(TCP_CURRENT, v);
+    }
+    if let Some(v) = config.get("default_qdisc") {
+        let _ = fs::write(QDISC_CURRENT, v);
     }
 }

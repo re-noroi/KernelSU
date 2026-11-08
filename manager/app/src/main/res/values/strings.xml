@@ -359,6 +359,9 @@
     <string name="tuning_sched_cgroup_background">Background</string>
     <string name="tuning_sched_cgroup_top_app">Top App</string>
     <string name="tuning_sched_cgroup_foreground">Foreground</string>
+    <string name="tuning_section_networking">Networking</string>
+    <string name="tuning_net_tcp_cong">TCP Cong. Alg.</string>
+    <string name="tuning_net_qdisc">Queueing Discipline</string>
     <string name="tuning_persist_title">Persist on boot</string>
     <string name="tuning_persist_summary_on">Values are restored after reboot.</string>
     <string name="tuning_persist_summary_off">Kernel defaults are used on reboot.</string>
