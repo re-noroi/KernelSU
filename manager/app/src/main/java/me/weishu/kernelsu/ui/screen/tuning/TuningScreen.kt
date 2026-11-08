@@ -39,6 +39,9 @@ fun TuningScreen(isRootTab: Boolean = false, bottomInnerPadding: Dp = 0.dp) {
         onSetCgroupUclampMin = viewModel::setCgroupUclampMin,
         onSetCgroupUclampMax = viewModel::setCgroupUclampMax,
         onSetCgroupShares = viewModel::setCgroupShares,
+        // Networking
+        onSetTcpCongestion = viewModel::setTcpCongestion,
+        onSetQdisc = viewModel::setQdisc,
     )
 
     when (LocalUiMode.current) {

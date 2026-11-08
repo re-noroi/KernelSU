@@ -566,6 +566,12 @@ enum TuningCmd {
     /// Enable (1) or disable (0) restoring tuning values across reboots
     Persist { value: u8 },
 
+    /// Set TCP Congestion Algorithm
+    TcpCongestion { value: String },
+
+    /// Set Queueing Discipline
+    Qdisc { value: String },
+
     /// Reapply the persisted tuning settings
     Apply,
 }
@@ -934,6 +940,8 @@ pub fn run() -> Result<()> {
                 crate::tuning::set_cgroup_value(&name, &key, value)
             }
             TuningCmd::Persist { value } => crate::tuning::set_persist(value != 0),
+            TuningCmd::TcpCongestion { value } => crate::tuning::set_tcp_congestion(&value),
+            TuningCmd::Qdisc { value } => crate::tuning::set_qdisc(&value),
             TuningCmd::Apply => {
                 crate::tuning::apply_persisted();
                 Ok(())

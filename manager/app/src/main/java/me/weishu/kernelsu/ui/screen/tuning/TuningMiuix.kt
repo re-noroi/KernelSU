@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardActions
@@ -26,6 +27,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.BatteryChargingFull
 import androidx.compose.material.icons.rounded.Thermostat
+import androidx.compose.material.icons.rounded.NetworkCheck
+import androidx.compose.material.icons.rounded.Router
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
@@ -50,7 +53,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.foundation.layout.height
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.component.bottombar.KernelTool
 import me.weishu.kernelsu.ui.component.bottombar.KernelToolTopAppBarMiuix
@@ -312,6 +314,53 @@ fun TuningScreenMiuix(
                                     )
                                 }
                             }
+                        }
+                    }
+                }
+
+                // ---- NETWORKING ----
+                if (state.network.supported) {
+                    item { SectionHeaderMiuix("Networking") }
+                    item {
+                        Card(modifier = Modifier.fillMaxWidth()) {
+                            OverlayDropdownPreference(
+                                title = "TCP Cong. Alg.",
+                                summary = "Current: ${state.network.tcpCurrent}",
+                                items = state.network.tcpAvailable,
+                                startAction = {
+                                    Icon(
+                                        Icons.Rounded.NetworkCheck,
+                                        modifier = Modifier.padding(end = 6.dp),
+                                        contentDescription = "TCP Congestion",
+                                        tint = colorScheme.onBackground,
+                                    )
+                                },
+                                enabled = state.network.tcpAvailable.isNotEmpty(),
+                                selectedIndex = state.network.tcpAvailable.indexOf(state.network.tcpCurrent).coerceAtLeast(0),
+                                onSelectedIndexChange = { pos ->
+                                    state.network.tcpAvailable.getOrNull(pos)?.let { actions.onSetTcpCongestion(it) }
+                                },
+                            )
+                            
+                            val qdiscs = listOf("fq_codel", "cake")
+                            OverlayDropdownPreference(
+                                title = "Queueing Discipline",
+                                summary = "Current: ${state.network.qdiscCurrent}",
+                                items = qdiscs,
+                                startAction = {
+                                    Icon(
+                                        Icons.Rounded.Router,
+                                        modifier = Modifier.padding(end = 6.dp),
+                                        contentDescription = "QDisc",
+                                        tint = colorScheme.onBackground,
+                                    )
+                                },
+                                enabled = true,
+                                selectedIndex = qdiscs.indexOf(state.network.qdiscCurrent).coerceAtLeast(0),
+                                onSelectedIndexChange = { pos ->
+                                    qdiscs.getOrNull(pos)?.let { actions.onSetQdisc(it) }
+                                },
+                            )
                         }
                     }
                 }
