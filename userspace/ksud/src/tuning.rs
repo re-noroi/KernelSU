@@ -62,6 +62,11 @@ const KCOMPRESSD: &str = "/proc/sys/vm/kcompressd";
 const MGLRU_ENABLED: &str = "/sys/kernel/mm/lru_gen/enabled";
 const MGLRU_MIN_TTL: &str = "/sys/kernel/mm/lru_gen/min_ttl_ms";
 
+// zRAM
+const ZRAM_DEV: &str = "/dev/block/zram0";
+const ZRAM_SYSFS: &str = "/sys/block/zram0";
+const ZRAM_SIZE_OPTIONS_GB: &[u64] = &[2, 3, 4, 6, 8];
+
 fn config_path() -> PathBuf {
     PathBuf::from(defs::TUNING_CONFIG_PATH)
 }
@@ -308,6 +313,34 @@ pub fn print_status() {
     println!("mem_mglru_raw={mglru_raw}");
     println!("mem_mglru_enabled={}", i32::from(mglru_enabled));
     println!("mem_mglru_ttl={mglru_ttl}");
+
+    // --- zRAM ---
+    let zram_exists = Path::new(ZRAM_DEV).exists();
+    let disksize = fs::read_to_string(format!("{ZRAM_SYSFS}/disksize"))
+        .ok()
+        .and_then(|s| s.trim().parse::<u64>().ok())
+        .unwrap_or(0);
+    let comp_raw = fs::read_to_string(format!("{ZRAM_SYSFS}/comp_algorithm"))
+        .unwrap_or_default();
+    // The active algorithm is wrapped in [brackets], e.g. "lzo [lz4] zstd"
+    let comp_current = comp_raw
+        .split_whitespace()
+        .find(|s| s.starts_with('[') && s.ends_with(']'))
+        .map(|s| s.trim_matches(|c| c == '[' || c == ']').to_string())
+        .unwrap_or_default();
+    let comp_available: Vec<String> = comp_raw
+        .split_whitespace()
+        .map(|s| s.trim_matches(|c| c == '[' || c == ']').to_string())
+        .collect();
+    // Swap state: look for "zram0" in /proc/swaps
+    let swaps = fs::read_to_string("/proc/swaps").unwrap_or_default();
+    let swap_active = swaps.lines().any(|l| l.contains("zram0"));
+
+    println!("zram_supported={}", i32::from(zram_exists));
+    println!("zram_disksize={disksize}");
+    println!("zram_comp_current={comp_current}");
+    println!("zram_comp_available={}", comp_available.join(","));
+    println!("zram_swap_active={}", i32::from(swap_active));
 }
 
 /// Print the supported thermal profiles as `index=name` lines.
@@ -495,6 +528,101 @@ pub fn set_mglru_ttl(value: i32) -> Result<()> {
     Ok(())
 }
 
+/// Resize zRAM. `size_gb` must be one of ZRAM_SIZE_OPTIONS_GB.
+/// Returns `Err` if the size isn't in the allowed list.
+pub fn set_zram_size(size_gb: u64) -> Result<()> {
+    if !ZRAM_SIZE_OPTIONS_GB.contains(&size_gb) {
+        bail!("unsupported zram size {size_gb}GB");
+    }
+    if !Path::new(ZRAM_DEV).exists() {
+        bail!("zram device not found");
+    }
+
+    let bytes = size_gb * 1024 * 1024 * 1024;
+    // Read the current algorithm first so we don't lose it on resize.
+    let comp = fs::read_to_string(format!("{ZRAM_SYSFS}/comp_algorithm"))
+        .unwrap_or_default()
+        .split_whitespace()
+        .find(|s| s.starts_with('[') && s.ends_with(']'))
+        .map(|s| s.trim_matches(|c| c == '[' || c == ']').to_string())
+        .unwrap_or_else(|| "lz4".to_string());
+
+    let script = format!(
+        "swapoff {dev} 2>/dev/null; \
+         echo 1 > {sys}/reset; \
+         echo {comp} > {sys}/comp_algorithm; \
+         echo {bytes} > {sys}/disksize; \
+         mkswap {dev} >/dev/null; \
+         swapon {dev}",
+        dev = ZRAM_DEV,
+        sys = ZRAM_SYSFS,
+        comp = comp,
+        bytes = bytes,
+    );
+
+    let status = Command::new("/system/bin/sh")
+        .args(["-c", &script])
+        .status()
+        .context("failed to spawn sh for zram resize")?;
+    if !status.success() {
+        bail!("zram resize script exited with {status}");
+    }
+
+    update_config("zram_size_gb", &size_gb.to_string())?;
+    println!("ok");
+    Ok(())
+}
+
+/// Change the zRAM compression algorithm.
+pub fn set_zram_algorithm(algorithm: &str) -> Result<()> {
+    if !Path::new(ZRAM_DEV).exists() {
+        bail!("zram device not found");
+    }
+    // Validate: must be in the available list
+    let available = fs::read_to_string(format!("{ZRAM_SYSFS}/comp_algorithm"))
+        .unwrap_or_default();
+    let ok = available
+        .split_whitespace()
+        .any(|s| s.trim_matches(|c| c == '[' || c == ']') == algorithm);
+    if !ok {
+        bail!("algorithm {algorithm} not available on this kernel");
+    }
+
+    // Changing the algorithm also requires reset. Same atomic-script pattern.
+    let size = fs::read_to_string(format!("{ZRAM_SYSFS}/disksize"))
+        .ok()
+        .and_then(|s| s.trim().parse::<u64>().ok())
+        .unwrap_or(0);
+    if size == 0 {
+        bail!("zram disksize is 0, cannot reapply");
+    }
+
+    let script = format!(
+        "swapoff {dev} 2>/dev/null; \
+         echo 1 > {sys}/reset; \
+         echo {algo} > {sys}/comp_algorithm; \
+         echo {size} > {sys}/disksize; \
+         mkswap {dev} >/dev/null; \
+         swapon {dev}",
+        dev = ZRAM_DEV,
+        sys = ZRAM_SYSFS,
+        algo = algorithm,
+        size = size,
+    );
+
+    let status = Command::new("/system/bin/sh")
+        .args(["-c", &script])
+        .status()
+        .context("failed to spawn sh for zram algorithm change")?;
+    if !status.success() {
+        bail!("zram algorithm script exited with {status}");
+    }
+
+    update_config("zram_algorithm", algorithm)?;
+    println!("ok");
+    Ok(())
+}
+
 /// Restore the persisted tuning settings. Called from the boot service stage.
 ///
 /// Individual node failures are logged and skipped so a single missing vendor
@@ -623,5 +751,14 @@ pub fn apply_persisted() {
     }
     if let Some(v) = config.get("vm_mglru_ttl") {
         let _ = fs::write(MGLRU_MIN_TTL, v);
+    }
+
+    if let Some(v) = config.get("zram_size_gb") {
+        if let Ok(gb) = v.parse::<u64>() {
+            let _ = set_zram_size(gb);
+        }
+    }
+    if let Some(v) = config.get("zram_algorithm") {
+        let _ = set_zram_algorithm(v);
     }
 }

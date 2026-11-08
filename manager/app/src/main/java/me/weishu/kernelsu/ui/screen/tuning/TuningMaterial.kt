@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.NetworkCheck
 import androidx.compose.material.icons.filled.Router
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.Compress
 import androidx.compose.material3.Button
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
@@ -296,6 +297,69 @@ fun TuningScreenMaterial(
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                                 )
                             }
+                        }
+                    }
+                }
+            }
+
+            // ---- ZRAM ----
+            if (state.zram.supported) {
+                item { SectionHeader("zRAM") }
+                item {
+                    SegmentedColumn(
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
+                    ) {
+                        // State row (read-only)
+                        item {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                            ) {
+                                Text("State", style = MaterialTheme.typography.bodyMedium)
+                                Text(
+                                    if (state.zram.swapActive) "Active" else "Inactive",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = if (state.zram.swapActive)
+                                        MaterialTheme.colorScheme.primary
+                                    else
+                                        MaterialTheme.colorScheme.error,
+                                )
+                            }
+                        }
+
+                        // Size dropdown
+                        item {
+                            val currentGb = (state.zram.disksize / (1024L * 1024L * 1024L)).coerceAtLeast(0)
+                            val sizes = listOf(2L, 3L, 4L, 6L, 8L)
+                            SegmentedDropdownItem(
+                                icon = Icons.Filled.Memory,
+                                title = "Size",
+                                summary = if (currentGb == 0L) "Current: —" else "Current: ${currentGb} GB",
+                                items = sizes.map { "$it GB" },
+                                enabled = true,
+                                selectedIndex = sizes.indexOf(currentGb).coerceAtLeast(0),
+                                onItemSelected = { pos ->
+                                    sizes.getOrNull(pos)?.let { actions.onSetZramSize(it) }
+                                },
+                            )
+                        }
+
+                        // Compression algorithm dropdown
+                        item {
+                            val algos = state.zram.compAvailable
+                            SegmentedDropdownItem(
+                                icon = Icons.Filled.Compress,
+                                title = "Compression Algorithm",
+                                summary = "Current: ${state.zram.compCurrent.ifEmpty { "—" }}",
+                                items = algos,
+                                enabled = algos.isNotEmpty(),
+                                selectedIndex = algos.indexOf(state.zram.compCurrent).coerceAtLeast(0),
+                                onItemSelected = { pos ->
+                                    algos.getOrNull(pos)?.let { actions.onSetZramAlgorithm(it) }
+                                },
+                            )
                         }
                     }
                 }

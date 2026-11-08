@@ -34,6 +34,7 @@ data class TuningUiState(
     val network: NetworkState = NetworkState(),
     val memory: MemoryState = MemoryState(),
     val errorMessage: String? = null,
+    val zram: ZramState = ZramState(),
 )
 
 class TuningViewModel : ViewModel() {
@@ -174,6 +175,30 @@ class TuningViewModel : ViewModel() {
             mglruTtl = mglruTtlOut.toIntOrNull() ?: 1000
         )
 
+        val zramSizeRaw = execRootCommand("cat /sys/block/zram0/disksize")
+        val zramCompRaw = execRootCommand("cat /sys/block/zram0/comp_algorithm").trim()
+        val swapsRaw = execRootCommand("cat /proc/swaps")
+
+        val zramSupported = zramSizeRaw.isNotEmpty()
+        // comp_algorithm is "lzo [lz4] zstd" — active one is in brackets
+        val compCurrent = zramCompRaw
+            .split(Regex("\\s+"))
+            .firstOrNull { it.startsWith("[") && it.endsWith("]") }
+            ?.trim('[', ']') ?: ""
+        val compAvailable = zramCompRaw
+            .split(Regex("\\s+"))
+            .filter { it.isNotBlank() }
+            .map { it.trim('[', ']') }
+        val swapActive = swapsRaw.lines().any { it.contains("zram0") }
+
+        val zram = ZramState(
+            supported = zramSupported,
+            disksize = zramSizeRaw.toLongOrNull() ?: 0L,
+            compCurrent = compCurrent,
+            compAvailable = compAvailable,
+            swapActive = swapActive,
+        )
+
         val persistStr = execRootCommand(
             "grep '^persist=' $configPath 2>/dev/null | cut -d= -f2"
         )
@@ -195,6 +220,7 @@ class TuningViewModel : ViewModel() {
                 network = network,
                 memory = memory,
                 errorMessage = null,
+                zram = zram,
             )
         }
     }
@@ -294,6 +320,16 @@ class TuningViewModel : ViewModel() {
         apply("mem_mglru_ttl", value.toString())
     }
 
+    fun setZramSize(sizeGb: Long) {
+        _uiState.update { it.copy(zram = it.zram.copy(disksize = sizeGb * 1024L * 1024L * 1024L)) }
+        apply("zram_size", sizeGb.toString())
+    }
+
+    fun setZramAlgorithm(algo: String) {
+        _uiState.update { it.copy(zram = it.zram.copy(compCurrent = algo)) }
+        apply("zram_algorithm", algo)
+    }
+
     private fun apply(type: String, value: String) {
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update { it.copy(isApplying = true, errorMessage = null) }
@@ -325,6 +361,8 @@ class TuningViewModel : ViewModel() {
                 type == "mem_kcompressd" -> "tuning kcompressd $value"
                 type == "mem_mglru" -> "tuning mglru $value"
                 type == "mem_mglru_ttl" -> "tuning mglru-ttl $value"
+                type == "zram_size" -> "tuning zram-size $value"
+                type == "zram_algorithm" -> "tuning zram-algorithm $value"
                 else -> null
             }
 
