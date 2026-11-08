@@ -112,24 +112,41 @@ class TuningViewModel : ViewModel() {
         }
 
         val skipRaw = execRootCommand("cat /proc/sys/kernel/sched_skip_headroom")
+        val hrRaw = execRootCommand("cat /proc/sys/kernel/sched_hr_scaling")
+        val lpRaw = execRootCommand("cat /proc/sys/kernel/sched_boost_hr_lp")
+        val bigRaw = execRootCommand("cat /proc/sys/kernel/sched_boost_hr_big")
+        val primeRaw = execRootCommand("cat /proc/sys/kernel/sched_boost_hr_prime")
+
         val scheduler = SchedulerState(
-            supported = skipRaw.isNotEmpty(),
+            skipHeadroomSupported = skipRaw.isNotEmpty(),
             skipHeadroom = skipRaw.toIntOrNull() ?: 1,
-            hrScaling = execRootCommand("cat /proc/sys/kernel/sched_hr_scaling").toIntOrNull() ?: 0,
-            boostHrLp = execRootCommand("cat /proc/sys/kernel/sched_boost_hr_lp").toIntOrNull() ?: 0,
-            boostHrBig = execRootCommand("cat /proc/sys/kernel/sched_boost_hr_big").toIntOrNull() ?: 0,
-            boostHrPrime = execRootCommand("cat /proc/sys/kernel/sched_boost_hr_prime").toIntOrNull() ?: 0,
+            hrScalingSupported = hrRaw.isNotEmpty(),
+            hrScaling = hrRaw.toIntOrNull() ?: 0,
+            boostHrLpSupported = lpRaw.isNotEmpty(),
+            boostHrLp = lpRaw.toIntOrNull() ?: 0,
+            boostHrBigSupported = bigRaw.isNotEmpty(),
+            boostHrBig = bigRaw.toIntOrNull() ?: 0,
+            boostHrPrimeSupported = primeRaw.isNotEmpty(),
+            boostHrPrime = primeRaw.toIntOrNull() ?: 0,
         )
 
         val cgroups = cgroupNames.mapNotNull { name ->
             val base = "/dev/cpuctl/$name"
-            val minStr = execRootCommand("cat $base/cpu.uclamp.min")
-            if (minStr.isEmpty()) return@mapNotNull null
+            val minRaw = execRootCommand("cat $base/cpu.uclamp.min")
+            val maxRaw = execRootCommand("cat $base/cpu.uclamp.max")
+            val sharesRaw = execRootCommand("cat $base/cpu.shares")
+
+            // Cgroup folder always exists on Android, but we check just in case
+            if (minRaw.isEmpty() && maxRaw.isEmpty() && sharesRaw.isEmpty()) return@mapNotNull null
+
             CgroupState(
                 name = name,
-                uclampMin = minStr.toFloatOrNull()?.toInt() ?: 0,
-                uclampMax = execRootCommand("cat $base/cpu.uclamp.max").toFloatOrNull()?.toInt() ?: 100,
-                shares = execRootCommand("cat $base/cpu.shares").toIntOrNull() ?: 1024,
+                uclampMinSupported = minRaw.isNotEmpty(),
+                uclampMin = minRaw.toFloatOrNull()?.toInt() ?: 0,
+                uclampMaxSupported = maxRaw.isNotEmpty(),
+                uclampMax = maxRaw.toFloatOrNull()?.toInt() ?: 100,
+                sharesSupported = sharesRaw.isNotEmpty(),
+                shares = sharesRaw.toIntOrNull() ?: 1024,
             )
         }
 
