@@ -2232,7 +2232,7 @@ private fun HomeScreenJailbreakPreview() {
 private fun BentoDashboardActivatedPreview() {
     CompositionLocalProvider(
         LocalUriHandler provides previewUriHandler,
-        LocalKernelTool provides KernelTool.Payload
+        LocalKernelTool provides KernelTool.Tuning
     ) {
         val state = previewHomeScreenState(ksuVersion = 12345, lkmMode = true, superuserCount = 5, moduleCount = 10)
         val actions = HomeActions({}, {}, {}, {}, {})
