@@ -114,8 +114,6 @@ object Natives {
 
     external fun getHookType(): String
 
-    external fun getSusFSVersion(): String
-
     external fun getDriverName(): String
 
     private const val NON_ROOT_DEFAULT_PROFILE_KEY = "$"

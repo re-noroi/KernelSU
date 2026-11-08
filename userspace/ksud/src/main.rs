@@ -61,8 +61,6 @@ mod su;
 #[cfg(target_os = "android")]
 mod sulog;
 #[cfg(target_os = "android")]
-mod susfs;
-#[cfg(target_os = "android")]
 mod tuning;
 #[cfg(target_os = "android")]
 mod unload;

@@ -148,12 +148,6 @@ enum Commands {
         args: Vec<String>,
     },
 
-    /// Manage SUSFS
-    Susfs {
-        #[command(subcommand)]
-        command: crate::susfs::cli::SusfsCommands,
-    },
-
     /// Manage the kernel module blocklist
     KmodBlock {
         #[command(subcommand)]
@@ -569,11 +563,6 @@ pub fn run() -> Result<()> {
         crate::resetprop::resetprop_main(&all_args)
     }
 
-    if arg0.ends_with("ksu_susfs") {
-        let all_args: Vec<String> = std::env::args().collect();
-        return crate::susfs::compat::run_compat_argv(&all_args);
-    }
-
     let cli = Args::parse();
 
     log::info!("command: {:?}", cli.command);
@@ -870,7 +859,6 @@ pub fn run() -> Result<()> {
             full_args.extend(args);
             crate::resetprop::resetprop_main(&full_args)
         }
-        Commands::Susfs { command } => crate::susfs::cli::run_susfs(command),
         Commands::KmodBlock { command } => crate::kmod_block::run(command),
 
         Commands::Kernel { command } => match command {

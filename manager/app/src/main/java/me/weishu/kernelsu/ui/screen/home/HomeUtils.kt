@@ -46,7 +46,6 @@ data class SystemInfo(
     val hookType: String,
     val selinuxStatus: String,
     val seccompStatus: Int,
-    val susfsVersion: String,
     val droidspacesVersion: String,
     val rekernelVersion: String,
     val rekernelLabel: String,
@@ -75,10 +74,7 @@ fun getHookTypeDisplayName(hookType: String, context: Context): String {
         "Tracepoint" to R.string.hook_tracepoint,
         "Tracepoint Syscall Redirect" to R.string.hook_tracepoint,
         "Inline" to R.string.hook_inline,
-        "Syscall Table Tamper" to R.string.hook_syscall_tamper,
-        "De-inlined SUSFS / Manual" to R.string.hook_manual_susfs,
-        "De-inlined SUSFS / Hybrid" to R.string.hook_hybrid_susfs,
-        "De-inlined SUSFS" to R.string.hook_deinlined_susfs
+        "Syscall Table Tamper" to R.string.hook_syscall_tamper
     )
     return map[hookType]?.let { context.getString(it) } ?: hookType
 }
@@ -129,9 +125,6 @@ fun generateDiagnosticReport(context: Context, systemInfo: SystemInfo): String {
         }
         appendLine("- **SELinux Status**: $selinuxDisplay")
         appendLine("- **Seccomp Status**: $seccompDisplay")
-        if (systemInfo.susfsVersion.isNotEmpty() && systemInfo.susfsVersion != "Not supported") {
-            appendLine("- **SUSFS Version**: ${systemInfo.susfsVersion}")
-        }
         if (systemInfo.droidspacesVersion.isNotEmpty()) {
             appendLine("- **Droidspaces**: ${systemInfo.droidspacesVersion}")
         }
