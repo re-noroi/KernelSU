@@ -533,6 +533,9 @@ enum TuningCmd {
         index: i32,
     },
 
+    /// Charging: set the constant charge current in microamps
+    ChargeCurrent { ua: u64 },
+
     /// Enable (1) or disable (0) bypass charging and remember it for the next boot
     Bypass {
         /// 1 to enable, 0 to disable
@@ -937,6 +940,7 @@ pub fn run() -> Result<()> {
                 Ok(())
             }
             TuningCmd::Thermal { index } => crate::tuning::set_thermal(index),
+            TuningCmd::ChargeCurrent { ua } => crate::tuning::set_charge_current(ua),
             TuningCmd::Bypass { value } => crate::tuning::set_bypass(value != 0),
             TuningCmd::SchedSkipHeadroom { value } => {
                 crate::tuning::set_sched_skip_headroom(value)
