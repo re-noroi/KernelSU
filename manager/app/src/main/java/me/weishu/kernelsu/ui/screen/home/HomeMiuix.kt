@@ -1255,20 +1255,6 @@ private fun BentoDeviceSpecsCard(
                         content = seccompDisplay,
                         icon = Icons.Filled.FilterList
                     )
-                    if (systemInfo.susfsVersion.isNotEmpty() && systemInfo.susfsVersion != "Not supported") {
-                        BentoMiuixSpecItem(
-                            label = stringResource(R.string.home_susfs_version),
-                            content = systemInfo.susfsVersion,
-                            iconContent = {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_sus),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(24.dp),
-                                    tint = colorScheme.onSurfaceVariantActions
-                                )
-                            }
-                        )
-                    }
                     if (systemInfo.droidspacesVersion.isNotEmpty()) {
                         BentoMiuixSpecItem(
                             label = stringResource(R.string.home_droidspaces_version),
@@ -1937,10 +1923,9 @@ private fun InfoCard(
             2 -> stringResource(R.string.seccomp_status_filter)
             else -> stringResource(R.string.seccomp_status_unknown)
         }
-        val showSusfs = systemInfo.susfsVersion.isNotEmpty() && systemInfo.susfsVersion != "Not supported"
         val showDroidspaces = systemInfo.droidspacesVersion.isNotEmpty()
         val showRekernel = systemInfo.rekernelVersion.isNotEmpty()
-        val anyAfterSeccomp = showSusfs || showDroidspaces || showRekernel
+        val anyAfterSeccomp = showDroidspaces || showRekernel
 
         InfoText(
             icon = Icons.Filled.FilterList,
@@ -1948,14 +1933,6 @@ private fun InfoCard(
             content = seccompDisplay,
             bottomPadding = if (anyAfterSeccomp) 16.dp else 0.dp
         )
-        if (showSusfs) {
-            InfoText(
-                painter = painterResource(R.drawable.ic_sus),
-                title = stringResource(R.string.home_susfs_version),
-                content = systemInfo.susfsVersion,
-                bottomPadding = if (showDroidspaces || showRekernel) 16.dp else 0.dp
-            )
-        }
         if (showDroidspaces) {
             InfoText(
                 icon = Icons.Outlined.Layers,
@@ -2019,7 +1996,6 @@ private val previewSystemInfo = SystemInfo(
     hookType = "Unknown",
     selinuxStatus = "Enforcing",
     seccompStatus = 2,
-    susfsVersion = "v2.0.0",
     droidspacesVersion = "v6.0.0",
     rekernelVersion = "v10.0",
     rekernelLabel = "Re:Kernel version",

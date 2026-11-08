@@ -1233,21 +1233,6 @@ private fun BentoDeviceSpecsCard(
                     leadingContent = { Icon(Icons.Filled.FilterList, null) }
                 )
             }
-            if (systemInfo.susfsVersion.isNotEmpty() && systemInfo.susfsVersion != "Not supported") {
-                item(key = "susfs", visible = isExpanded) {
-                    SegmentedListItem(
-                        onClick = { copyItem(context.getString(R.string.home_susfs_version), systemInfo.susfsVersion) },
-                        headlineContent = { Text(stringResource(R.string.home_susfs_version)) },
-                        supportingContent = { Text(systemInfo.susfsVersion) },
-                        leadingContent = {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_sus),
-                                contentDescription = stringResource(R.string.home_susfs_version),
-                            )
-                        }
-                    )
-                }
-            }
             if (systemInfo.droidspacesVersion.isNotEmpty()) {
                 item(key = "droidspaces", visible = isExpanded) {
                     SegmentedListItem(
@@ -2071,20 +2056,6 @@ private fun InfoCard(
                     content = seccompDisplay,
                 )
             }
-            if (systemInfo.susfsVersion.isNotEmpty() && systemInfo.susfsVersion != "Not supported") {
-                item {
-                    InfoCardItem(
-                        iconContent = {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_sus),
-                                contentDescription = stringResource(R.string.home_susfs_version),
-                            )
-                        },
-                        label = stringResource(R.string.home_susfs_version),
-                        content = systemInfo.susfsVersion,
-                    )
-                }
-            }
             if (systemInfo.droidspacesVersion.isNotEmpty()) {
                 item {
                     InfoCardItem(
@@ -2151,7 +2122,6 @@ private val previewSystemInfo = SystemInfo(
     hookType = "Unknown",
     selinuxStatus = "Enforcing",
     seccompStatus = 2,
-    susfsVersion = "v2.0.0",
     droidspacesVersion = "v6.0.0",
     rekernelVersion = "v10.0",
     rekernelLabel = "Re:Kernel version",

@@ -75,8 +75,6 @@ inline std::pair<int, int> legacy_get_info() {
 
 bool get_hook_type(char *buf, size_t size);
 
-bool get_susfs_version(char *buf, size_t size);
-
 bool get_driver_name(char *buf, size_t size);
 
 #endif //KERNELSU_KSU_H
