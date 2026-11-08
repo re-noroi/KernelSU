@@ -539,6 +539,33 @@ enum TuningCmd {
         value: u8,
     },
 
+    /// Toggle DVFS headroom (0 = enable, 1 = disable)
+    SchedSkipHeadroom { value: u8 },
+
+    /// Toggle DVFS headroom scaling (0 = off, 1 = on)
+    SchedHrScaling { value: u8 },
+
+    /// Little cores scaling (-50..100)
+    SchedBoostHrLp { value: i32 },
+
+    /// Perf cores scaling (-50..100)
+    SchedBoostHrBig { value: i32 },
+
+    /// Prime core scaling (-50..30)
+    SchedBoostHrPrime { value: i32 },
+
+    /// Set a cgroup tunable
+    Cgroup {
+        /// background | top-app | foreground
+        name: String,
+        /// uclamp_min | uclamp_max | shares
+        key: String,
+        value: i32,
+    },
+
+    /// Enable (1) or disable (0) restoring tuning values across reboots
+    Persist { value: u8 },
+
     /// Reapply the persisted tuning settings
     Apply,
 }
@@ -888,6 +915,25 @@ pub fn run() -> Result<()> {
             }
             TuningCmd::Thermal { index } => crate::tuning::set_thermal(index),
             TuningCmd::Bypass { value } => crate::tuning::set_bypass(value != 0),
+            TuningCmd::SchedSkipHeadroom { value } => {
+                crate::tuning::set_sched_skip_headroom(value)
+            }
+            TuningCmd::SchedHrScaling { value } => {
+                crate::tuning::set_sched_hr_scaling(value)
+            }
+            TuningCmd::SchedBoostHrLp { value } => {
+                crate::tuning::set_sched_boost_hr_lp(value)
+            }
+            TuningCmd::SchedBoostHrBig { value } => {
+                crate::tuning::set_sched_boost_hr_big(value)
+            }
+            TuningCmd::SchedBoostHrPrime { value } => {
+                crate::tuning::set_sched_boost_hr_prime(value)
+            }
+            TuningCmd::Cgroup { name, key, value } => {
+                crate::tuning::set_cgroup_value(&name, &key, value)
+            }
+            TuningCmd::Persist { value } => crate::tuning::set_persist(value != 0),
             TuningCmd::Apply => {
                 crate::tuning::apply_persisted();
                 Ok(())

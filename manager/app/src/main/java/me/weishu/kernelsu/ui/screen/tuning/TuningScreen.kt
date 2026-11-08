@@ -27,6 +27,18 @@ fun TuningScreen(isRootTab: Boolean = false, bottomInnerPadding: Dp = 0.dp) {
         onBack = dropUnlessResumed { navigator.pop() },
         onSelectThermal = viewModel::selectThermal,
         onSetBypass = viewModel::setBypass,
+        // Persistence
+        onSetPersist = viewModel::setPersist,
+        // Scheduler — FakeDreamers
+        onSetSkipHeadroom = viewModel::setSkipHeadroom,
+        onSetHrScaling = viewModel::setHrScaling,
+        onSetBoostHrLp = viewModel::setBoostHrLp,
+        onSetBoostHrBig = viewModel::setBoostHrBig,
+        onSetBoostHrPrime = viewModel::setBoostHrPrime,
+        // Scheduler — CGroup
+        onSetCgroupUclampMin = viewModel::setCgroupUclampMin,
+        onSetCgroupUclampMax = viewModel::setCgroupUclampMax,
+        onSetCgroupShares = viewModel::setCgroupShares,
     )
 
     when (LocalUiMode.current) {
