@@ -30,6 +30,7 @@ import androidx.compose.material.icons.rounded.Thermostat
 import androidx.compose.material.icons.rounded.NetworkCheck
 import androidx.compose.material.icons.rounded.Router
 import androidx.compose.material.icons.rounded.Memory
+import androidx.compose.material.icons.rounded.Compress
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
@@ -310,6 +311,80 @@ fun TuningScreenMiuix(
                                     )
                                 }
                             }
+                        }
+                    }
+                }
+
+                // ---- ZRAM ----
+                if (state.zram.supported) {
+                    item { SectionHeaderMiuix("zRAM") }
+                    item {
+                        Card(modifier = Modifier.fillMaxWidth()) {
+                            // State row
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                            ) {
+                                Text("State", fontSize = 16.sp)
+                                Text(
+                                    if (state.zram.swapActive) "Active" else "Inactive",
+                                    fontSize = 16.sp,
+                                    color = if (state.zram.swapActive) colorScheme.primary
+                                            else colorScheme.error,
+                                )
+                            }
+
+                            // Size dropdown
+                            val currentGb = (state.zram.disksize / (1024L * 1024L * 1024L)).coerceAtLeast(0L)
+
+                            // Added 0L for Auto
+                            val sizes = listOf(0L, 2L, 3L, 4L, 6L, 8L)
+                            val labels = listOf("Auto (init default)", "2 GB", "3 GB", "4 GB", "6 GB", "8 GB")
+
+                            // If the current size isn't in the list, default to index 0 (Auto)
+                            val selectedIdx = sizes.indexOf(currentGb).takeIf { it >= 0 } ?: 0
+
+                            OverlayDropdownPreference(
+                                title = "Size",
+                                summary = if (currentGb == 0L) "Current: Auto" else "Current: ${currentGb} GB",
+                                items = labels,
+                                startAction = {
+                                    Icon(
+                                        Icons.Rounded.Memory,
+                                        modifier = Modifier.padding(end = 6.dp),
+                                        contentDescription = "zRAM size",
+                                        tint = colorScheme.onBackground,
+                                    )
+                                },
+                                enabled = true,
+                                selectedIndex = selectedIdx,
+                                onSelectedIndexChange = { pos ->
+                                    sizes.getOrNull(pos)?.let { actions.onSetZramSize(it) }
+                                },
+                            )
+
+                            // Algorithm dropdown
+                            val algos = state.zram.compAvailable
+                            OverlayDropdownPreference(
+                                title = "Compression Algorithm",
+                                summary = "Current: ${state.zram.compCurrent.ifEmpty { "—" }}",
+                                items = algos,
+                                startAction = {
+                                    Icon(
+                                        Icons.Rounded.Compress,
+                                        modifier = Modifier.padding(end = 6.dp),
+                                        contentDescription = "zRAM algorithm",
+                                        tint = colorScheme.onBackground,
+                                    )
+                                },
+                                enabled = algos.isNotEmpty(),
+                                selectedIndex = algos.indexOf(state.zram.compCurrent).coerceAtLeast(0),
+                                onSelectedIndexChange = { pos ->
+                                    algos.getOrNull(pos)?.let { actions.onSetZramAlgorithm(it) }
+                                },
+                            )
                         }
                     }
                 }
