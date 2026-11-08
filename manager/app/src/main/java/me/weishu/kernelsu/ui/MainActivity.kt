@@ -571,7 +571,6 @@ fun MainPage(
             KernelTool.Payload -> PayloadScreen(isRootTab = true, bottomInnerPadding = bottomInnerPadding)
             KernelTool.Kconfig -> KconfigScreen(isRootTab = true)
             KernelTool.Dmesg -> DmesgScreen(isRootTab = true)
-            KernelTool.CrashLog -> CrashLogScreen(isRootTab = true)
             KernelTool.Kallsyms -> KallsymsScreen(isRootTab = true)
             KernelTool.KernelModule -> KernelModuleScreen(isRootTab = true, bottomInnerPadding = bottomInnerPadding)
             KernelTool.Susfs -> SusfsScreen(isRootTab = true, bottomInnerPadding = bottomInnerPadding)

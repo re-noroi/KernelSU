@@ -2,21 +2,18 @@ package me.weishu.kernelsu.ui.component.bottombar
 
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.DataObject
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material.icons.filled.ViewModule
-import androidx.compose.material.icons.outlined.BugReport
 import androidx.compose.material.icons.outlined.DataObject
 import androidx.compose.material.icons.outlined.Terminal
 import androidx.compose.material.icons.outlined.Thermostat
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.Unarchive
 import androidx.compose.material.icons.outlined.ViewModule
-import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.DataObject
 import androidx.compose.material.icons.rounded.Terminal
 import androidx.compose.material.icons.rounded.Thermostat
@@ -86,14 +83,6 @@ enum class KernelTool(
         filledIcon = Icons.Filled.Terminal,
         roundedIcon = Icons.Rounded.Terminal,
         route = Route.Dmesg,
-    ),
-    CrashLog(
-        id = "analyzer",
-        label = R.string.crash_analyzer_title,
-        outlinedIcon = Icons.Outlined.BugReport,
-        filledIcon = Icons.Filled.BugReport,
-        roundedIcon = Icons.Rounded.BugReport,
-        route = Route.CrashLog,
     ),
     Kallsyms(
         id = "kallsyms",
