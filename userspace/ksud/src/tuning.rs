@@ -531,6 +531,16 @@ pub fn set_mglru_ttl(value: i32) -> Result<()> {
 /// Resize zRAM. `size_gb` must be one of ZRAM_SIZE_OPTIONS_GB.
 /// Returns `Err` if the size isn't in the allowed list.
 pub fn set_zram_size(size_gb: u64) -> Result<()> {
+    if size_gb == 0 {
+        // "Auto" selected: remove the key so init's default is used on next boot
+        let mut config = load_config();
+        if config.remove("zram_size_gb").is_some() {
+            save_config(&config)?;
+        }
+        println!("ok");
+        return Ok(());
+    }
+
     if !ZRAM_SIZE_OPTIONS_GB.contains(&size_gb) {
         bail!("unsupported zram size {size_gb}GB");
     }

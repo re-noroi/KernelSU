@@ -15,6 +15,7 @@ import me.weishu.kernelsu.ui.screen.tuning.SchedulerState
 import me.weishu.kernelsu.ui.screen.tuning.CgroupState
 import me.weishu.kernelsu.ui.screen.tuning.NetworkState
 import me.weishu.kernelsu.ui.screen.tuning.MemoryState
+import me.weishu.kernelsu.ui.screen.tuning.ZramState
 
 data class ThermalProfile(val index: Int, val name: String)
 

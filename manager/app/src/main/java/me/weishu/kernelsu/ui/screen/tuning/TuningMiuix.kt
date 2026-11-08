@@ -337,12 +337,19 @@ fun TuningScreenMiuix(
                             }
 
                             // Size dropdown
-                            val currentGb = (state.zram.disksize / (1024L * 1024L * 1024L)).coerceAtLeast(0)
-                            val sizes = listOf(2L, 3L, 4L, 6L, 8L)
+                            val currentGb = (state.zram.disksize / (1024L * 1024L * 1024L)).coerceAtLeast(0L)
+
+                            // Added 0L for Auto
+                            val sizes = listOf(0L, 2L, 3L, 4L, 6L, 8L)
+                            val labels = listOf("Auto (init default)", "2 GB", "3 GB", "4 GB", "6 GB", "8 GB")
+
+                            // If the current size isn't in the list, default to index 0 (Auto)
+                            val selectedIdx = sizes.indexOf(currentGb).takeIf { it >= 0 } ?: 0
+
                             OverlayDropdownPreference(
                                 title = "Size",
-                                summary = if (currentGb == 0L) "Current: —" else "Current: ${currentGb} GB",
-                                items = sizes.map { "$it GB" },
+                                summary = if (currentGb == 0L) "Current: Auto" else "Current: ${currentGb} GB",
+                                items = labels,
                                 startAction = {
                                     Icon(
                                         Icons.Rounded.Memory,
@@ -352,7 +359,7 @@ fun TuningScreenMiuix(
                                     )
                                 },
                                 enabled = true,
-                                selectedIndex = sizes.indexOf(currentGb).coerceAtLeast(0),
+                                selectedIndex = selectedIdx,
                                 onSelectedIndexChange = { pos ->
                                     sizes.getOrNull(pos)?.let { actions.onSetZramSize(it) }
                                 },
