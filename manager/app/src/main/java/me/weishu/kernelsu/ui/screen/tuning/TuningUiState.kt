@@ -21,6 +21,14 @@ data class CgroupState(
 )
 
 @Immutable
+data class NetworkState(
+    val supported: Boolean = false,
+    val tcpAvailable: List<String> = emptyList(),
+    val tcpCurrent: String = "",
+    val qdiscCurrent: String = ""
+)
+
+@Immutable
 data class TuningActions(
     val onBack: () -> Unit,
     val onSelectThermal: (Int) -> Unit,
@@ -37,4 +45,7 @@ data class TuningActions(
     val onSetCgroupUclampMin: (String, Int) -> Unit,
     val onSetCgroupUclampMax: (String, Int) -> Unit,
     val onSetCgroupShares: (String, Int) -> Unit,
+    // Networking
+    val onSetTcpCongestion: (String) -> Unit,
+    val onSetQdisc: (String) -> Unit,
 )
