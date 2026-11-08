@@ -26,7 +26,6 @@ object KconfigParser {
                 val key = parts[0]
                 val value = parts.getOrElse(1) { "" }
                 val category = when {
-                    key.startsWith("CONFIG_KSU_SUSFS") -> "SUSFS"
                     key.startsWith("CONFIG_KSU") -> "KernelSU"
                     key.startsWith("CONFIG_KPROBES") || key.startsWith("CONFIG_HAVE_KPROBES") || key.startsWith("CONFIG_FTRACE") -> "Kprobes / Ftrace"
                     key.startsWith("CONFIG_SECURITY") || key.startsWith("CONFIG_LSM") -> "Security / LSM"
