@@ -15,13 +15,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import me.weishu.kernelsu.BuildConfig
 import me.weishu.kernelsu.Natives
 import me.weishu.kernelsu.data.repository.SettingsRepository
 import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
-import me.weishu.kernelsu.data.repository.SusfsRepositoryImpl
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.getKernelVersion
 import me.weishu.kernelsu.ksuApp
@@ -302,20 +300,16 @@ class HomeViewModel(
             return if (results.isEmpty()) "Branch Link" else "Branch Link ${results.count { it == "ok" }}/${results.size}"
         }
 
-        val hasSusfs = checkKconfig("CONFIG_KSU_SUSFS")
-
         // Same names the hook type ioctl of each kernel reports
         return when {
             // xx (KSU_LSM_SECURITY_HOOKS is only defined there)
             checkKconfig("CONFIG_KSU_HACK_ARM64_BRANCH_LINK") -> branchLinkHookType()
             checkKconfig("CONFIG_KSU_TAMPER_SYSCALL_TABLE") -> "Syscall Table Tamper"
-            checkKconfig("CONFIG_KSU_KPROBES_KSUD") -> if (hasSusfs) "De-inlined SUSFS / Hybrid" else "Hybrid"
-            hasKconfigSymbol("CONFIG_KSU_LSM_SECURITY_HOOKS") -> if (hasSusfs) "De-inlined SUSFS / Manual" else "Manual"
+            checkKconfig("CONFIG_KSU_KPROBES_KSUD") -> "Hybrid"
+            hasKconfigSymbol("CONFIG_KSU_LSM_SECURITY_HOOKS") -> "Manual"
             // ReSukiSU
             checkKconfig("CONFIG_KSU_TRACEPOINT_HOOK") -> "Tracepoint Syscall Redirect"
             checkKconfig("CONFIG_KSU_MANUAL_HOOK") -> "Manual"
-            // official, kow and next redirect syscalls from the sys_enter tracepoint
-            hasSusfs -> "Inline"
             checkKconfig("CONFIG_HAVE_SYSCALL_TRACEPOINTS") -> "Tracepoint"
             else -> "Kprobes"
         }
@@ -416,19 +410,6 @@ class HomeViewModel(
                 seccompStatus = runCatching {
                     Os.prctl(21 /* PR_GET_SECCOMP */, 0, 0, 0, 0)
                 }.getOrDefault(-1),
-                susfsVersion = if (isManager && ksuVersion != null) {
-                    val nativeVer = Natives.getSusFSVersion()
-                    // "Not supported" means no built-in SUSFS, which an LKM may still provide
-                    if ((nativeVer.isBlank() || nativeVer == "Not supported") && checkShell) {
-                        runCatching {
-                            runBlocking(Dispatchers.IO) {
-                                SusfsRepositoryImpl().getStatus().version
-                            }
-                        }.getOrDefault("")
-                    } else {
-                        nativeVer
-                    }
-                } else "",
                 droidspacesVersion = "",
                 rekernelVersion = "",
                 rekernelLabel = ksuApp.getString(R.string.home_rekernel_version),

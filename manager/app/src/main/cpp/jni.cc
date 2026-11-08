@@ -450,14 +450,6 @@ Java_me_weishu_kernelsu_Natives_getHookType(JNIEnv *env, jobject) {
 
 extern "C"
 JNIEXPORT jstring JNICALL
-Java_me_weishu_kernelsu_Natives_getSusFSVersion(JNIEnv *env, jobject) {
-    char version[32] = {0};
-    get_susfs_version(version, sizeof(version));
-    return env->NewStringUTF(version);
-}
-
-extern "C"
-JNIEXPORT jstring JNICALL
 Java_me_weishu_kernelsu_Natives_getDriverName(JNIEnv *env, jobject) {
     char name[32] = {0};
     get_driver_name(name, sizeof(name));
