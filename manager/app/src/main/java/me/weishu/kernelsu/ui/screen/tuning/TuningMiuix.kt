@@ -481,11 +481,13 @@ private fun IntInputMiuix(
     title: String,
     value: Int,
     range: IntRange,
+    enabled: Boolean = true, // <-- ADD THIS
     onValueChange: (Int) -> Unit,
 ) {
     var text by remember(value) { mutableStateOf(value.toString()) }
 
     fun commit() {
+        if (!enabled) return
         val parsed = text.toIntOrNull() ?: value
         val clamped = parsed.coerceIn(range.first, range.last)
         text = clamped.toString()
@@ -500,7 +502,11 @@ private fun IntInputMiuix(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, fontSize = 15.sp)
+            Text(
+                title, 
+                fontSize = 15.sp,
+                color = if (enabled) colorScheme.onBackground else colorScheme.onBackground.copy(alpha = 0.5f)
+            )
             Text(
                 "Current: $value  |  Range: ${range.first}–${range.last}",
                 fontSize = 12.sp,
@@ -511,9 +517,10 @@ private fun IntInputMiuix(
         OutlinedTextField(
             value = text,
             onValueChange = { new ->
-                if (new.length <= 3 && new.all { it.isDigit() }) text = new
+                if (enabled && new.length <= 4 && new.all { it.isDigit() }) text = new
             },
             singleLine = true,
+            enabled = enabled,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { commit() }),
             textStyle = LocalTextStyle.current.copy(color = colorScheme.onBackground),
@@ -525,7 +532,6 @@ private fun IntInputMiuix(
                 cursorColor = colorScheme.primary,
                 focusedIndicatorColor = colorScheme.primary
             ),
-            // NARROWER WIDTH
             modifier = Modifier
                 .width(60.dp)
                 .height(48.dp)
@@ -533,11 +539,11 @@ private fun IntInputMiuix(
         
         Button(
             onClick = { commit() },
+            enabled = enabled,
             colors = ButtonDefaults.buttonColors(
                 containerColor = colorScheme.primary,
                 contentColor = colorScheme.onPrimary
             ),
-            // SHORTER HEIGHT (40dp) & NARROWER WIDTH (52dp)
             modifier = Modifier
                 .width(52.dp)
                 .height(40.dp),
