@@ -23,7 +23,7 @@ fun AppProfileConfig(
             onProfileChange = onProfileChange
         )
 
-        UiMode.Material -> AppProfileConfigMaterial(
+        UiMode.Material, UiMode.Minimal -> AppProfileConfigMaterial(
             modifier = modifier,
             fixedName = fixedName,
             enabled = enabled,
@@ -50,7 +50,7 @@ fun RootProfileConfig(
             onProfileChange = onProfileChange
         )
 
-        UiMode.Material -> RootProfileConfigMaterial(
+        UiMode.Material, UiMode.Minimal -> RootProfileConfigMaterial(
             modifier = modifier,
             enabled = enabled,
             profile = profile,
@@ -76,7 +76,7 @@ fun TemplateConfig(
             onProfileChange = onProfileChange
         )
 
-        UiMode.Material -> TemplateConfigMaterial(
+        UiMode.Material, UiMode.Minimal -> TemplateConfigMaterial(
             profile = profile,
             onViewTemplate = onViewTemplate,
             onManageTemplate = onManageTemplate,

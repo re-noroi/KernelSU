@@ -22,7 +22,7 @@ fun ModulePreflashDialog(
             onConfirm = onConfirm,
             onDismiss = onDismiss,
         )
-        UiMode.Material -> ModulePreflashDialogMaterial(
+        UiMode.Material, UiMode.Minimal -> ModulePreflashDialogMaterial(
             show = true,
             results = results,
             isInspecting = isInspecting,
