@@ -23,6 +23,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BatteryChargingFull
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Thermostat
@@ -183,41 +184,33 @@ fun TuningScreenMaterial(
                     }
                     if (state.chargeCurrentSupported) {
                         item {
+                            val tenths = (state.chargeCurrent / 100_000L).toInt()
+                            val currentLabel = "${tenths / 10}.${tenths % 10} A"
                             SegmentedSwitchItem(
-                                icon = Icons.Filled.Save,
-                                title = "Writable Mode (0644)",
-                                summary = if (state.chargeWritable)
-                                    "Node is writable — slider is active"
-                                else
-                                    "Node is read-only (0444) — enable to use the slider",
+                                icon = Icons.Filled.Bolt,
+                                title = "Charge Current Control",
+                                summary = "Current: $currentLabel",
                                 checked = state.chargeWritable,
                                 enabled = true,
                                 onCheckedChange = actions.onSetChargeWritable,
                             )
                         }
-                        item {
-                            val minTenths = 10  // 1.0A
-                            val maxTenths = 100 // 10.0A
-                            val currentTenths = (state.chargeCurrent / 100_000L).toInt()
-                                .coerceIn(minTenths, maxTenths)
+                        if (state.chargeWritable) {
+                            item {
+                                val minTenths = 10   // 1.0A
+                                val maxTenths = 100  // 10.0A
+                                val currentTenths = (state.chargeCurrent / 100_000L).toInt()
+                                    .coerceIn(minTenths, maxTenths)
 
-                            IntSliderItem(
-                                title = "Max Charging Current",
-                                value = currentTenths,
-                                range = minTenths..maxTenths,
-                                step = 5,
-                                enabled = state.chargeWritable,
-                                formatter = { v -> "${v / 10}.${v % 10} A" },
-                                onValueChange = { v ->
-                                    actions.onSetChargeCurrent(v * 100_000L)
-                                },
-                            )
-                            if (!state.chargeWritable) {
-                                Text(
-                                    "Enable Writable Mode above to change the current.",
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                                IntSliderItem(
+                                    title = "Max Charging Current",
+                                    value = currentTenths,
+                                    range = minTenths..maxTenths,
+                                    step = 5,
+                                    formatter = { v -> "${v / 10}.${v % 10} A" },
+                                    onValueChange = { v ->
+                                        actions.onSetChargeCurrent(v * 100_000L)
+                                    },
                                 )
                             }
                         }
