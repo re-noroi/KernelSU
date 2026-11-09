@@ -1,9 +1,11 @@
 package me.weishu.kernelsu
 
+import android.content.ComponentName
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.weishu.kernelsu.ui.util.execKsudCommand
@@ -11,6 +13,17 @@ import me.weishu.kernelsu.ui.util.execKsudCommand
 class BypassChargingTileService : TileService() {
 
     private val scope = CoroutineScope(Dispatchers.IO)
+
+    override fun onTileAdded() {
+        super.onTileAdded()
+        // Forces onStartListening() to fire immediately so the tile shows
+        // the correct state the moment the user drops it into their panel,
+        // without waiting for the next QS pull-down.
+        requestListeningState(
+            this,
+            ComponentName(this, BypassChargingTileService::class.java)
+        )
+    }
 
     override fun onStartListening() {
         super.onStartListening()
@@ -32,10 +45,10 @@ class BypassChargingTileService : TileService() {
 
         scope.launch {
             val bypassValue = if (newState == Tile.STATE_ACTIVE) "1" else "0"
-            
+
             // Call the same ksud command used by the app
             val result = execKsudCommand("tuning bypass $bypassValue")
-            
+
             // If it failed (e.g. no root), revert the tile visual state
             if (!result.isSuccess) {
                 withContext(Dispatchers.Main) {
@@ -64,5 +77,13 @@ class BypassChargingTileService : TileService() {
                 }
             }
         }
+    }
+
+    override fun onDestroy() {
+        // TileService is usually a singleton managed by the system, but this
+        // prevents any lingering coroutines from trying to touch a dead tile
+        // if the service ever gets torn down (e.g. process death + revive).
+        scope.cancel()
+        super.onDestroy()
     }
 }
