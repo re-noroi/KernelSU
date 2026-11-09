@@ -13,6 +13,22 @@ import me.weishu.kernelsu.ui.LocalUiMode
 import me.weishu.kernelsu.ui.UiMode
 import me.weishu.kernelsu.ui.util.LocalScrollAnimation
 import me.weishu.kernelsu.ui.util.LocalShowSwitchIcon
+import android.graphics.ImageDecoder
+import android.net.Uri
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 enum class ColorMode(val value: Int) {
     SYSTEM(0),
@@ -77,12 +93,16 @@ object ThemeController {
         val uiMode = repo.uiMode
         var colorModeValue = repo.themeMode
 
-        if (uiMode == "miuix") {
-            val miuixMonet = repo.miuixMonet
+        val modeMonet = when (uiMode) {
+            "miuix" -> repo.miuixMonet
+            "minimal" -> repo.minimalMonet
+            else -> null
+        }
+        if (modeMonet != null) {
             val colorMode = ColorMode.fromValue(colorModeValue)
-            colorModeValue = if (!miuixMonet && colorMode.isMonet) {
+            colorModeValue = if (!modeMonet && colorMode.isMonet) {
                 colorMode.toNonMonetMode()
-            } else if (miuixMonet && !colorMode.isMonet) {
+            } else if (modeMonet && !colorMode.isMonet) {
                 colorMode.toMonetMode()
             } else {
                 colorModeValue
@@ -138,6 +158,33 @@ fun KernelSUTheme(
                 appSettings = appSettings,
                 content = content
             )
+
+            UiMode.Minimal -> {
+                val wallpaper = LocalMinimalWallpaper.current
+                val bitmap = rememberMinimalWallpaper(wallpaper)
+                
+                Box(modifier = Modifier.fillMaxSize()) {
+                    if (bitmap != null) {
+                        Image(
+                            bitmap = bitmap,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        // Dim the wallpaper so text is readable
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.4f))
+                        )
+                    }
+                    MaterialKernelSUTheme(
+                        appSettings = appSettings,
+                        minimal = true,
+                        content = content
+                    )
+                }
+            }
         }
     }
 }
@@ -158,6 +205,8 @@ val LocalAppIconMode = staticCompositionLocalOf { 0 }
 
 val LocalModernBento = staticCompositionLocalOf { false }
 
+val LocalMinimalWallpaper = staticCompositionLocalOf { "" }
+
 val LocalClassicUi = staticCompositionLocalOf { false }
 
 val LocalEnableBlur = staticCompositionLocalOf { false }
@@ -169,3 +218,25 @@ val LocalEnableFloatingBottomBarBlur = staticCompositionLocalOf { false }
 val LocalEnableModuleUpdateBadge = staticCompositionLocalOf { true }
 
 val LocalModuleDescriptionMaxLines = staticCompositionLocalOf { 4 }
+
+@Composable
+private fun rememberMinimalWallpaper(uriString: String): ImageBitmap? {
+    val context = LocalContext.current
+    val bitmap by produceState<ImageBitmap?>(initialValue = null, uriString) {
+        value = if (uriString.isBlank()) {
+            null
+        } else {
+            withContext(Dispatchers.IO) {
+                runCatching {
+                    val source = ImageDecoder.createSource(context.contentResolver, Uri.parse(uriString))
+                    ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
+                        val longestEdge = maxOf(info.size.width, info.size.height).coerceAtLeast(1)
+                        val sample = (longestEdge / 2048).coerceAtLeast(1)
+                        decoder.setTargetSampleSize(sample)
+                    }.asImageBitmap()
+                }.getOrNull()
+            }
+        }
+    }
+    return bitmap
+}

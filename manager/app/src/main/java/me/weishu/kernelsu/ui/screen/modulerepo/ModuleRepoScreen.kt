@@ -100,7 +100,7 @@ fun ModuleRepoScreen() {
 
     when (LocalUiMode.current) {
         UiMode.Miuix -> ModuleRepoScreenMiuix(state, actions)
-        UiMode.Material -> ModuleRepoScreenMaterial(state, actions)
+        UiMode.Material, UiMode.Minimal -> ModuleRepoScreenMaterial(state, actions)
     }
 }
 
@@ -159,7 +159,7 @@ fun ModuleRepoDetailScreen(module: RepoModuleArg) {
 
     when (LocalUiMode.current) {
         UiMode.Miuix -> ModuleRepoDetailScreenMiuix(state, actions)
-        UiMode.Material -> ModuleRepoDetailScreenMaterial(state, actions)
+        UiMode.Material, UiMode.Minimal -> ModuleRepoDetailScreenMaterial(state, actions)
     }
 }
 

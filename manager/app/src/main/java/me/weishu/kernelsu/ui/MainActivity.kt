@@ -16,6 +16,8 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -51,6 +53,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.graphics.Color
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -104,6 +107,7 @@ import me.weishu.kernelsu.ui.theme.LocalEnableFloatingBottomBar
 import me.weishu.kernelsu.ui.theme.LocalEnableFloatingBottomBarBlur
 import me.weishu.kernelsu.ui.theme.LocalEnableModuleUpdateBadge
 import me.weishu.kernelsu.ui.theme.LocalModuleDescriptionMaxLines
+import me.weishu.kernelsu.ui.theme.LocalMinimalWallpaper
 import me.weishu.kernelsu.ui.util.LocalScrollAnimation
 import me.weishu.kernelsu.ui.util.LocalShowSwitchIcon
 import me.weishu.kernelsu.ui.util.install
@@ -205,6 +209,7 @@ open class MainActivity : ComponentActivity() {
                 LocalScrollAnimation provides appSettings.scrollAnimation,
                 LocalClassicUi provides appSettings.classicUi,
                 LocalModernBento provides appSettings.modernBento,
+                LocalMinimalWallpaper provides uiState.minimalWallpaper,
                 LocalKernelTool provides uiState.bottomBarKernelTool,
             ) {
                 KernelSUTheme(appSettings = appSettings, uiMode = uiMode) {
@@ -234,22 +239,23 @@ open class MainActivity : ComponentActivity() {
                     }
 
                     val navDisplay = @Composable {
-                        NavDisplay(
-                            backStack = navigator.backStack,
-                            effects = NavDisplayEffects(cornerClipRadius = rememberNavSystemCornerRadius()),
-                            onBack = {
-                                when (val top = navigator.current()) {
-                                    is Route.TemplateEditor -> {
-                                        if (!top.readOnly) {
-                                            navigator.setResult("template_edit", true)
-                                        } else {
-                                            navigator.pop()
+                        Box(modifier = Modifier.fillMaxSize().background(Color.Transparent)) {
+                            NavDisplay(
+                                backStack = navigator.backStack,
+                                effects = NavDisplayEffects(cornerClipRadius = rememberNavSystemCornerRadius()),
+                                onBack = {
+                                    when (val top = navigator.current()) {
+                                        is Route.TemplateEditor -> {
+                                            if (!top.readOnly) {
+                                                navigator.setResult("template_edit", true)
+                                            } else {
+                                                navigator.pop()
+                                            }
                                         }
+                                        else -> navigator.pop()
                                     }
-
-                                    else -> navigator.pop()
                                 }
-                            }) {
+                            ) {
                             entry<Route.Main>(swipeDismiss = swipeDismiss) { mainScreenEntry() }
                             entry<Route.About>(swipeDismiss = swipeDismiss) { AboutScreen() }
                             entry<Route.Kallsyms>(swipeDismiss = swipeDismiss) { KallsymsScreen() }
@@ -293,10 +299,10 @@ open class MainActivity : ComponentActivity() {
                             entry<Route.Settings>(swipeDismiss = swipeDismiss) { mainScreenEntry() }
                         }
                     }
-
+                }
                     when (uiMode) {
-                        UiMode.Material -> androidx.compose.material3.Scaffold(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainer
+                        UiMode.Material, UiMode.Minimal -> androidx.compose.material3.Scaffold(
+                            containerColor = if (uiMode == UiMode.Minimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer
                         ) { navDisplay() }
 
                         UiMode.Miuix -> Scaffold { navDisplay() }
@@ -392,7 +398,7 @@ fun MainScreen(
     }
     val uiMode = LocalUiMode.current
     val surfaceColor = when (uiMode) {
-        UiMode.Material -> MaterialTheme.colorScheme.surface // Blur is not used in Material, this is just a placeholder
+        UiMode.Material, UiMode.Minimal -> MaterialTheme.colorScheme.surface // Blur is not used in Material, this is just a placeholder
         UiMode.Miuix -> MiuixTheme.colorScheme.surface
     }
     val blurBackdrop = rememberBlurBackdrop(enableBlur)
@@ -426,6 +432,7 @@ fun MainScreen(
 
             val mainModifier = Modifier
                 .then(if (enableFloatingBottomBar && enableFloatingBottomBarBlur) Modifier.layerBackdrop(backdrop) else Modifier)
+                .background(Color.Transparent)
 
             Box(modifier = if (blurBackdrop != null) Modifier.layerBackdrop(blurBackdrop) else Modifier) {
                 if (scrollAnimation) {
@@ -483,8 +490,8 @@ fun MainScreen(
             val navBarBottomPadding = WindowInsets.systemBars.asPaddingValues().calculateBottomPadding()
 
             when (uiMode) {
-                UiMode.Material -> androidx.compose.material3.Scaffold(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                UiMode.Material, UiMode.Minimal -> androidx.compose.material3.Scaffold(
+                    containerColor = if (uiMode == UiMode.Minimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer
                 ) {
                     Row {
                         SideRail(navigationBadge)
@@ -526,9 +533,9 @@ fun MainScreen(
             }
 
             when (uiMode) {
-                UiMode.Material -> androidx.compose.material3.Scaffold(
+                UiMode.Material, UiMode.Minimal -> androidx.compose.material3.Scaffold(
                     bottomBar = bottomBar,
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    containerColor = if (uiMode == UiMode.Minimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer
                 ) { innerPadding ->
                     pagerContent(innerPadding.calculateBottomPadding())
                 }
