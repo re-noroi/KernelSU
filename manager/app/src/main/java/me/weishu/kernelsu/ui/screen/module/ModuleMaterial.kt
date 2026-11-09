@@ -131,6 +131,8 @@ import me.weishu.kernelsu.R
 import me.weishu.kernelsu.data.model.Module
 import me.weishu.kernelsu.data.model.ModuleUpdateInfo
 import me.weishu.kernelsu.data.repository.isSoftRebootPreferred
+import me.weishu.kernelsu.ui.LocalUiMode
+import me.weishu.kernelsu.ui.UiMode
 import me.weishu.kernelsu.ui.component.ObserveAsEvents
 import me.weishu.kernelsu.ui.component.ScrollToTopOnChange
 import me.weishu.kernelsu.ui.component.dialog.rememberConfirmDialog
@@ -155,6 +157,7 @@ fun ModulePagerMaterial(
     actions: ModuleActions,
     bottomInnerPadding: Dp,
 ) {
+    val isMinimal = LocalUiMode.current == UiMode.Minimal
     val snackBarHost = remember { SnackbarHostState() }
     val haptic = LocalHapticFeedback.current
 
@@ -301,6 +304,7 @@ fun ModulePagerMaterial(
     }
 
     ExpressiveScaffold(
+        containerColor = if (isMinimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
         topBar = {
             SearchAppBar(
                 title = { Text(stringResource(R.string.module)) },
@@ -308,6 +312,10 @@ fun ModulePagerMaterial(
                 onSearchTextChange = actions.onSearchTextChange,
                 onClearClick = actions.onClearSearch,
                 snackbarHostState = snackBarHost,
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = if (isMinimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
+                    scrolledContainerColor = if (isMinimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
+                ),
                 navigationIcon = {
                     IconButton(
                         onClick = { actions.onOpenRepo() }

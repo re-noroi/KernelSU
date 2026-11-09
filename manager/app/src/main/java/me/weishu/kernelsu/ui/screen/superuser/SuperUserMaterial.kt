@@ -71,10 +71,13 @@ import android.content.Context
 import android.net.Uri
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.weishu.kernelsu.Natives
+import me.weishu.kernelsu.ui.LocalUiMode
+import me.weishu.kernelsu.ui.UiMode
 import me.weishu.kernelsu.ui.component.dialog.ConfirmResult
 import me.weishu.kernelsu.ui.component.dialog.rememberConfirmDialog
 import me.weishu.kernelsu.ui.component.profilebackup.ProfileBackupDialogMaterial
@@ -103,6 +106,7 @@ fun SuperUserPagerMaterial(
     actions: SuperUserActions,
     bottomInnerPadding: Dp,
 ) {
+    val isMinimal = LocalUiMode.current == UiMode.Minimal
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     val listState = rememberLazyListState()
     val searchListState = rememberLazyListState()
@@ -269,6 +273,7 @@ fun SuperUserPagerMaterial(
     }
 
     ExpressiveScaffold(
+        containerColor = if (isMinimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
         topBar = {
             SearchAppBar(
                 snackbarHostState = snackbarHostState,
@@ -282,6 +287,10 @@ fun SuperUserPagerMaterial(
                     localSearchText = ""
                     actions.onClearSearch()
                 },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = if (isMinimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
+                    scrolledContainerColor = if (isMinimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
+                ),
                 navigationIcon = {
                     IconButton(onClick = actions.onOpenSulog) {
                         Icon(
@@ -667,7 +676,7 @@ private fun SimpleAppItem(
             containerColor = if (matched) {
                 colorScheme.secondaryContainer
             } else {
-                colorScheme.surfaceColorAtElevation(3.dp)
+                Color.Transparent // Fixed from surfaceColorAtElevation(3.dp)
             }
         ),
         content = { Text(app.label, overflow = TextOverflow.Ellipsis, maxLines = 1) },
