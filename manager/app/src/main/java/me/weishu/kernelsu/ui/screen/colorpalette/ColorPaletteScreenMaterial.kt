@@ -56,6 +56,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.rounded.AspectRatio
 import androidx.compose.material.icons.rounded.CallToAction
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Dashboard
 import androidx.compose.material.icons.rounded.DesignServices
@@ -64,6 +65,7 @@ import androidx.compose.material.icons.rounded.Style
 import androidx.compose.material.icons.rounded.Swipe
 import androidx.compose.material.icons.rounded.ToggleOn
 import androidx.compose.material.icons.rounded.ViewCarousel
+import androidx.compose.material.icons.rounded.Wallpaper
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LargeFlexibleTopAppBar
@@ -92,10 +94,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import com.materialkolor.PaletteStyle
 import com.materialkolor.dynamiccolor.ColorSpec
 import me.weishu.kernelsu.R
+import me.weishu.kernelsu.ui.LocalUiMode
+import me.weishu.kernelsu.ui.UiMode
 import me.weishu.kernelsu.ui.component.bottombar.useNavigationRail
 import me.weishu.kernelsu.ui.component.material.ExpressiveScaffold
 import me.weishu.kernelsu.ui.component.material.ExpressiveToggleButton
@@ -104,6 +111,7 @@ import me.weishu.kernelsu.MainActivityKowsu
 import me.weishu.kernelsu.MainActivityOfficial
 import me.weishu.kernelsu.ui.component.material.SegmentedColumn
 import me.weishu.kernelsu.ui.component.material.SegmentedDropdownItem
+import me.weishu.kernelsu.ui.component.material.SegmentedListItem
 import me.weishu.kernelsu.ui.component.material.SegmentedSwitchItem
 import me.weishu.kernelsu.ui.component.material.TonalCard
 import me.weishu.kernelsu.ui.component.material.TopBarBackButton
@@ -126,6 +134,19 @@ fun ColorPaletteScreenMaterial(
     val colorSpec = state.currentColorSpec
     val haptic = LocalHapticFeedback.current
     val context = LocalContext.current
+    val wallpaperPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            runCatching {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                )
+            }
+            actions.onSetMinimalWallpaper(uri.toString())
+        }
+    }
 
     ExpressiveScaffold(
         topBar = {
@@ -574,6 +595,54 @@ fun ColorPaletteScreenMaterial(
                             },
                             modifier = Modifier.fillMaxWidth()
                         )
+                    }
+                }
+            }
+
+            if (LocalUiMode.current == UiMode.Minimal) {
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(13.dp)
+                    ) {
+                        SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
+                            item {
+                                SegmentedSwitchItem(
+                                    icon = Icons.Rounded.Style,
+                                    title = stringResource(R.string.settings_minimal_monet),
+                                    summary = stringResource(R.string.settings_minimal_monet_summary),
+                                    checked = uiState.minimalMonet,
+                                    onCheckedChange = actions.onSetMinimalMonet,
+                                )
+                            }
+                            item {
+                                SegmentedListItem(
+                                    onClick = { wallpaperPicker.launch(arrayOf("image/*")) },
+                                    headlineContent = { Text(stringResource(R.string.settings_minimal_wallpaper)) },
+                                    supportingContent = {
+                                        Text(
+                                            text = if (uiState.minimalWallpaper.isBlank()) {
+                                                stringResource(R.string.settings_minimal_wallpaper_summary)
+                                            } else {
+                                                uiState.minimalWallpaper
+                                            },
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    },
+                                    leadingContent = { Icon(Icons.Rounded.Wallpaper, null) },
+                                )
+                            }
+                            if (uiState.minimalWallpaper.isNotBlank()) item {
+                                SegmentedListItem(
+                                    onClick = { actions.onSetMinimalWallpaper("") },
+                                    headlineContent = { Text(stringResource(R.string.settings_minimal_wallpaper_clear)) },
+                                    leadingContent = { Icon(Icons.Rounded.Delete, null) },
+                                )
+                            }
+                        }
                     }
                 }
             }

@@ -14,6 +14,7 @@ import me.weishu.kernelsu.ui.webui.MonetColorsProvider
 @Composable
 fun MaterialKernelSUTheme(
     appSettings: AppSettings,
+    minimal: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val context = LocalContext.current
@@ -42,7 +43,7 @@ fun MaterialKernelSUTheme(
 
     MaterialExpressiveTheme(
         colorScheme = animatedColorScheme,
-        motionScheme = MotionScheme.expressive(),
+        motionScheme = if (minimal) MotionScheme.standard() else MotionScheme.expressive(),
         typography = Typography,
         content = {
             MonetColorsProvider.UpdateCss(colorScheme)

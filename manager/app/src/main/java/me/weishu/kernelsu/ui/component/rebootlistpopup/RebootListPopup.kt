@@ -63,6 +63,6 @@ fun rememberRebootAction(): (String) -> Unit {
 fun RebootListPopup() {
     when (LocalUiMode.current) {
         UiMode.Miuix -> RebootListPopupMiuix()
-        UiMode.Material -> RebootListPopupMaterial()
+        UiMode.Material, UiMode.Minimal -> RebootListPopupMaterial()
     }
 }

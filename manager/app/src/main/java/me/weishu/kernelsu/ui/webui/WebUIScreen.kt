@@ -129,7 +129,7 @@ fun WebUIScreen(webUIState: WebUIState) {
 
     when (LocalUiMode.current) {
         UiMode.Miuix -> HandleWebUIEventMiuix(webUIState, fileLauncher)
-        UiMode.Material -> HandleWebUIEventMaterial(webUIState, fileLauncher)
+        UiMode.Material, UiMode.Minimal -> HandleWebUIEventMaterial(webUIState, fileLauncher)
     }
 
     HandleWebViewLifecycle(webUIState)

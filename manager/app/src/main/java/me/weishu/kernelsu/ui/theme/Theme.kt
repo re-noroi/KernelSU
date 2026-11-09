@@ -77,12 +77,16 @@ object ThemeController {
         val uiMode = repo.uiMode
         var colorModeValue = repo.themeMode
 
-        if (uiMode == "miuix") {
-            val miuixMonet = repo.miuixMonet
+        val modeMonet = when (uiMode) {
+            "miuix" -> repo.miuixMonet
+            "minimal" -> repo.minimalMonet
+            else -> null
+        }
+        if (modeMonet != null) {
             val colorMode = ColorMode.fromValue(colorModeValue)
-            colorModeValue = if (!miuixMonet && colorMode.isMonet) {
+            colorModeValue = if (!modeMonet && colorMode.isMonet) {
                 colorMode.toNonMonetMode()
-            } else if (miuixMonet && !colorMode.isMonet) {
+            } else if (modeMonet && !colorMode.isMonet) {
                 colorMode.toMonetMode()
             } else {
                 colorModeValue
@@ -138,6 +142,12 @@ fun KernelSUTheme(
                 appSettings = appSettings,
                 content = content
             )
+
+            UiMode.Minimal -> MaterialKernelSUTheme(
+                appSettings = appSettings,
+                minimal = true,
+                content = content
+            )
         }
     }
 }
@@ -157,6 +167,8 @@ val LocalColorMode = staticCompositionLocalOf { 0 }
 val LocalAppIconMode = staticCompositionLocalOf { 0 }
 
 val LocalModernBento = staticCompositionLocalOf { false }
+
+val LocalMinimalWallpaper = staticCompositionLocalOf { "" }
 
 val LocalClassicUi = staticCompositionLocalOf { false }
 

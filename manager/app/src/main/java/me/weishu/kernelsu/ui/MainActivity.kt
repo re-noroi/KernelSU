@@ -104,6 +104,7 @@ import me.weishu.kernelsu.ui.theme.LocalEnableFloatingBottomBar
 import me.weishu.kernelsu.ui.theme.LocalEnableFloatingBottomBarBlur
 import me.weishu.kernelsu.ui.theme.LocalEnableModuleUpdateBadge
 import me.weishu.kernelsu.ui.theme.LocalModuleDescriptionMaxLines
+import me.weishu.kernelsu.ui.theme.LocalMinimalWallpaper
 import me.weishu.kernelsu.ui.util.LocalScrollAnimation
 import me.weishu.kernelsu.ui.util.LocalShowSwitchIcon
 import me.weishu.kernelsu.ui.util.install
@@ -205,6 +206,7 @@ open class MainActivity : ComponentActivity() {
                 LocalScrollAnimation provides appSettings.scrollAnimation,
                 LocalClassicUi provides appSettings.classicUi,
                 LocalModernBento provides appSettings.modernBento,
+                LocalMinimalWallpaper provides uiState.minimalWallpaper,
                 LocalKernelTool provides uiState.bottomBarKernelTool,
             ) {
                 KernelSUTheme(appSettings = appSettings, uiMode = uiMode) {
@@ -295,7 +297,7 @@ open class MainActivity : ComponentActivity() {
                     }
 
                     when (uiMode) {
-                        UiMode.Material -> androidx.compose.material3.Scaffold(
+                        UiMode.Material, UiMode.Minimal -> androidx.compose.material3.Scaffold(
                             containerColor = MaterialTheme.colorScheme.surfaceContainer
                         ) { navDisplay() }
 
@@ -392,7 +394,7 @@ fun MainScreen(
     }
     val uiMode = LocalUiMode.current
     val surfaceColor = when (uiMode) {
-        UiMode.Material -> MaterialTheme.colorScheme.surface // Blur is not used in Material, this is just a placeholder
+        UiMode.Material, UiMode.Minimal -> MaterialTheme.colorScheme.surface // Blur is not used in Material, this is just a placeholder
         UiMode.Miuix -> MiuixTheme.colorScheme.surface
     }
     val blurBackdrop = rememberBlurBackdrop(enableBlur)
@@ -483,7 +485,7 @@ fun MainScreen(
             val navBarBottomPadding = WindowInsets.systemBars.asPaddingValues().calculateBottomPadding()
 
             when (uiMode) {
-                UiMode.Material -> androidx.compose.material3.Scaffold(
+                UiMode.Material, UiMode.Minimal -> androidx.compose.material3.Scaffold(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer
                 ) {
                     Row {
@@ -526,7 +528,7 @@ fun MainScreen(
             }
 
             when (uiMode) {
-                UiMode.Material -> androidx.compose.material3.Scaffold(
+                UiMode.Material, UiMode.Minimal -> androidx.compose.material3.Scaffold(
                     bottomBar = bottomBar,
                     containerColor = MaterialTheme.colorScheme.surfaceContainer
                 ) { innerPadding ->

@@ -386,6 +386,11 @@
     <string name="module_undo_uninstall_failed">Failed to undo uninstall: %s</string>
     <string name="group_contains_apps">Contains %d apps</string>
     <string name="settings_theme">Theme</string>
+    <string name="settings_minimal_monet">Monet colors</string>
+    <string name="settings_minimal_monet_summary">Derive the accent palette from the system wallpaper</string>
+    <string name="settings_minimal_wallpaper">Wallpaper</string>
+    <string name="settings_minimal_wallpaper_summary">Pick an image from your gallery to use as the home background</string>
+    <string name="settings_minimal_wallpaper_clear">Remove wallpaper</string>
     <string name="settings_theme_summary">Choose the app theme mode.</string>
     <string name="settings_theme_mode_system">Follow system</string>
     <string name="settings_theme_mode_light">Light</string>
