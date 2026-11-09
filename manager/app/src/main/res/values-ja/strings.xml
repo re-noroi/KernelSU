@@ -380,8 +380,6 @@
     <string name="download_probe_failed">イメージのプローブに失敗しました: %1$s</string>
     <string name="copy_success">クリップボードにコピーしました</string>
     <string name="profile_flags_desc_no_new_privs">この root プロファイルのコンテキスト内で、KernelSU を介したさらなる権限昇格を防止します。</string>
-    <string name="install_force_backup">純正イメージとしてバックアップ</string>
-    <string name="install_force_backup_summary">選択した boot イメージが純正イメージであることを確認してください</string>
     <string name="module_shortcut_copy_scheme">URL スキームをコピー</string>
     <string name="module_shortcut_scheme_copied">URL スキームをコピーしました</string>
     <string name="kallsyms_title">ルシンボル</string>
@@ -405,8 +403,6 @@
     <string name="sulog_filter_ioctl_grant_root">Root 許可</string>
     <string name="sulog_filter_daemon_restart">デーモン再起動</string>
     <string name="settings_official_icon">公式アプリアイコンを使用</string>
-    <string name="backup_boot">boot.img をバックアップ</string>
-    <string name="backup_boot_summary">アクティブなスロットから boot.img を /sdcard/Download にバックアップ</string>
     <string name="flash_boot_img">boot.img をフラッシュ</string>
     <string name="flash_boot_img_summary">フラッシュする boot.img ファイルを選択</string>
     <string name="anykernel_install_summary">フラッシュする AnyKernel3 zip パッケージを選択</string>

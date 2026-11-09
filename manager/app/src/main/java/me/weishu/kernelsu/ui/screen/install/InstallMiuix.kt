@@ -201,20 +201,6 @@ internal fun InstallScreenMiuix(
                                     )
                                 }
                             }
-                            if (uiState.canForceBackup) {
-                                Card(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 12.dp),
-                                ) {
-                                    CheckboxPreference(
-                                        title = stringResource(id = R.string.install_force_backup),
-                                        checked = uiState.forceBackup,
-                                        summary = stringResource(id = R.string.install_force_backup_summary),
-                                        onCheckedChange = actions.onSelectForceBackup
-                                    )
-                                }
-                            }
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -312,13 +298,7 @@ internal fun InstallScreenMiuix(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 12.dp),
-                        text = stringResource(
-                            id = if (uiState.installMethod is InstallMethod.BackupBoot) {
-                                R.string.backup_boot
-                            } else {
-                                R.string.install_next
-                            }
-                        ),
+                        text = stringResource(R.string.install_next),
                         enabled = uiState.isNextEnabled,
                         colors = ButtonDefaults.textButtonColorsPrimary(),
                         onClick = actions.onNext
@@ -360,7 +340,6 @@ private fun SelectInstallMethod(
             is InstallMethod.DirectInstallToInactiveSlot -> confirmDialog.showConfirm(dialogTitle, dialogContent)
             is InstallMethod.AnyKernel -> onSelectAnyKernel()
             is InstallMethod.FlashBootImg -> onSelectBootImg()
-            is InstallMethod.BackupBoot -> onSelected(option)
         }
     }
 

@@ -168,8 +168,6 @@
     <string name="install_next">下一步</string>
     <string name="install_select_partition">選取分割區</string>
     <string name="install_upload_lkm_file">使用本地 LKM 檔案</string>
-    <string name="install_force_backup">備份為原廠映像</string>
-    <string name="install_force_backup_summary">請確保你選擇的 boot 映像是原廠映像</string>
     <string name="install_only_support_ko_file">僅支援 .ko 格式檔案</string>
     <string name="select_file_tip">建議使用 %1$s 分割區映像</string>
     <string name="select_kmi">選取 KMI</string>
@@ -417,8 +415,6 @@
     <string name="sulog_filter_ioctl_grant_root">授予 Root</string>
     <string name="sulog_filter_daemon_restart">Daemon 重啟</string>
     <string name="settings_official_icon">使用官方應用程式圖示</string>
-    <string name="backup_boot">備份 boot.img</string>
-    <string name="backup_boot_summary">從目前使用中插槽擷取並備份 boot.img 至 /sdcard/Download</string>
     <string name="flash_boot_img">刷入 boot.img</string>
     <string name="flash_boot_img_summary">選取一個 boot.img 映像檔刷入</string>
     <string name="anykernel_install_summary">選取一個 AnyKernel3 zip 刷機套件刷入</string>

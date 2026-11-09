@@ -70,7 +70,6 @@ fun InstallScreen() {
     var advancedOptionsShown by rememberSaveable { mutableStateOf(false) }
     var allowShell by rememberSaveable { mutableStateOf(false) }
     var enableAdb by rememberSaveable { mutableStateOf(false) }
-    var forceBackup by rememberSaveable { mutableStateOf(false) }
 
     val currentKmi by produceState(initialValue = "") { value = getCurrentKmi() }
     val partitions by produceState(initialValue = emptyList()) { value = getAvailablePartitions() }
@@ -115,14 +114,13 @@ fun InstallScreen() {
     val selectFileTip = stringResource(id = R.string.select_file_tip, defaultPartition)
     val selectFileTipNoGki = stringResource(id = R.string.select_file_tip_nogki)
     val downloadFileMsg = stringResource(id = R.string.download_dialog_msg)
-    val backupBootSummary = stringResource(id = R.string.backup_boot_summary)
     val flashBootImgSummary = stringResource(id = R.string.flash_boot_img_summary)
     val anyKernelSummary = stringResource(id = R.string.anykernel_install_summary)
 
     val installMethodOptions = remember(
         rootAvailable, isAbDevice, isGkiDevice,
         selectFileTip, selectFileTipNoGki, downloadFileMsg,
-        backupBootSummary, flashBootImgSummary, anyKernelSummary
+        flashBootImgSummary, anyKernelSummary
     ) {
         buildList {
             add(InstallMethod.SelectFile(summary = if (isGkiDevice) selectFileTip else selectFileTipNoGki))
@@ -133,7 +131,6 @@ fun InstallScreen() {
             }
             if (rootAvailable) {
                 add(InstallMethod.AnyKernel(summary = anyKernelSummary))
-                add(InstallMethod.BackupBoot(summary = backupBootSummary))
                 add(InstallMethod.FlashBootImg(summary = flashBootImgSummary))
             }
         }
@@ -199,7 +196,6 @@ fun InstallScreen() {
                             lkm = finalLkmSelection,
                             allowShell = allowShell,
                             enableAdb = enableAdb,
-                            backup = forceBackup
                         )
                         else -> FlashIt.FlashBoot(
                             boot = if (method is InstallMethod.SelectFile) method.uri else null,
@@ -208,7 +204,6 @@ fun InstallScreen() {
                             partition = partitions.getOrNull(partitionSelectionIndex),
                             allowShell = allowShell,
                             enableAdb = enableAdb,
-                            backup = method is InstallMethod.SelectFile && forceBackup
                         )
                     }
                 )
@@ -331,7 +326,6 @@ fun InstallScreen() {
         is InstallMethod.DirectInstallToInactiveSlot -> true
         is InstallMethod.AnyKernel -> method.uri != null
         is InstallMethod.FlashBootImg -> method.uri != null
-        is InstallMethod.BackupBoot -> true
     }
 
     val state = InstallUiState(
@@ -352,8 +346,6 @@ fun InstallScreen() {
         advancedOptionsShown = advancedOptionsShown,
         allowShell = allowShell,
         enableAdb = enableAdb,
-        forceBackup = forceBackup,
-        canForceBackup = installMethod is InstallMethod.SelectFile,
         isAbDevice = isAb,
         canSelectSlot = canSelectSlot,
         slotItems = slotItems,
@@ -425,9 +417,6 @@ fun InstallScreen() {
         },
         onNext = {
             when (val method = installMethod) {
-                is InstallMethod.BackupBoot -> {
-                    navigator.push(Route.Flash(FlashIt.BackupBoot))
-                }
                 is InstallMethod.FlashBootImg -> {
                     method.uri?.let { uri ->
                         navigator.push(Route.Flash(FlashIt.FlashBootImg(uri, slot = selectedSlot)))
@@ -469,9 +458,6 @@ fun InstallScreen() {
         },
         onSelectEnableAdb = {
             enableAdb = it
-        },
-        onSelectForceBackup = {
-            forceBackup = it
         }
     )
 
