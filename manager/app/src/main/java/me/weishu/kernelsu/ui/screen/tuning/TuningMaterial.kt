@@ -183,6 +183,19 @@ fun TuningScreenMaterial(
                     }
                     if (state.chargeCurrentSupported) {
                         item {
+                            SegmentedSwitchItem(
+                                icon = Icons.Filled.Save,
+                                title = "Writable Mode (0644)",
+                                summary = if (state.chargeWritable)
+                                    "Node is writable — slider is active"
+                                else
+                                    "Node is read-only (0444) — enable to use the slider",
+                                checked = state.chargeWritable,
+                                enabled = true,
+                                onCheckedChange = actions.onSetChargeWritable,
+                            )
+                        }
+                        item {
                             val minTenths = 10  // 1.0A
                             val maxTenths = 100 // 10.0A
                             val currentTenths = (state.chargeCurrent / 100_000L).toInt()
@@ -192,12 +205,21 @@ fun TuningScreenMaterial(
                                 title = "Max Charging Current",
                                 value = currentTenths,
                                 range = minTenths..maxTenths,
-                                step = 5, // 0.5A increments
+                                step = 5,
+                                enabled = state.chargeWritable,
                                 formatter = { v -> "${v / 10}.${v % 10} A" },
                                 onValueChange = { v ->
                                     actions.onSetChargeCurrent(v * 100_000L)
                                 },
                             )
+                            if (!state.chargeWritable) {
+                                Text(
+                                    "Enable Writable Mode above to change the current.",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                                )
+                            }
                         }
                     }
                     item {

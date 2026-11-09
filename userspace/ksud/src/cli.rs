@@ -533,6 +533,9 @@ enum TuningCmd {
         index: i32,
     },
 
+    /// Charging: toggle sysfs writable mode (1=0644, 0=0444)
+    ChargeWritable { value: u8 },
+
     /// Charging: set the constant charge current in microamps
     ChargeCurrent { ua: u64 },
 
@@ -940,6 +943,9 @@ pub fn run() -> Result<()> {
                 Ok(())
             }
             TuningCmd::Thermal { index } => crate::tuning::set_thermal(index),
+            TuningCmd::ChargeWritable { value } => {
+                crate::tuning::set_charge_writable(value != 0)
+            }
             TuningCmd::ChargeCurrent { ua } => crate::tuning::set_charge_current(ua),
             TuningCmd::Bypass { value } => crate::tuning::set_bypass(value != 0),
             TuningCmd::SchedSkipHeadroom { value } => {

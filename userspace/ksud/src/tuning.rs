@@ -116,6 +116,12 @@ fn read_u64_str(path: &str) -> Option<u64> {
     fs::read_to_string(path).ok()?.trim().parse().ok()
 }
 
+fn is_node_writable(path: &Path) -> bool {
+    fs::metadata(path)
+        .map(|m| m.permissions().mode() & 0o200 != 0)
+        .unwrap_or(false)
+}
+
 fn write_i32_str(path: &str, value: i32) -> Result<()> {
     fs::write(path, value.to_string())
         .with_context(|| format!("failed to write {path}"))?;
@@ -239,8 +245,10 @@ pub fn print_status() {
 
     let charge_supported = Path::new(CHARGE_CURRENT_MAX).exists();
     let charge_current = read_u64_str(CHARGE_CURRENT_MAX).unwrap_or(0);
+    let charge_writable = is_node_writable(Path::new(CHARGE_CURRENT_MAX));
     println!("charge_current_supported={}", i32::from(charge_supported));
     println!("charge_current={charge_current}");
+    println!("charge_writable={}", i32::from(charge_writable));
 
     let bypass = bypass_node(&config);
     let bypass_current = bypass
@@ -401,6 +409,20 @@ pub fn set_charge_current(value_ua: u64) -> Result<()> {
     fs::write(CHARGE_CURRENT_MAX, clamped.to_string())
         .with_context(|| "failed to write constant_charge_current_max")?;
     update_config("charge_current_ua", &clamped.to_string())?;
+    println!("ok");
+    Ok(())
+}
+
+/// Toggle the sysfs node between 0644 (writable) and 0444 (read-only).
+/// Persistent: applied again at boot from tuning.conf.
+pub fn set_charge_writable(enabled: bool) -> Result<()> {
+    let path = Path::new(CHARGE_CURRENT_MAX);
+    if !path.exists() {
+        bail!("constant_charge_current_max node not found");
+    }
+    set_mode(path, if enabled { 0o644 } else { 0o444 });
+    update_config("charge_writable", if enabled { "1" } else { "0" })?;
+    info!("charge node writable = {enabled}");
     println!("ok");
     Ok(())
 }
@@ -703,6 +725,21 @@ pub fn apply_persisted() {
             }
         } else {
             warn!("thermal node not found, cannot restore profile {saved}");
+        }
+    }
+
+    // Restore perm first, then value (order matters — write needs 0644)
+    if let Some(v) = config.get("charge_writable") {
+        let enabled = v == "1";
+        let path = Path::new(CHARGE_CURRENT_MAX);
+        if path.exists() {
+            set_mode(path, if enabled { 0o644 } else { 0o444 });
+        }
+    }
+
+    if let Some(v) = config.get("charge_current_ua") {
+        if let Ok(ua) = v.parse::<u64>() {
+            let _ = set_charge_current(ua);
         }
     }
 
