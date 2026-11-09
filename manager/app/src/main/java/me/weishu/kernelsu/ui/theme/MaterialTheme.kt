@@ -44,7 +44,7 @@ fun MaterialKernelSUTheme(
     val finalColorScheme = if (minimal) {
         animatedColorScheme.copy(
             background = Color.Transparent,
-            surface = Color.Black.copy(alpha = 0.75f), // 25% transparent
+            surface = Color.Transparent,
             surfaceContainer = Color.Black.copy(alpha = 0.75f),
             surfaceContainerLow = Color.Black.copy(alpha = 0.75f),
             surfaceContainerHigh = Color.Black.copy(alpha = 0.75f),
