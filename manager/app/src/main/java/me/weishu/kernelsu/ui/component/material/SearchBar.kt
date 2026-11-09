@@ -151,6 +151,10 @@ fun SearchAppBar(
             SearchBarDefaults.InputField(
                 textFieldState = textFieldState,
                 searchBarState = searchBarState,
+                colors = SearchBarDefaults.inputFieldColors(
+                    focusedContainerColor = if (isSearchExpanded) Color.Black else Color.Transparent,
+                    unfocusedContainerColor = if (isSearchExpanded) Color.Black else Color.Transparent,
+                ),
                 onSearch = {
                     focusManager.clearFocus()
                     keyboardController?.hide()
@@ -214,6 +218,9 @@ fun SearchAppBar(
     ExpandedFullScreenContainedSearchBar(
         state = searchBarState,
         inputField = inputField,
+        colors = SearchBarDefaults.colors(
+            containerColor = Color.Black
+        ),
         windowInsets = { SearchBarDefaults.fullScreenWindowInsets.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal) },
         content = {
             WindowNavigationEventBridge()
