@@ -418,8 +418,6 @@
     <string name="profile_flags_desc_no_new_privs">禁止从此 Root Profile 的上下文中通过 KernelSU 进一步提升权限</string>
     <string name="module_shortcut_copy_scheme">复制 URL Scheme</string>
     <string name="module_shortcut_scheme_copied">已复制 URL Scheme</string>
-    <string name="install_force_backup">备份为原厂镜像</string>
-    <string name="install_force_backup_summary">请确保你选择的 boot 镜像是原厂镜像</string>
     <string name="settings_sulog">SU 日志</string>
     <string name="settings_sulog_summary">将 Root 相关事件记录到 KernelSU 的 SU 日志文件中</string>
     <string name="sulog_log_files">日志文件</string>
@@ -483,8 +481,6 @@
     <string name="sulog_filter_sucompat">传统 SU</string>
     <string name="sulog_filter_ioctl_grant_root">授予 Root</string>
     <string name="sulog_filter_daemon_restart">守护进程重启</string>
-    <string name="backup_boot">备份 boot.img</string>
-    <string name="backup_boot_summary">从当前活动槽位提取并备份 boot.img 到 /sdcard/Download</string>
     <string name="flash_boot_img">刷入 boot.img</string>
     <string name="flash_boot_img_summary">选择一个 boot.img 映像文件刷入</string>
     <string name="anykernel_install_summary">选择一个 AnyKernel3 zip 刷机包刷入</string>

@@ -290,8 +290,6 @@
     <string name="flash_module">Flash module</string>
     <string name="anykernel_install">Flash AnyKernel</string>
     <string name="anykernel_install_summary">Select an AnyKernel3 zip package to flash</string>
-    <string name="backup_boot">Backup boot.img</string>
-    <string name="backup_boot_summary">Extract and backup boot.img from active slot to /sdcard/Download</string>
     <string name="flash_boot_img">Flash boot.img</string>
     <string name="flash_boot_img_summary">Select a boot.img file to flash</string>
     <string name="install_select_slot">Select Slot</string>
@@ -304,8 +302,6 @@
     <string name="install_select_lkm_variant">Select LKM variant</string>
     <string name="install_lkm_kowsu">KowSU</string>
     <string name="install_lkm_xxksu">xxKSU</string>
-    <string name="install_force_backup">Backup as stock image</string>
-    <string name="install_force_backup_summary">Please make sure your selected boot image is a stock image</string>
     <string name="install_only_support_ko_file">Only .ko files are supported</string>
     <string name="select_file_tip">%1$s partition image is recommended</string>
     <string name="select_kmi">Select KMI</string>

@@ -453,11 +453,9 @@ private fun writeLkmFile(lkm: LkmSelection): File? {
 private fun bootPatchFlags(
     allowShell: Boolean,
     enableAdb: Boolean,
-    forceBackup: Boolean,
 ): String = buildString {
     if (allowShell) append(" --allow-shell")
     if (enableAdb) append(" --enable-adbd")
-    if (forceBackup) append(" --backup")
 }
 
 fun installBoot(
@@ -467,7 +465,6 @@ fun installBoot(
     partition: String?,
     allowShell: Boolean,
     enableAdb: Boolean,
-    forceBackup: Boolean,
     onStdout: (String) -> Unit,
     onStderr: (String) -> Unit,
 ): FlashResult {
@@ -492,7 +489,7 @@ fun installBoot(
     } else {
         " -b ${bootFile.absolutePath}"
     }
-    cmd += bootPatchFlags(allowShell, enableAdb, forceBackup)
+    cmd += bootPatchFlags(allowShell, enableAdb)
 
     if (ota) {
         cmd += " -u"
@@ -538,7 +535,6 @@ fun downloadBoot(
     lkm: LkmSelection,
     allowShell: Boolean,
     enableAdb: Boolean,
-    forceBackup: Boolean,
     onStdout: (String) -> Unit,
     onStderr: (String) -> Unit,
 ): FlashResult {
@@ -595,7 +591,7 @@ fun downloadBoot(
     }
 
     var cmd = "${getKsuDaemonPath()} boot-patch -b ${bootFile.absolutePath}"
-    cmd += bootPatchFlags(allowShell, enableAdb, forceBackup)
+    cmd += bootPatchFlags(allowShell, enableAdb)
 
     val lkmFile = writeLkmFile(lkm)
     if (lkmFile != null) {
@@ -923,11 +919,6 @@ fun restartApp(packageName: String, userId: Int? = null) {
 
 fun isWebuiModuleInstalled(modId: String): Boolean {
     return SuFile("/data/adb/modules/$modId/webroot/index.html").exists()
-}
-
-fun flashBootBackup(cmd: String, onStdout: (String) -> Unit, onStderr: (String) -> Unit): FlashResult {
-    val res = flashWithIO(cmd, onStdout, onStderr)
-    return FlashResult(res.code, res.err.joinToString("\n"), false)
 }
 
 fun flashBootImgCmd(cmd: String, onStdout: (String) -> Unit, onStderr: (String) -> Unit): FlashResult {
