@@ -47,6 +47,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -576,13 +577,14 @@ private fun MinimalSpecRow(
 
 @Composable
 private fun MinimalFooter(actions: HomeActions) {
+    val learnUrl = stringResource(R.string.home_learn_kernelsu_url)
     Surface(
         shape = RoundedCornerShape(20.dp),
         color = Color.Transparent,
         modifier = Modifier
             .fillMaxWidth()
             .clickable {
-                actions.onOpenUrl(stringResource(R.string.home_learn_kernelsu_url))
+                actions.onOpenUrl(learnUrl)
             },
     ) {
         Row(

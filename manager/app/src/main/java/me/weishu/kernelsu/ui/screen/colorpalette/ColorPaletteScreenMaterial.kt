@@ -134,6 +134,7 @@ fun ColorPaletteScreenMaterial(
     val colorSpec = state.currentColorSpec
     val haptic = LocalHapticFeedback.current
     val context = LocalContext.current
+    val isMinimal = LocalUiMode.current == UiMode.Minimal
     val wallpaperPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
@@ -599,7 +600,7 @@ fun ColorPaletteScreenMaterial(
                 }
             }
 
-            if (LocalUiMode.current == UiMode.Minimal) {
+            if (isMinimal) {
                 item {
                     Column(
                         modifier = Modifier
