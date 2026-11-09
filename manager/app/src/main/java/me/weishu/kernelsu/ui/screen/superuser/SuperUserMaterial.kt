@@ -273,7 +273,7 @@ fun SuperUserPagerMaterial(
     }
 
     ExpressiveScaffold(
-        containerColor = if (isMinimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
+        containerColor = if (isMinimal) Color.Transparent else colorScheme.surfaceContainer,
         topBar = {
             SearchAppBar(
                 snackbarHostState = snackbarHostState,
