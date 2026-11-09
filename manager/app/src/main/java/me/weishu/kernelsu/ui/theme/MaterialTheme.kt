@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
 import androidx.core.view.WindowInsetsControllerCompat
 import me.weishu.kernelsu.ui.webui.MonetColorsProvider
 
@@ -40,6 +41,22 @@ fun MaterialKernelSUTheme(
     }
 
     val animatedColorScheme = colorScheme.animateAsState()
+
+    val finalColorScheme = if (minimal) {
+        animatedColorScheme.copy(
+            background = Color.Transparent,
+            surface = Color.Black.copy(alpha = 0.75f), // 25% transparent
+            surfaceContainer = Color.Black.copy(alpha = 0.75f),
+            surfaceContainerLow = Color.Black.copy(alpha = 0.75f),
+            surfaceContainerHigh = Color.Black.copy(alpha = 0.75f),
+            surfaceContainerHighest = Color.Black.copy(alpha = 0.75f),
+            onSurface = Color.White,
+            onSurfaceVariant = Color.LightGray,
+            onBackground = Color.White,
+        )
+    } else {
+        animatedColorScheme
+    }
 
     MaterialExpressiveTheme(
         colorScheme = animatedColorScheme,

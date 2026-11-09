@@ -51,6 +51,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.graphics.Color
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -298,7 +299,7 @@ open class MainActivity : ComponentActivity() {
 
                     when (uiMode) {
                         UiMode.Material, UiMode.Minimal -> androidx.compose.material3.Scaffold(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainer
+                            containerColor = if (uiMode == UiMode.Minimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer
                         ) { navDisplay() }
 
                         UiMode.Miuix -> Scaffold { navDisplay() }
@@ -486,7 +487,7 @@ fun MainScreen(
 
             when (uiMode) {
                 UiMode.Material, UiMode.Minimal -> androidx.compose.material3.Scaffold(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    containerColor = if (uiMode == UiMode.Minimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer
                 ) {
                     Row {
                         SideRail(navigationBadge)
@@ -530,7 +531,7 @@ fun MainScreen(
             when (uiMode) {
                 UiMode.Material, UiMode.Minimal -> androidx.compose.material3.Scaffold(
                     bottomBar = bottomBar,
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    containerColor = if (uiMode == UiMode.Minimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer
                 ) { innerPadding ->
                     pagerContent(innerPadding.calculateBottomPadding())
                 }

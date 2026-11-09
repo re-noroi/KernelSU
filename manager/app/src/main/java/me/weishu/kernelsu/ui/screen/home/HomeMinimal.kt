@@ -1,6 +1,5 @@
 package me.weishu.kernelsu.ui.screen.home
 
-import android.graphics.ImageDecoder
 import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -72,8 +71,9 @@ import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.LocalKernelTool
 import me.weishu.kernelsu.ui.component.bottombar.RegisterTabReselect
 import me.weishu.kernelsu.ui.navigation3.Navigator
-import me.weishu.kernelsu.ui.theme.LocalMinimalWallpaper
 
+@Suppress("UNUSED_PARAMETER")
+@Composable
 @Suppress("UNUSED_PARAMETER")
 @Composable
 fun HomePagerMinimal(
@@ -88,81 +88,62 @@ fun HomePagerMinimal(
         scrollState.animateScrollTo(0)
     }
 
-    val wallpaper = LocalMinimalWallpaper.current
-    val wallpaperBitmap = rememberMinimalWallpaper(wallpaper)
-
-    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-        if (wallpaperBitmap != null) {
-            Image(
-                bitmap = wallpaperBitmap,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
+    // Scaffold background is now transparent so the global wallpaper shows through
+    Scaffold(
+        containerColor = Color.Transparent,
+        topBar = {
+            TopAppBar(
+                title = {
+                    Column {
+                        Text(
+                            text = state.appName,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White
+                        )
+                        Text(
+                            text = state.systemInfo.deviceModel,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.LightGray,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    scrolledContainerColor = Color.Transparent,
+                ),
+                windowInsets = WindowInsets.safeDrawing.only(
+                    WindowInsetsSides.Top + WindowInsetsSides.Horizontal
+                ),
             )
-            // Dim the wallpaper slightly so text remains readable, but keep it visible
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.4f))
+        },
+        contentWindowInsets = WindowInsets.safeDrawing.only(
+            WindowInsetsSides.Top + WindowInsetsSides.Horizontal
+        ),
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                .verticalScroll(scrollState)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            MinimalStatusCard(state = state, actions = actions)
+            MinimalQuickGrid(state = state, actions = actions)
+            MinimalSpecsCard(state = state)
+            MinimalFooter(actions = actions)
+
+            Spacer(
+                Modifier.height(
+                    bottomInnerPadding + if (!Natives.isFullFeatured()) {
+                        WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                    } else {
+                        0.dp
+                    }
+                )
             )
-        }
-
-        Scaffold(
-            containerColor = Color.Transparent,
-            topBar = {
-                TopAppBar(
-                    title = {
-                        Column {
-                            Text(
-                                text = state.appName,
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color.White
-                            )
-                            Text(
-                                text = state.systemInfo.deviceModel,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color.LightGray,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent,
-                        scrolledContainerColor = Color.Transparent,
-                    ),
-                    windowInsets = WindowInsets.safeDrawing.only(
-                        WindowInsetsSides.Top + WindowInsetsSides.Horizontal
-                    ),
-                )
-            },
-            contentWindowInsets = WindowInsets.safeDrawing.only(
-                WindowInsetsSides.Top + WindowInsetsSides.Horizontal
-            ),
-        ) { innerPadding ->
-            Column(
-                modifier = Modifier
-                    .padding(innerPadding)
-                    .verticalScroll(scrollState)
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                MinimalStatusCard(state = state, actions = actions)
-                MinimalQuickGrid(state = state, actions = actions)
-                MinimalSpecsCard(state = state)
-                MinimalFooter(actions = actions)
-
-                Spacer(
-                    Modifier.height(
-                        bottomInnerPadding + if (!Natives.isFullFeatured()) {
-                            WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-                        } else {
-                            0.dp
-                        }
-                    )
-                )
-            }
         }
     }
 }
@@ -213,7 +194,8 @@ private fun MinimalStatusCard(
 
     Surface(
         shape = RoundedCornerShape(28.dp),
-        color = Color.Black.copy(alpha = 0.75f), // 25% transparent
+        // Color.Black.copy(alpha = 0.75f) is inherited from the theme, but hardcoded here is fine
+        color = Color.Black.copy(alpha = 0.75f), 
         modifier = Modifier
             .fillMaxWidth()
             .clickable(enabled = state.ksuVersion == null) {
@@ -270,13 +252,14 @@ private fun MinimalStatusCard(
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.LightGray,
                     )
-                } else {
-                    Text(
-                        text = stringResource(R.string.home_manager_version) + " " + state.systemInfo.managerVersion,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.LightGray,
-                    )
                 }
+                
+                // ADDED: Manager version is now explicitly shown below the KernelSU version
+                Text(
+                    text = stringResource(R.string.home_manager_version) + " " + state.systemInfo.managerVersion,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.LightGray,
+                )
             }
 
             if (state.showRootWarning) {
