@@ -95,7 +95,6 @@ import me.weishu.kernelsu.ui.screen.superuser.SuperUserPager
 import me.weishu.kernelsu.ui.screen.template.AppProfileTemplateScreen
 import me.weishu.kernelsu.ui.screen.templateeditor.TemplateEditorScreen
 import me.weishu.kernelsu.ui.component.bottombar.KernelTool
-import me.weishu.kernelsu.ui.screen.kconfig.KconfigScreen
 import me.weishu.kernelsu.ui.screen.kallsyms.KallsymsScreen
 import me.weishu.kernelsu.ui.screen.kernelmodule.KernelModuleScreen
 import me.weishu.kernelsu.ui.screen.crashlog.CrashLogScreen
@@ -271,7 +270,6 @@ open class MainActivity : ComponentActivity() {
                             entry<Route.Kallsyms>(swipeDismiss = swipeDismiss) { KallsymsScreen() }
                             entry<Route.Sulog>(swipeDismiss = swipeDismiss) { SulogScreen() }
                             entry<Route.Dmesg>(swipeDismiss = swipeDismiss) { DmesgScreen() }
-                            entry<Route.Kconfig>(swipeDismiss = swipeDismiss) { KconfigScreen() }
                             entry<Route.KernelModule>(swipeDismiss = swipeDismiss) { KernelModuleScreen() }
                             entry<Route.CrashLog>(swipeDismiss = swipeDismiss) { CrashLogScreen() }
                             entry<Route.PayloadExtract>(swipeDismiss = swipeDismiss) { PayloadScreen() }
@@ -574,7 +572,6 @@ fun MainPage(
         2 -> when (LocalKernelTool.current) {
             KernelTool.Tuning -> TuningScreen(isRootTab = true, bottomInnerPadding = bottomInnerPadding)
             KernelTool.Payload -> PayloadScreen(isRootTab = true, bottomInnerPadding = bottomInnerPadding)
-            KernelTool.Kconfig -> KconfigScreen(isRootTab = true)
             KernelTool.Dmesg -> DmesgScreen(isRootTab = true)
             KernelTool.Kallsyms -> KallsymsScreen(isRootTab = true)
             KernelTool.KernelModule -> KernelModuleScreen(isRootTab = true, bottomInnerPadding = bottomInnerPadding)

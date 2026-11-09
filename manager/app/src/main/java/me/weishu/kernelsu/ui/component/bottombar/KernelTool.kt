@@ -5,19 +5,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DataObject
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.filled.Thermostat
-import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material.icons.outlined.DataObject
 import androidx.compose.material.icons.outlined.Terminal
 import androidx.compose.material.icons.outlined.Thermostat
-import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.Unarchive
 import androidx.compose.material.icons.outlined.ViewModule
 import androidx.compose.material.icons.rounded.DataObject
 import androidx.compose.material.icons.rounded.Terminal
 import androidx.compose.material.icons.rounded.Thermostat
-import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.Unarchive
 import androidx.compose.material.icons.rounded.ViewModule
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -47,14 +44,6 @@ enum class KernelTool(
         filledIcon = Icons.Filled.Unarchive,
         roundedIcon = Icons.Rounded.Unarchive,
         route = Route.PayloadExtract,
-    ),
-    Kconfig(
-        id = "kconfig",
-        label = R.string.kconfig_title,
-        outlinedIcon = Icons.Outlined.Tune,
-        filledIcon = Icons.Filled.Tune,
-        roundedIcon = Icons.Rounded.Tune,
-        route = Route.Kconfig,
     ),
     Dmesg(
         id = "dmesg",
