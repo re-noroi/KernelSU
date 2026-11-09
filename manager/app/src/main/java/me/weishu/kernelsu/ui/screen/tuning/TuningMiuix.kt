@@ -26,6 +26,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.BatteryChargingFull
+import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.Thermostat
 import androidx.compose.material.icons.rounded.NetworkCheck
 import androidx.compose.material.icons.rounded.Router
@@ -205,6 +206,42 @@ fun TuningScreenMiuix(
                                 color = colorScheme.onSurfaceVariantSummary,
                                 fontSize = 14.sp,
                             )
+                        }
+                                                if (state.chargeCurrentSupported) {
+                            val tenths = (state.chargeCurrent / 100_000L).toInt()
+                            val currentLabel = "${tenths / 10}.${tenths % 10} A"
+                            SwitchPreference(
+                                title = "Charge Current Control",
+                                summary = "Current: $currentLabel",
+                                startAction = {
+                                    Icon(
+                                        Icons.Rounded.Bolt,
+                                        modifier = Modifier.padding(end = 6.dp),
+                                        contentDescription = "Charge current",
+                                        tint = colorScheme.onBackground,
+                                    )
+                                },
+                                enabled = true,
+                                checked = state.chargeWritable,
+                                onCheckedChange = actions.onSetChargeWritable,
+                            )
+                            if (state.chargeWritable) {
+                                val minTenths = 10
+                                val maxTenths = 100
+                                val currentTenths = (state.chargeCurrent / 100_000L).toInt()
+                                    .coerceIn(minTenths, maxTenths)
+
+                                IntSliderMiuix(
+                                    title = "Max Charging Current",
+                                    value = currentTenths,
+                                    range = minTenths..maxTenths,
+                                    step = 5,
+                                    formatter = { v -> "${v / 10}.${v % 10} A" },
+                                    onValueChange = { v ->
+                                        actions.onSetChargeCurrent(v * 100_000L)
+                                    },
+                                )
+                            }
                         }
                         val bypassSummary = when {
                             !state.bypassSupported -> stringResource(R.string.tuning_unsupported)
@@ -595,6 +632,7 @@ private fun IntSliderMiuix(
     range: IntRange,
     step: Int = 1,
     enabled: Boolean = true,
+    formatter: (Int) -> String = { it.toString() },
     onValueChange: (Int) -> Unit,
 ) {
     var dragValue by remember(value) { mutableFloatStateOf(value.toFloat()) }
@@ -604,7 +642,7 @@ private fun IntSliderMiuix(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(title, fontSize = 15.sp)
-            Text("${dragValue.roundToInt()}", fontSize = 15.sp)
+            Text(formatter(dragValue.roundToInt()), fontSize = 15.sp)
         }
         Slider(
             value = dragValue,

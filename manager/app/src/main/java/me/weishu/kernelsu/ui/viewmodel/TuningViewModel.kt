@@ -25,6 +25,9 @@ data class TuningUiState(
     val thermalSupported: Boolean = false,
     val thermalCurrent: Int = -1,
     val thermalIndex: Int = -1,
+    val chargeCurrentSupported: Boolean = false,
+    val chargeWritable: Boolean = false,
+    val chargeCurrent: Long = 0L,     // µA — current programmed value
     val bypassSupported: Boolean = false,
     val bypassCurrent: Boolean = false,
     val bypassEnabled: Boolean = false,
@@ -85,6 +88,12 @@ class TuningViewModel : ViewModel() {
         val thermalOut = execRootCommand("cat $thermalNode")
         val thermalSupported = thermalOut.isNotEmpty()
         val thermalCurrent = thermalOut.toIntOrNull() ?: -1
+
+        val chargeRaw = execRootCommand("cat /sys/class/power_supply/battery/constant_charge_current_max")
+        val chargeCurrentSupported = chargeRaw.isNotEmpty()
+        val chargeCurrent = chargeRaw.toLongOrNull() ?: 0L
+        val chargePermRaw = execRootCommand("stat -c %a /sys/class/power_supply/battery/constant_charge_current_max")
+        val chargeWritable = chargePermRaw.contains("6") || chargePermRaw.contains("7") || chargePermRaw.contains("2") || chargePermRaw.contains("3")
 
         var bypassSupported = false
         var bypassCurrent = false
@@ -211,6 +220,9 @@ class TuningViewModel : ViewModel() {
                 thermalSupported = thermalSupported,
                 thermalCurrent = thermalCurrent,
                 thermalIndex = if (thermalCurrent >= 0) thermalCurrent else -1,
+                chargeWritable = chargeWritable,
+                chargeCurrentSupported = chargeCurrentSupported,
+                chargeCurrent = chargeCurrent,
                 bypassSupported = bypassSupported,
                 bypassCurrent = bypassCurrent,
                 bypassEnabled = bypassCurrent,
@@ -230,6 +242,16 @@ class TuningViewModel : ViewModel() {
         if (index < 0) return
         _uiState.update { it.copy(thermalIndex = index) }
         apply("thermal", index.toString())
+    }
+
+    fun setChargeWritable(enabled: Boolean) {
+        _uiState.update { it.copy(chargeWritable = enabled) }
+        apply("charge_writable", if (enabled) "1" else "0")
+    }
+
+    fun setChargeCurrent(valueUa: Long) {
+        _uiState.update { it.copy(chargeCurrent = valueUa) }
+        apply("charge_current", valueUa.toString())
     }
 
     fun setBypass(enabled: Boolean) {
@@ -339,6 +361,8 @@ class TuningViewModel : ViewModel() {
             // and saving to tuning.conf automatically.
             val args = when {
                 type == "thermal" -> "tuning thermal $value"
+                type == "charge_writable" -> "tuning charge-writable $value"
+                type == "charge_current" -> "tuning charge-current $value"
                 type == "bypass" -> "tuning bypass $value"
                 type == "persist" -> "tuning persist $value"
                 type == "sched_skip_headroom" -> "tuning sched-skip-headroom $value"
