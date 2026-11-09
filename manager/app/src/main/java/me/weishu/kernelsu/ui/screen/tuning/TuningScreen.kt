@@ -26,6 +26,7 @@ fun TuningScreen(isRootTab: Boolean = false, bottomInnerPadding: Dp = 0.dp) {
     val actions = TuningActions(
         onBack = dropUnlessResumed { navigator.pop() },
         onSelectThermal = viewModel::selectThermal,
+        onSetChargeCurrent = viewModel::setChargeCurrent,
         onSetBypass = viewModel::setBypass,
         // Persistence
         onSetPersist = viewModel::setPersist,
