@@ -117,7 +117,7 @@ fun CrashLogScreen() {
             navigator = navigator,
         )
 
-        UiMode.Material -> CrashLogScreenMaterial(
+        UiMode.Material, UiMode.Minimal -> CrashLogScreenMaterial(
             uiState = uiState,
             onSelectSource = viewModel::selectSource,
             onSearch = viewModel::setSearchQuery,

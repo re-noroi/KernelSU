@@ -56,6 +56,9 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.nav.gesture.WindowNavigationEventBridge
+import androidx.compose.ui.graphics.Color
+import me.weishu.kernelsu.ui.LocalUiMode
+import me.weishu.kernelsu.ui.UiMode
 
 @Composable
 fun SearchAppBar(
@@ -70,6 +73,7 @@ fun SearchAppBar(
     defaultContent: @Composable BoxScope.(bottomPadding: Dp, closeSearch: () -> Unit) -> Unit = { _, _ -> },
     searchContent: @Composable BoxScope.(bottomPadding: Dp, closeSearch: () -> Unit) -> Unit = { _, _ -> }
 ) {
+    val isMinimal = LocalUiMode.current == UiMode.Minimal
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
     val scaledDensity = LocalDensity.current
@@ -147,6 +151,10 @@ fun SearchAppBar(
             SearchBarDefaults.InputField(
                 textFieldState = textFieldState,
                 searchBarState = searchBarState,
+                colors = SearchBarDefaults.inputFieldColors(
+                    focusedContainerColor = if (isSearchExpanded) Color.Black else Color.Transparent,
+                    unfocusedContainerColor = if (isSearchExpanded) Color.Black else Color.Transparent,
+                ),
                 onSearch = {
                     focusManager.clearFocus()
                     keyboardController?.hide()
@@ -180,7 +188,7 @@ fun SearchAppBar(
         }
     }
 
-    Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
+    Surface(color = if (isMinimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer) {
         Column(
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -202,7 +210,7 @@ fun SearchAppBar(
 
                 state = searchBarState,
                 inputField = inputField,
-                colors = SearchBarDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
+                colors = SearchBarDefaults.colors(containerColor = if (isMinimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerHighest),
             )
         }
     }
@@ -210,6 +218,9 @@ fun SearchAppBar(
     ExpandedFullScreenContainedSearchBar(
         state = searchBarState,
         inputField = inputField,
+        colors = SearchBarDefaults.colors(
+            containerColor = Color.Black
+        ),
         windowInsets = { SearchBarDefaults.fullScreenWindowInsets.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal) },
         content = {
             WindowNavigationEventBridge()

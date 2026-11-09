@@ -56,6 +56,7 @@ class MainActivityViewModel(
             moduleDescriptionMaxLines = settingRepo.moduleDescriptionMaxLines,
             uiMode = UiMode.fromValue(settingRepo.uiMode),
             bottomBarKernelTool = KernelTool.fromId(settingRepo.bottomBarKernelTool),
+            minimalWallpaper = settingRepo.minimalWallpaper,
         )
     }
 
@@ -79,6 +80,8 @@ class MainActivityViewModel(
             "enable_swipe_dismiss",
             "pager_interception_mode",
             "ui_mode",
+            "minimal_monet",
+            "minimal_wallpaper",
             KernelTool.PREF_KEY,
         )
     }

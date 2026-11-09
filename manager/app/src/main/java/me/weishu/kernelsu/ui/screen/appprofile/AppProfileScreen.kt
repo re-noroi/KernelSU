@@ -78,7 +78,7 @@ fun AppProfileScreen(uid: Int) {
 
     fun showMessage(message: String) {
         scope.launch {
-            if (uiMode == UiMode.Material) {
+            if (uiMode != UiMode.Miuix) {
                 snackbarHost.showSnackbar(message)
             } else {
                 Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
@@ -132,7 +132,7 @@ fun AppProfileScreen(uid: Int) {
                     showMessage(failToUpdateAppProfile)
                 } else {
                     profile = profileToSave
-                    if (uiMode == UiMode.Material) {
+                    if (uiMode != UiMode.Miuix) {
                         viewModel.loadAppList()
                     }
                 }
@@ -146,7 +146,7 @@ fun AppProfileScreen(uid: Int) {
             actions = actions,
         )
 
-        UiMode.Material -> AppProfileScreenMaterial(
+        UiMode.Material, UiMode.Minimal -> AppProfileScreenMaterial(
             state = state,
             actions = actions,
             snackBarHost = snackbarHost,
