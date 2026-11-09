@@ -27,7 +27,6 @@ data class TuningUiState(
     val thermalIndex: Int = -1,
     val chargeCurrentSupported: Boolean = false,
     val chargeCurrent: Long = 0L,     // µA — current programmed value
-    val chargeMax: Long = 0L,         // µA — hardware ceiling
     val bypassSupported: Boolean = false,
     val bypassCurrent: Boolean = false,
     val bypassEnabled: Boolean = false,
@@ -89,11 +88,9 @@ class TuningViewModel : ViewModel() {
         val thermalSupported = thermalOut.isNotEmpty()
         val thermalCurrent = thermalOut.toIntOrNull() ?: -1
 
-        val chargeCurRaw = execRootCommand("cat /sys/class/power_supply/battery/constant_charge_current")
-        val chargeMaxRaw = execRootCommand("cat /sys/class/power_supply/battery/constant_charge_current_max")
-        val chargeCurrentSupported = chargeCurRaw.isNotEmpty() && chargeMaxRaw.isNotEmpty()
-        val chargeCurrent = chargeCurRaw.toLongOrNull() ?: 0L
-        val chargeMax = chargeMaxRaw.toLongOrNull() ?: 0L
+        val chargeRaw = execRootCommand("cat /sys/class/power_supply/battery/constant_charge_current_max")
+        val chargeCurrentSupported = chargeRaw.isNotEmpty()
+        val chargeCurrent = chargeRaw.toLongOrNull() ?: 0L
 
         var bypassSupported = false
         var bypassCurrent = false
@@ -222,7 +219,6 @@ class TuningViewModel : ViewModel() {
                 thermalIndex = if (thermalCurrent >= 0) thermalCurrent else -1,
                 chargeCurrentSupported = chargeCurrentSupported,
                 chargeCurrent = chargeCurrent,
-                chargeMax = chargeMax,
                 bypassSupported = bypassSupported,
                 bypassCurrent = bypassCurrent,
                 bypassEnabled = bypassCurrent,

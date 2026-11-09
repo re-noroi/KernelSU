@@ -34,9 +34,9 @@ pub const THERMAL_PROFILES: &[(i32, &str)] = &[
 const THERMAL_NODES: &[&str] = &["/sys/class/thermal/thermal_message/sconfig"];
 const THERMAL_CONTEXT: &str = "u:object_r:sysfs_thermal:s0";
 
-const CHARGE_CURRENT: &str = "/sys/class/power_supply/battery/constant_charge_current";
 const CHARGE_CURRENT_MAX: &str = "/sys/class/power_supply/battery/constant_charge_current_max";
-const CHARGE_CURRENT_MIN_UA: u64 = 1_000_000; // 1.0 A floor
+const CHARGE_CURRENT_MIN_UA: u64 = 1_000_000; // 1.0 A
+const CHARGE_CURRENT_LIMIT_UA: u64 = 10_000_000; // 10.0 A
 const BYPASS_NODES: &[&str] = &[
     "/sys/class/power_supply/battery/input_suspend",
     "/sys/class/power_supply/bms/input_suspend",
@@ -237,12 +237,10 @@ pub fn print_status() {
         .and_then(|value| value.parse::<i32>().ok())
         .unwrap_or(-1);
 
-    let charge_supported = Path::new(CHARGE_CURRENT).exists() && Path::new(CHARGE_CURRENT_MAX).exists();
-    let charge_current = read_u64_str(CHARGE_CURRENT).unwrap_or(0);
-    let charge_max = read_u64_str(CHARGE_CURRENT_MAX).unwrap_or(0);
+    let charge_supported = Path::new(CHARGE_CURRENT_MAX).exists();
+    let charge_current = read_u64_str(CHARGE_CURRENT_MAX).unwrap_or(0);
     println!("charge_current_supported={}", i32::from(charge_supported));
     println!("charge_current={charge_current}");
-    println!("charge_max={charge_max}");
 
     let bypass = bypass_node(&config);
     let bypass_current = bypass
@@ -394,15 +392,14 @@ pub fn set_thermal(index: i32) -> Result<()> {
 }
 
 pub fn set_charge_current(value_ua: u64) -> Result<()> {
-    if !Path::new(CHARGE_CURRENT).exists() {
-        bail!("constant_charge_current node not found");
+    if !Path::new(CHARGE_CURRENT_MAX).exists() {
+        bail!("constant_charge_current_max node not found");
     }
-    // Clamp between 1A and the hardware max (if the max node exists)
-    let max_ua = read_u64_str(CHARGE_CURRENT_MAX).unwrap_or(12_000_000);
-    let clamped = value_ua.clamp(CHARGE_CURRENT_MIN_UA, max_ua);
+    // Clamp between 1A and 10A
+    let clamped = value_ua.clamp(CHARGE_CURRENT_MIN_UA, CHARGE_CURRENT_LIMIT_UA);
 
-    fs::write(CHARGE_CURRENT, clamped.to_string())
-        .with_context(|| "failed to write constant_charge_current")?;
+    fs::write(CHARGE_CURRENT_MAX, clamped.to_string())
+        .with_context(|| "failed to write constant_charge_current_max")?;
     update_config("charge_current_ua", &clamped.to_string())?;
     println!("ok");
     Ok(())

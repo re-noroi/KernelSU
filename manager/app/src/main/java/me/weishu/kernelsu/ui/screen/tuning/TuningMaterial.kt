@@ -181,10 +181,10 @@ fun TuningScreenMaterial(
                             },
                         )
                     }
-                    if (state.chargeCurrentSupported && state.chargeMax > 0L) {
+                    if (state.chargeCurrentSupported) {
                         item {
-                            val minTenths = 10 // 1.0A
-                            val maxTenths = (state.chargeMax / 100_000L).toInt()
+                            val minTenths = 10  // 1.0A
+                            val maxTenths = 100 // 10.0A
                             val currentTenths = (state.chargeCurrent / 100_000L).toInt()
                                 .coerceIn(minTenths, maxTenths)
 

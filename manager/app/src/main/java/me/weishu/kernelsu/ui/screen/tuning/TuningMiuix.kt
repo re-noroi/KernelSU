@@ -206,9 +206,9 @@ fun TuningScreenMiuix(
                                 fontSize = 14.sp,
                             )
                         }
-                        if (state.chargeCurrentSupported && state.chargeMax > 0L) {
-                            val minTenths = 10 // 1.0A
-                            val maxTenths = (state.chargeMax / 100_000L).toInt()
+                        if (state.chargeCurrentSupported) {
+                            val minTenths = 10  // 1.0A
+                            val maxTenths = 100 // 10.0A
                             val currentTenths = (state.chargeCurrent / 100_000L).toInt()
                                 .coerceIn(minTenths, maxTenths)
 
