@@ -52,7 +52,6 @@ import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -91,9 +90,8 @@ fun HomePagerMinimal(
 
     val wallpaper = LocalMinimalWallpaper.current
     val wallpaperBitmap = rememberMinimalWallpaper(wallpaper)
-    val colorScheme = MaterialTheme.colorScheme
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         if (wallpaperBitmap != null) {
             Image(
                 bitmap = wallpaperBitmap,
@@ -101,22 +99,16 @@ fun HomePagerMinimal(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
+            // Dim the wallpaper slightly so text remains readable, but keep it visible
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(
-                                colorScheme.surface.copy(alpha = 0.86f),
-                                colorScheme.surface.copy(alpha = 0.97f),
-                            )
-                        )
-                    )
+                    .background(Color.Black.copy(alpha = 0.4f))
             )
         }
 
         Scaffold(
-            containerColor = if (wallpaperBitmap == null) colorScheme.surface else Color.Transparent,
+            containerColor = Color.Transparent,
             topBar = {
                 TopAppBar(
                     title = {
@@ -125,11 +117,12 @@ fun HomePagerMinimal(
                                 text = state.appName,
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.SemiBold,
+                                color = Color.White
                             )
                             Text(
                                 text = state.systemInfo.deviceModel,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = colorScheme.onSurfaceVariant,
+                                color = Color.LightGray,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
@@ -220,7 +213,7 @@ private fun MinimalStatusCard(
 
     Surface(
         shape = RoundedCornerShape(28.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        color = Color.Black.copy(alpha = 0.75f), // 25% transparent
         modifier = Modifier
             .fillMaxWidth()
             .clickable(enabled = state.ksuVersion == null) {
@@ -269,18 +262,19 @@ private fun MinimalStatusCard(
                     },
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.SemiBold,
+                    color = Color.White
                 )
                 if (versionText != null) {
                     Text(
                         text = versionText,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = Color.LightGray,
                     )
                 } else {
                     Text(
                         text = stringResource(R.string.home_manager_version) + " " + state.systemInfo.managerVersion,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = Color.LightGray,
                     )
                 }
             }
@@ -316,7 +310,7 @@ private fun MinimalNoticeRow(
 ) {
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = tint.copy(alpha = 0.10f),
+        color = tint.copy(alpha = 0.15f),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
@@ -431,11 +425,11 @@ private fun MinimalTile(
     onClick: () -> Unit,
 ) {
     val container = if (accent) {
-        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f)
+        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.75f)
     } else {
-        MaterialTheme.colorScheme.surfaceContainerLow
+        Color.Black.copy(alpha = 0.75f) // 25% transparent
     }
-    val content = if (accent) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+    val content = if (accent) MaterialTheme.colorScheme.error else Color.White
 
     Surface(
         shape = RoundedCornerShape(22.dp),
@@ -481,7 +475,7 @@ private fun MinimalTile(
                     color = if (accent) {
                         MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
                     } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
+                        Color.LightGray
                     },
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -516,17 +510,17 @@ private fun MinimalSpecsCard(state: HomeUiState) {
 
     Surface(
         shape = RoundedCornerShape(24.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        color = Color.Black.copy(alpha = 0.75f), // 25% transparent
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
             Text(
                 text = stringResource(R.string.bento_device_specs),
-                style = MaterialTheme.typography.titleSmall,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = Color.White,
             )
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(12.dp))
             MinimalSpecRow(Icons.Rounded.Smartphone, stringResource(R.string.home_device_model), modelText)
             MinimalSpecRow(Icons.Rounded.DeveloperBoard, stringResource(R.string.home_kernel), info.kernelVersion)
             MinimalSpecRow(
@@ -549,29 +543,29 @@ private fun MinimalSpecRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 7.dp),
+            .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(18.dp),
+            tint = Color.LightGray,
+            modifier = Modifier.size(24.dp), // Slightly larger icon matching Image 2
         )
-        Spacer(Modifier.width(12.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f),
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        Spacer(Modifier.width(16.dp))
+        // Using a Column fixes the vertical text bug and matches the Material theme layout
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.LightGray,
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White,
+            )
+        }
     }
 }
 
@@ -594,13 +588,13 @@ private fun MinimalFooter(actions: HomeActions) {
             Text(
                 text = stringResource(R.string.home_learn_kernelsu),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = Color.LightGray,
                 modifier = Modifier.weight(1f),
             )
             Icon(
                 imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = Color.LightGray,
                 modifier = Modifier.size(18.dp),
             )
         }
