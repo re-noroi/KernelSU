@@ -112,7 +112,7 @@ fun DmesgScreen(isRootTab: Boolean = false) {
             navigator = navigator,
             isRootTab = isRootTab,
         )
-        UiMode.Material -> DmesgScreenMaterial(
+        UiMode.Material, UiMode.Minimal -> DmesgScreenMaterial(
             uiState = uiState,
             onSearch = viewModel::setSearchQuery,
             onRefresh = viewModel::loadDmesg,

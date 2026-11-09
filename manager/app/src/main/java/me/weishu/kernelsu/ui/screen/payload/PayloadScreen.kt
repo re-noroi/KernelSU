@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.dp
 fun PayloadScreen(isRootTab: Boolean = false, bottomInnerPadding: Dp = 0.dp) {
     val viewModel = viewModel<PayloadViewModel>()
     when (LocalUiMode.current) {
-        UiMode.Material -> PayloadMaterial(viewModel = viewModel, isRootTab = isRootTab, bottomInnerPadding = bottomInnerPadding)
+        UiMode.Material, UiMode.Minimal -> PayloadMaterial(viewModel = viewModel, isRootTab = isRootTab, bottomInnerPadding = bottomInnerPadding)
         UiMode.Miuix -> PayloadMiuix(viewModel = viewModel, isRootTab = isRootTab, bottomInnerPadding = bottomInnerPadding)
     }
 }

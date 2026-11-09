@@ -7,6 +7,8 @@ interface SettingsRepository {
     var checkKsuDriverUpdate: Boolean
     var themeMode: Int
     var miuixMonet: Boolean
+    var minimalMonet: Boolean
+    var minimalWallpaper: String
     var keyColor: Int
     var colorStyle: String
     var colorSpec: String
