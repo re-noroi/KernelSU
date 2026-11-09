@@ -16,6 +16,8 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -250,7 +252,6 @@ open class MainActivity : ComponentActivity() {
                                                 navigator.pop()
                                             }
                                         }
-
                                         else -> navigator.pop()
                                     }
                                 }
@@ -298,7 +299,7 @@ open class MainActivity : ComponentActivity() {
                             entry<Route.Settings>(swipeDismiss = swipeDismiss) { mainScreenEntry() }
                         }
                     }
-
+                }
                     when (uiMode) {
                         UiMode.Material, UiMode.Minimal -> androidx.compose.material3.Scaffold(
                             containerColor = if (uiMode == UiMode.Minimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer

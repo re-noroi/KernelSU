@@ -60,11 +60,11 @@ fun MaterialKernelSUTheme(
     }
 
     MaterialExpressiveTheme(
-        colorScheme = animatedColorScheme,
+        colorScheme = finalColorScheme,
         motionScheme = if (minimal) MotionScheme.standard() else MotionScheme.expressive(),
         typography = Typography,
         content = {
-            MonetColorsProvider.UpdateCss(colorScheme)
+            MonetColorsProvider.UpdateCss(finalColorScheme)
             content()
         }
     )
