@@ -107,5 +107,13 @@ fun HomePager(
             navigator = navigator,
             isCurrentPage = isCurrentPage,
         )
+
+        UiMode.Minimal -> HomePagerMinimal(
+            state = uiState,
+            actions = actions,
+            bottomInnerPadding = bottomInnerPadding,
+            navigator = navigator,
+            isCurrentPage = isCurrentPage,
+        )
     }
 }

@@ -52,7 +52,7 @@ fun KernelToolSelectDialog(
                 onDismissRequest = onDismissRequest,
             )
         }
-        UiMode.Material -> {
+        UiMode.Material, UiMode.Minimal -> {
             val context = LocalContext.current
             SingleSelectDialog(
                 title = stringResource(R.string.select_bottom_bar_tool),

@@ -15,6 +15,8 @@ data class SettingsUiState(
     val moduleAutoHotInstall: Boolean = true,
     val themeMode: Int = 0,
     val miuixMonet: Boolean = false,
+    val minimalMonet: Boolean = true,
+    val minimalWallpaper: String = "",
     val keyColor: Int = 0,
     val colorStyle: String = PaletteStyle.TonalSpot.name,
     val colorSpec: String = ColorSpec.SpecVersion.Default.name,
