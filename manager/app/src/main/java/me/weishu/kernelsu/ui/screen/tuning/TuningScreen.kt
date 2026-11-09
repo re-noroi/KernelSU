@@ -57,6 +57,6 @@ fun TuningScreen(isRootTab: Boolean = false, bottomInnerPadding: Dp = 0.dp) {
 
     when (LocalUiMode.current) {
         UiMode.Miuix -> TuningScreenMiuix(uiState, actions, isRootTab, bottomInnerPadding)
-        UiMode.Material -> TuningScreenMaterial(uiState, actions, isRootTab, bottomInnerPadding)
+        UiMode.Material, UiMode.Minimal -> TuningScreenMaterial(uiState, actions, isRootTab, bottomInnerPadding)
     }
 }

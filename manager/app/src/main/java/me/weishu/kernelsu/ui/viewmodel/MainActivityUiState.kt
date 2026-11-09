@@ -18,4 +18,5 @@ data class MainActivityUiState(
     val moduleDescriptionMaxLines: Int = 4,
     val uiMode: UiMode,
     val bottomBarKernelTool: KernelTool = KernelTool.Tuning,
+    val minimalWallpaper: String = "",
 )

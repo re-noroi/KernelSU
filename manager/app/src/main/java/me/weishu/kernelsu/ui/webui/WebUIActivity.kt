@@ -127,7 +127,7 @@ private fun LoadingContent() {
             }
         }
 
-        UiMode.Material -> {
+        UiMode.Material, UiMode.Minimal -> {
             Box(
                 modifier = Modifier
                     .fillMaxSize()

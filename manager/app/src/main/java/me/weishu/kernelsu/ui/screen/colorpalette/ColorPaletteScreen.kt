@@ -43,6 +43,8 @@ fun ColorPaletteScreen() {
         onBack = dropUnlessResumed { navigator.pop() },
         onSetThemeMode = viewModel::setThemeMode,
         onSetMiuixMonet = viewModel::setMiuixMonet,
+        onSetMinimalMonet = viewModel::setMinimalMonet,
+        onSetMinimalWallpaper = viewModel::setMinimalWallpaper,
         onSetKeyColor = viewModel::setKeyColor,
         onSetColorMode = viewModel::setColorMode,
         onSetColorStyle = viewModel::setColorStyle,
@@ -70,5 +72,6 @@ fun ColorPaletteScreen() {
     when (LocalUiMode.current) {
         UiMode.Miuix -> ColorPaletteScreenMiuix(state, actions)
         UiMode.Material -> ColorPaletteScreenMaterial(state, actions)
+        UiMode.Minimal -> ColorPaletteScreenMaterial(state, actions)
     }
 }

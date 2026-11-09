@@ -88,7 +88,7 @@ fun KallsymsScreen(isRootTab: Boolean = false) {
 
     when (LocalUiMode.current) {
         UiMode.Miuix -> KallsymsScreenMiuix(uiState, viewModel::setSearchQuery, context, navigator, isRootTab)
-        UiMode.Material -> KallsymsScreenMaterial(uiState, viewModel::setSearchQuery, context, navigator, isRootTab)
+        UiMode.Material, UiMode.Minimal -> KallsymsScreenMaterial(uiState, viewModel::setSearchQuery, context, navigator, isRootTab)
     }
 }
 

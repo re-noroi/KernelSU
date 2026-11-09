@@ -61,7 +61,7 @@ fun SettingPager(
         onSetModuleAutoHotInstall = viewModel::setModuleAutoHotInstall,
         onOpenTheme = { navigator.push(Route.ColorPalette) },
         onSetUiModeIndex = { index ->
-            viewModel.setUiMode(if (index == 0) UiMode.Miuix.value else UiMode.Material.value)
+            viewModel.setUiMode(UiMode.entries.getOrElse(index) { UiMode.Material }.value)
         },
         onOpenProfileTemplate = { navigator.push(Route.AppProfileTemplate) },
         onSetSuCompatMode = viewModel::setSuCompatMode,
@@ -88,6 +88,6 @@ fun SettingPager(
 
     when (LocalUiMode.current) {
         UiMode.Miuix -> SettingPagerMiuix(uiState, actions, bottomInnerPadding)
-        UiMode.Material -> SettingPagerMaterial(uiState, actions, bottomInnerPadding)
+        UiMode.Material, UiMode.Minimal -> SettingPagerMaterial(uiState, actions, bottomInnerPadding)
     }
 }

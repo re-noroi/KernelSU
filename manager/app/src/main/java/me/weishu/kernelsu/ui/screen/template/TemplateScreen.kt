@@ -60,7 +60,7 @@ fun AppProfileTemplateScreen() {
 
     fun showMessage(message: String) {
         scope.launch {
-            if (uiMode == UiMode.Material) {
+            if (uiMode != UiMode.Miuix) {
                 snackBarHost.showSnackbar(message)
             } else {
                 miuixSnackbarHost.showSnackbar(message)
@@ -115,7 +115,7 @@ fun AppProfileTemplateScreen() {
                     requestKey,
                 )
 
-                UiMode.Material -> navigator.push(
+                UiMode.Material, UiMode.Minimal -> navigator.push(
                     Route.TemplateEditor(TemplateViewModel.TemplateInfo(), false)
                 )
             }
@@ -127,7 +127,7 @@ fun AppProfileTemplateScreen() {
                     requestKey,
                 )
 
-                UiMode.Material -> navigator.push(
+                UiMode.Material, UiMode.Minimal -> navigator.push(
                     Route.TemplateEditor(template, !template.local)
                 )
             }
@@ -141,7 +141,7 @@ fun AppProfileTemplateScreen() {
             snackBarHost = miuixSnackbarHost,
         )
 
-        UiMode.Material -> AppProfileTemplateScreenMaterial(
+        UiMode.Material, UiMode.Minimal -> AppProfileTemplateScreenMaterial(
             state = uiState,
             actions = actions,
             snackBarHost = snackBarHost,

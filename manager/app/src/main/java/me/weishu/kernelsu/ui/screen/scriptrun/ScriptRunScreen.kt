@@ -78,7 +78,7 @@ fun ScriptRunScreen(arg: ScriptRunArg, onBackEnabledChange: (Boolean) -> Unit) {
         val snackbarHost = remember { SnackbarHostState() }
         val showMessage: (String) -> Unit = { message ->
             scope.launch {
-                if (uiMode == UiMode.Material) {
+                if (uiMode != UiMode.Miuix) {
                     snackbarHost.showSnackbar(message)
                 } else {
                     Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
@@ -117,7 +117,7 @@ fun ScriptRunScreen(arg: ScriptRunArg, onBackEnabledChange: (Boolean) -> Unit) {
         )
         when (uiMode) {
             UiMode.Miuix -> ExecuteModuleActionScreenMiuix(outputState, outputActions)
-            UiMode.Material -> ExecuteModuleActionScreenMaterial(outputState, outputActions, snackbarHost)
+            UiMode.Material, UiMode.Minimal -> ExecuteModuleActionScreenMaterial(outputState, outputActions, snackbarHost)
         }
         return
     }
@@ -141,7 +141,7 @@ fun ScriptRunScreen(arg: ScriptRunArg, onBackEnabledChange: (Boolean) -> Unit) {
 
     when (uiMode) {
         UiMode.Miuix -> ScriptRunScreenMiuix(state, actions)
-        UiMode.Material -> ScriptRunScreenMaterial(state, actions)
+        UiMode.Material, UiMode.Minimal -> ScriptRunScreenMaterial(state, actions)
     }
 }
 

@@ -76,6 +76,14 @@ class SettingsRepositoryImpl : SettingsRepository {
         get() = prefs.getBoolean("miuix_monet", false)
         set(value) = prefs.edit { putBoolean("miuix_monet", value) }
 
+    override var minimalMonet: Boolean
+        get() = prefs.getBoolean("minimal_monet", true)
+        set(value) = prefs.edit { putBoolean("minimal_monet", value) }
+
+    override var minimalWallpaper: String
+        get() = prefs.getString("minimal_wallpaper", "").orEmpty()
+        set(value) = prefs.edit { putString("minimal_wallpaper", value) }
+
     override var keyColor: Int
         get() = prefs.getInt("key_color", 0)
         set(value) = prefs.edit { putInt("key_color", value) }

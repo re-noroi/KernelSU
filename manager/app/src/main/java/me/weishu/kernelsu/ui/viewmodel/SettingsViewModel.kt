@@ -39,6 +39,8 @@ class SettingsViewModel(
             val checkKsuDriverUpdate = repo.checkKsuDriverUpdate
             val themeMode = repo.themeMode
             val miuixMonet = repo.miuixMonet
+            val minimalMonet = repo.minimalMonet
+            val minimalWallpaper = repo.minimalWallpaper
             val keyColor = repo.keyColor
             val enablePredictiveBack = repo.enablePredictiveBack
             val enableSwipeDismiss = repo.enableSwipeDismiss
@@ -119,6 +121,8 @@ class SettingsViewModel(
                     moduleAutoHotInstall = repo.moduleAutoHotInstall,
                     themeMode = themeMode,
                     miuixMonet = miuixMonet,
+                    minimalMonet = minimalMonet,
+                    minimalWallpaper = minimalWallpaper,
                     keyColor = keyColor,
                     appIconMode = appIconMode,
                     modernBento = modernBento,
@@ -171,26 +175,21 @@ class SettingsViewModel(
     }
 
     fun setUiMode(mode: String) {
-        val oldMode = repo.uiMode
         val currentThemeMode = repo.themeMode
+        val colorMode = ColorMode.fromValue(currentThemeMode)
+        val baseMode = if (colorMode == ColorMode.DARK_AMOLED) 2 else currentThemeMode
+        val targetMonet = when (mode) {
+            "miuix" -> repo.miuixMonet
+            "minimal" -> repo.minimalMonet
+            else -> null
+        }
 
-        val newThemeMode = when (oldMode) {
-            "material" if mode == "miuix" -> {
-                val colorMode = ColorMode.fromValue(currentThemeMode)
-                val baseMode = if (colorMode == ColorMode.DARK_AMOLED) 2 else currentThemeMode
-                if (repo.miuixMonet && !colorMode.isMonet) {
-                    ColorMode.fromValue(baseMode).toMonetMode()
-                } else if (!repo.miuixMonet && colorMode.isMonet) {
-                    ColorMode.fromValue(baseMode).toNonMonetMode()
-                } else baseMode
-            }
+        val newThemeMode = when {
+            targetMonet == true && !colorMode.isMonet ->
+                ColorMode.fromValue(baseMode).toMonetMode()
 
-            "miuix" if mode == "material" -> {
-                val colorMode = ColorMode.fromValue(currentThemeMode)
-                if (colorMode.isMonet) {
-                    colorMode.toNonMonetMode()
-                } else currentThemeMode
-            }
+            targetMonet == false && colorMode.isMonet ->
+                ColorMode.fromValue(baseMode).toNonMonetMode()
 
             else -> currentThemeMode
         }
@@ -222,7 +221,12 @@ class SettingsViewModel(
 
     fun setThemeMode(mode: Int) {
         val currentUiMode = repo.uiMode
-        val effectiveMode = if (currentUiMode == "miuix" && _uiState.value.miuixMonet) {
+        val monetEnabled = when (currentUiMode) {
+            "miuix" -> _uiState.value.miuixMonet
+            "minimal" -> _uiState.value.minimalMonet
+            else -> false
+        }
+        val effectiveMode = if (monetEnabled) {
             mode + 3
         } else {
             mode
@@ -247,6 +251,24 @@ class SettingsViewModel(
         repo.miuixMonet = enabled
         repo.themeMode = newThemeMode
         _uiState.update { it.copy(miuixMonet = enabled, themeMode = newThemeMode) }
+    }
+
+    fun setMinimalMonet(enabled: Boolean) {
+        val currentThemeMode = repo.themeMode
+        val colorMode = ColorMode.fromValue(currentThemeMode)
+        val newThemeMode = if (enabled) {
+            if (!colorMode.isMonet) colorMode.toMonetMode() else currentThemeMode
+        } else {
+            if (colorMode.isMonet) colorMode.toNonMonetMode() else currentThemeMode
+        }
+        repo.minimalMonet = enabled
+        repo.themeMode = newThemeMode
+        _uiState.update { it.copy(minimalMonet = enabled, themeMode = newThemeMode) }
+    }
+
+    fun setMinimalWallpaper(uri: String) {
+        repo.minimalWallpaper = uri
+        _uiState.update { it.copy(minimalWallpaper = uri) }
     }
 
     fun setKeyColor(color: Int) {

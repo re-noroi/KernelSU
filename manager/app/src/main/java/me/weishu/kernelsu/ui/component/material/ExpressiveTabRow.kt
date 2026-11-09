@@ -20,6 +20,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import me.weishu.kernelsu.ui.LocalUiMode
+import me.weishu.kernelsu.ui.UiMode
 
 @Composable
 fun ExpressiveTabRow(
@@ -27,7 +29,7 @@ fun ExpressiveTabRow(
     tabs: List<String>,
     onTabClick: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
+    containerColor: Color = if (LocalUiMode.current == UiMode.Minimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
 ) {
     val safeIndex = selectedTabIndex.coerceIn(0, (tabs.size - 1).coerceAtLeast(0))
     PrimaryTabRow(
