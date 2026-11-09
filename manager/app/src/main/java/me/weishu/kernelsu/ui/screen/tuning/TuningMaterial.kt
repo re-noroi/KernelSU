@@ -23,6 +23,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BatteryChargingFull
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Thermostat
@@ -180,6 +181,39 @@ fun TuningScreenMaterial(
                                 state.profiles.getOrNull(pos)?.let { actions.onSelectThermal(it.index) }
                             },
                         )
+                    }
+                    if (state.chargeCurrentSupported) {
+                        item {
+                            val tenths = (state.chargeCurrent / 100_000L).toInt()
+                            val currentLabel = "${tenths / 10}.${tenths % 10} A"
+                            SegmentedSwitchItem(
+                                icon = Icons.Filled.Bolt,
+                                title = "Charge Current Control",
+                                summary = "Current: $currentLabel",
+                                checked = state.chargeWritable,
+                                enabled = true,
+                                onCheckedChange = actions.onSetChargeWritable,
+                            )
+                        }
+                        if (state.chargeWritable) {
+                            item {
+                                val minTenths = 10   // 1.0A
+                                val maxTenths = 100  // 10.0A
+                                val currentTenths = (state.chargeCurrent / 100_000L).toInt()
+                                    .coerceIn(minTenths, maxTenths)
+
+                                IntSliderItem(
+                                    title = "Max Charging Current",
+                                    value = currentTenths,
+                                    range = minTenths..maxTenths,
+                                    step = 5,
+                                    formatter = { v -> "${v / 10}.${v % 10} A" },
+                                    onValueChange = { v ->
+                                        actions.onSetChargeCurrent(v * 100_000L)
+                                    },
+                                )
+                            }
+                        }
                     }
                     item {
                         val summary = when {
@@ -599,6 +633,7 @@ private fun IntSliderItem(
     range: IntRange,
     step: Int = 1,
     enabled: Boolean = true,
+    formatter: (Int) -> String = { it.toString() },
     onValueChange: (Int) -> Unit,
 ) {
     var dragValue by remember(value) { mutableFloatStateOf(value.toFloat()) }
@@ -608,7 +643,7 @@ private fun IntSliderItem(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(title, style = MaterialTheme.typography.bodyMedium)
-            Text("${dragValue.roundToInt()}", style = MaterialTheme.typography.bodyMedium)
+            Text(formatter(dragValue.roundToInt()), style = MaterialTheme.typography.bodyMedium)
         }
         Slider(
             value = dragValue,
