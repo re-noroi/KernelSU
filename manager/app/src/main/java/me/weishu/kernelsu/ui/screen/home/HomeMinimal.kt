@@ -1,7 +1,5 @@
 package me.weishu.kernelsu.ui.screen.home
 
-import android.net.Uri
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -46,34 +44,24 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import me.weishu.kernelsu.Natives
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.LocalKernelTool
 import me.weishu.kernelsu.ui.component.bottombar.RegisterTabReselect
 import me.weishu.kernelsu.ui.navigation3.Navigator
 
-@Suppress("UNUSED_PARAMETER")
-@Composable
 @Suppress("UNUSED_PARAMETER")
 @Composable
 fun HomePagerMinimal(
@@ -146,28 +134,6 @@ fun HomePagerMinimal(
             )
         }
     }
-}
-
-@Composable
-private fun rememberMinimalWallpaper(uriString: String): ImageBitmap? {
-    val context = LocalContext.current
-    val bitmap by produceState<ImageBitmap?>(initialValue = null, uriString) {
-        value = if (uriString.isBlank()) {
-            null
-        } else {
-            withContext(Dispatchers.IO) {
-                runCatching {
-                    val source = ImageDecoder.createSource(context.contentResolver, Uri.parse(uriString))
-                    ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
-                        val longestEdge = maxOf(info.size.width, info.size.height).coerceAtLeast(1)
-                        val sample = (longestEdge / 2048).coerceAtLeast(1)
-                        decoder.setTargetSampleSize(sample)
-                    }.asImageBitmap()
-                }.getOrNull()
-            }
-        }
-    }
-    return bitmap
 }
 
 @Composable
