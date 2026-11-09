@@ -32,12 +32,15 @@ pub const THERMAL_PROFILES: &[(i32, &str)] = &[
 ];
 
 const THERMAL_NODES: &[&str] = &["/sys/class/thermal/thermal_message/sconfig"];
+const THERMAL_CONTEXT: &str = "u:object_r:sysfs_thermal:s0";
+
+const CHARGE_CURRENT_MAX: &str = "/sys/class/power_supply/battery/constant_charge_current_max";
+const CHARGE_CURRENT_MIN_UA: u64 = 1_000_000; // 1.0 A
+const CHARGE_CURRENT_LIMIT_UA: u64 = 10_000_000; // 10.0 A
 const BYPASS_NODES: &[&str] = &[
     "/sys/class/power_supply/battery/input_suspend",
     "/sys/class/power_supply/bms/input_suspend",
 ];
-
-const THERMAL_CONTEXT: &str = "u:object_r:sysfs_thermal:s0";
 
 // Scheduler sysfs nodes (FakeDreamers)
 const SCHED_SKIP_HEADROOM: &str = "/proc/sys/kernel/sched_skip_headroom";
@@ -107,6 +110,16 @@ fn read_i32(path: &Path) -> Option<i32> {
 
 fn read_i32_str(path: &str) -> Option<i32> {
     fs::read_to_string(path).ok()?.trim().parse().ok()
+}
+
+fn read_u64_str(path: &str) -> Option<u64> {
+    fs::read_to_string(path).ok()?.trim().parse().ok()
+}
+
+fn is_node_writable(path: &Path) -> bool {
+    fs::metadata(path)
+        .map(|m| m.permissions().mode() & 0o200 != 0)
+        .unwrap_or(false)
 }
 
 fn write_i32_str(path: &str, value: i32) -> Result<()> {
@@ -229,6 +242,13 @@ pub fn print_status() {
         .get("thermal_profile")
         .and_then(|value| value.parse::<i32>().ok())
         .unwrap_or(-1);
+
+    let charge_supported = Path::new(CHARGE_CURRENT_MAX).exists();
+    let charge_current = read_u64_str(CHARGE_CURRENT_MAX).unwrap_or(0);
+    let charge_writable = is_node_writable(Path::new(CHARGE_CURRENT_MAX));
+    println!("charge_current_supported={}", i32::from(charge_supported));
+    println!("charge_current={charge_current}");
+    println!("charge_writable={}", i32::from(charge_writable));
 
     let bypass = bypass_node(&config);
     let bypass_current = bypass
@@ -375,6 +395,34 @@ pub fn set_thermal(index: i32) -> Result<()> {
         "thermal profile set to {name} ({index}) via {}",
         node.display()
     );
+    println!("ok");
+    Ok(())
+}
+
+pub fn set_charge_current(value_ua: u64) -> Result<()> {
+    if !Path::new(CHARGE_CURRENT_MAX).exists() {
+        bail!("constant_charge_current_max node not found");
+    }
+    // Clamp between 1A and 10A
+    let clamped = value_ua.clamp(CHARGE_CURRENT_MIN_UA, CHARGE_CURRENT_LIMIT_UA);
+
+    fs::write(CHARGE_CURRENT_MAX, clamped.to_string())
+        .with_context(|| "failed to write constant_charge_current_max")?;
+    update_config("charge_current_ua", &clamped.to_string())?;
+    println!("ok");
+    Ok(())
+}
+
+/// Toggle the sysfs node between 0644 (writable) and 0444 (read-only).
+/// Persistent: applied again at boot from tuning.conf.
+pub fn set_charge_writable(enabled: bool) -> Result<()> {
+    let path = Path::new(CHARGE_CURRENT_MAX);
+    if !path.exists() {
+        bail!("constant_charge_current_max node not found");
+    }
+    set_mode(path, if enabled { 0o644 } else { 0o444 });
+    update_config("charge_writable", if enabled { "1" } else { "0" })?;
+    info!("charge node writable = {enabled}");
     println!("ok");
     Ok(())
 }
@@ -677,6 +725,27 @@ pub fn apply_persisted() {
             }
         } else {
             warn!("thermal node not found, cannot restore profile {saved}");
+        }
+    }
+
+    // Restore perm first, then value (order matters — write needs 0644)
+    if let Some(v) = config.get("charge_writable") {
+        let enabled = v == "1";
+        let path = Path::new(CHARGE_CURRENT_MAX);
+        if path.exists() {
+            set_mode(path, if enabled { 0o644 } else { 0o444 });
+        }
+    }
+
+    if let Some(v) = config.get("charge_current_ua") {
+        if let Ok(ua) = v.parse::<u64>() {
+            let _ = set_charge_current(ua);
+        }
+    }
+
+    if let Some(v) = config.get("charge_current_ua") {
+        if let Ok(ua) = v.parse::<u64>() {
+            let _ = set_charge_current(ua);
         }
     }
 
