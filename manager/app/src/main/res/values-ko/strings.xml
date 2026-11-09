@@ -391,8 +391,6 @@
     <string name="settings_soft_reboot_summary">모듈 설치, 업데이트 또는 전환 시 전체 재부팅 대신 소프트 재부팅을 사용합니다.</string>
     <string name="copy_success">클립보드에 복사되었습니다</string>
     <string name="profile_flags_desc_no_new_privs">이 루트 프로필의 컨텍스트 내에서 KernelSU를 통한 추가 권한 상승을 방지합니다。</string>
-    <string name="install_force_backup">순정 이미지로 백업</string>
-    <string name="install_force_backup_summary">선택한 boot 이미지가 순정 이미지인지 확인하세요</string>
     <string name="module_shortcut_copy_scheme">URL 스킴 복사</string>
     <string name="module_shortcut_scheme_copied">URL 스킴이 복사됨</string>
     <string name="kallsyms_title">커널 심볼</string>
@@ -405,8 +403,6 @@
     <string name="kconfig_search">커널 설정 검색…</string>
     <string name="share">공유</string>
     <string name="settings_official_icon">공식 앱 아이콘 사용</string>
-    <string name="backup_boot">boot.img 백업</string>
-    <string name="backup_boot_summary">현재 슬롯에서 boot.img를 /sdcard/Download로 백업</string>
     <string name="flash_boot_img">boot.img 플래싱</string>
     <string name="flash_boot_img_summary">플래시할 boot.img 파일 선택</string>
     <string name="anykernel_install_summary">플래시할 AnyKernel3 zip 패키지 선택</string>

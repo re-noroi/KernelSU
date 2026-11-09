@@ -26,8 +26,6 @@ internal data class InstallUiState(
     val advancedOptionsShown: Boolean,
     val allowShell: Boolean,
     val enableAdb: Boolean,
-    val forceBackup: Boolean,
-    val canForceBackup: Boolean,
     val isAbDevice: Boolean = false,
     val canSelectSlot: Boolean = false,
     val slotItems: List<String> = emptyList(),
@@ -52,5 +50,4 @@ internal data class InstallScreenActions(
     val onAdvancedOptionsClicked: () -> Unit,
     val onSelectAllowShell: (Boolean) -> Unit,
     val onSelectEnableAdb: (Boolean) -> Unit,
-    val onSelectForceBackup: (Boolean) -> Unit,
 )

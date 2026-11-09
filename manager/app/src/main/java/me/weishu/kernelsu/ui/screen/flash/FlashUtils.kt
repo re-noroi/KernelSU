@@ -78,7 +78,6 @@ sealed class FlashIt : Parcelable {
         val partition: String? = null,
         val allowShell: Boolean = false,
         val enableAdb: Boolean = false,
-        val backup: Boolean = false,
     ) : FlashIt()
 
     @Parcelize
@@ -88,7 +87,6 @@ sealed class FlashIt : Parcelable {
         val lkm: LkmSelection,
         val allowShell: Boolean = false,
         val enableAdb: Boolean = false,
-        val backup: Boolean = false,
     ) : FlashIt()
 
     @Parcelize
@@ -102,9 +100,6 @@ sealed class FlashIt : Parcelable {
 
     @Parcelize
     data object FlashUninstall : FlashIt()
-
-    @Parcelize
-    data object BackupBoot : FlashIt()
 
     @Parcelize
     data class FlashBootImg(val uri: Uri, val slot: String = "") : FlashIt()
@@ -140,7 +135,6 @@ fun flashIt(
             flashIt.partition,
             flashIt.allowShell,
             flashIt.enableAdb,
-            flashIt.backup,
             onStdout,
             onStderr
         )
@@ -151,7 +145,6 @@ fun flashIt(
             flashIt.lkm,
             flashIt.allowShell,
             flashIt.enableAdb,
-            flashIt.backup,
             onStdout,
             onStderr
         )
@@ -166,85 +159,6 @@ fun flashIt(
 
         FlashIt.FlashRestore -> restoreBoot(onStdout, onStderr)
         FlashIt.FlashUninstall -> uninstallPermanently(onStdout, onStderr)
-
-        is FlashIt.BackupBoot -> {
-            val slot = com.topjohnwu.superuser.ShellUtils.fastCmd(
-                me.weishu.kernelsu.ui.util.getRootShell(true),
-                "getprop ro.boot.slot_suffix"
-            ).trim()
-            val timestamp = java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.getDefault()).format(java.util.Date())
-            val outputPath = "/sdcard/Download/boot_backup_${timestamp}.img"
-            val cmd = """
-                slot="$slot"
-                if [ -z "§slot" ]; then
-                    slot=§(getprop ro.boot.slot_suffix)
-                    if [ -z "§slot" ]; then
-                        s=§(getprop ro.boot.slot)
-                        [ -n "§s" ] && slot="_§s"
-                    fi
-                fi
-
-                target="boot§slot"
-                boot_dev=""
-                for candidate in \
-                    "/dev/block/by-name/§target" \
-                    "/dev/block/bootdevice/by-name/§target" \
-                    /dev/block/platform/*/by-name/§target \
-                    /dev/block/platform/*/*/by-name/§target; do
-                    if [ -e "§candidate" ]; then
-                        boot_dev="§candidate"
-                        break
-                    fi
-                done
-                if [ -z "§boot_dev" ]; then
-                    boot_dev=§(find /dev/block \( -type b -o -type c -o -type l \) -iname "§target" 2>/dev/null | head -n 1)
-                fi
-                if [ -z "§boot_dev" ]; then
-                    for uevent in /sys/dev/block/*/uevent; do
-                        [ -f "§uevent" ] || continue
-                        devname=§(grep -E '^DEVNAME=' "§uevent" | cut -d= -f2)
-                        partname=§(grep -E '^PARTNAME=' "§uevent" | cut -d= -f2)
-                        if [ -n "§partname" ] && [ "§(echo "§target" | tr '[:upper:]' '[:lower:]')" = "§(echo "§partname" | tr '[:upper:]' '[:lower:]')" ]; then
-                            boot_dev="/dev/block/§devname"
-                            break
-                        fi
-                    done
-                fi
-
-                if [ -n "§boot_dev" ]; then
-                    real_dev=§(readlink -f "§boot_dev" 2>/dev/null || echo "§boot_dev")
-                    [ -b "§real_dev" ] && boot_dev="§real_dev"
-                fi
-
-                if [ -z "§boot_dev" ] || [ ! -b "§boot_dev" ]; then
-                    echo "Error: Cannot find boot§slot partition block device!" >&2
-                    exit 1
-                fi
-
-                mkdir -p /sdcard/Download 2>/dev/null || true
-                out_dir=§(dirname "$outputPath")
-                mkdir -p "§out_dir" 2>/dev/null || true
-
-                echo "Backing up §boot_dev to $outputPath..."
-                if dd if="§boot_dev" of="$outputPath" bs=1M; then
-                    sync
-                    if [ -s "$outputPath" ]; then
-                        echo "boot.img backed up successfully to: $outputPath"
-                    else
-                        echo "Error: Output backup file is empty!" >&2
-                        rm -f "$outputPath" 2>/dev/null || true
-                        exit 1
-                    fi
-                else
-                    sync
-                    echo "Error: dd command failed while reading from §boot_dev!" >&2
-                    rm -f "$outputPath" 2>/dev/null || true
-                    exit 1
-                fi
-            """.trimIndent().replace('§', '$')
-            me.weishu.kernelsu.ui.util.flashBootBackup(cmd, onStdout, onStderr)
-        }
-
         is FlashIt.FlashBootImg -> {
             val slot = if (flashIt.slot.isNotEmpty()) {
                 flashIt.slot

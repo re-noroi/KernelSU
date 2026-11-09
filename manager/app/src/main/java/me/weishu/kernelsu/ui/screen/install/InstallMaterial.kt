@@ -146,14 +146,6 @@ internal fun InstallScreenMaterial(
                             icon = Icons.Filled.Edit
                         )
                     }
-                    if (uiState.canForceBackup) add {
-                        SegmentedCheckboxItem(
-                            title = stringResource(R.string.install_force_backup),
-                            summary = stringResource(R.string.install_force_backup_summary),
-                            onCheckedChange = actions.onSelectForceBackup,
-                            checked = uiState.forceBackup,
-                        )
-                    }
                     add {
                         val summaryText = when (uiState.lkmVariant) {
                             LkmVariant.KOWSU -> stringResource(R.string.install_lkm_kowsu)
@@ -243,13 +235,7 @@ internal fun InstallScreenMaterial(
                 onClick = actions.onNext
             ) {
                 Text(
-                    stringResource(
-                        if (uiState.installMethod is InstallMethod.BackupBoot) {
-                            R.string.backup_boot
-                        } else {
-                            R.string.install_next
-                        }
-                    )
+                    stringResource(R.string.install_next)
                 )
             }
         }
@@ -282,7 +268,6 @@ private fun SelectInstallMethod(
             is InstallMethod.DirectInstallToInactiveSlot -> confirmDialog.showConfirm(dialogTitle, dialogContent)
             is InstallMethod.AnyKernel -> onSelectAnyKernel()
             is InstallMethod.FlashBootImg -> onSelectBootImg()
-            is InstallMethod.BackupBoot -> onSelected(option)
         }
     }
 
