@@ -312,10 +312,6 @@ fun ModulePagerMaterial(
                 onSearchTextChange = actions.onSearchTextChange,
                 onClearClick = actions.onClearSearch,
                 snackbarHostState = snackBarHost,
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = if (isMinimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
-                    scrolledContainerColor = if (isMinimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
-                ),
                 navigationIcon = {
                     IconButton(
                         onClick = { actions.onOpenRepo() }

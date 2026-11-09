@@ -287,10 +287,6 @@ fun SuperUserPagerMaterial(
                     localSearchText = ""
                     actions.onClearSearch()
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = if (isMinimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
-                    scrolledContainerColor = if (isMinimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
-                ),
                 navigationIcon = {
                     IconButton(onClick = actions.onOpenSulog) {
                         Icon(
