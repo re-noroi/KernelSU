@@ -203,8 +203,6 @@
     <string name="install_select_lkm_variant">Pilih varian LKM</string>
     <string name="install_lkm_kowsu">KowSU</string>
     <string name="install_lkm_xxksu">xxKSU</string>
-    <string name="install_force_backup">Cadangkan sebagai image bawaan</string>
-    <string name="install_force_backup_summary">Pastikan image boot yang Anda pilih adalah image bawaan</string>
     <string name="install_only_support_ko_file">Hanya berkas .ko yang didukung</string>
     <string name="select_file_tip">%1$s partisi image disarankan</string>
     <string name="select_kmi">Pilih KMI</string>
