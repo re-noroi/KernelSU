@@ -42,6 +42,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -74,6 +75,7 @@ import me.weishu.kernelsu.ui.component.material.TopBarBackButton
 import me.weishu.kernelsu.ui.component.material.expressiveTopAppBarColors
 import me.weishu.kernelsu.ui.navigation3.LocalNavigator
 import me.weishu.kernelsu.ui.viewmodel.TuningUiState
+import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -402,7 +404,7 @@ fun TuningScreenMaterial(
             }
 
             // ---- SCHEDULERS ----
-            if (state.scheduler.skipHeadroomSupported || state.cgroups.isNotEmpty()) {
+            if (state.scheduler.skipHeadroomSupported || state.scheduler.peltMultiplierSupported || state.cgroups.isNotEmpty()) {
                 item { SectionHeader(stringResource(R.string.tuning_section_schedulers)) }
 
                 // FakeDreamers
@@ -411,6 +413,23 @@ fun TuningScreenMaterial(
                     SegmentedColumn(
                         modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
                     ) {
+                        if (state.scheduler.peltMultiplierSupported) {
+                            item {
+                                PeltMultiplierSwitch(
+                                    checked = state.scheduler.peltMultiplier != 0,
+                                    onCheckedChange = actions.onSetPeltMultiplier,
+                                )
+                            }
+                        } else if (state.scheduler.skipHeadroomSupported) {
+                            item {
+                                Text(
+                                    stringResource(R.string.tuning_sched_pelt_unsupported),
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                )
+                            }
+                        }
                         if (state.scheduler.skipHeadroomSupported) {
                             item {
                                 SegmentedSwitchItem(
@@ -471,7 +490,7 @@ fun TuningScreenMaterial(
                                     }
                                 }
                             }
-                        } else {
+                        } else if (!state.scheduler.peltMultiplierSupported) {
                             item {
                                 Text(
                                     "Not Supported, this is not a FakeDreamer Kernel.",
@@ -604,6 +623,44 @@ private fun SubHeader(text: String) {
         text = text,
         style = MaterialTheme.typography.titleSmall,
         modifier = Modifier.padding(start = 24.dp, top = 8.dp, bottom = 4.dp),
+    )
+}
+
+@Composable
+private fun PeltMultiplierSwitch(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    var locked by remember { mutableStateOf(false) }
+    var pending by remember { mutableStateOf<Boolean?>(null) }
+
+    LaunchedEffect(locked) {
+        if (locked) {
+            delay(2000)
+            locked = false
+            pending = null
+        }
+    }
+
+    val displayChecked = pending ?: checked
+    val summary = when {
+        locked && displayChecked -> stringResource(R.string.tuning_sched_pelt_enabling)
+        locked -> stringResource(R.string.tuning_sched_pelt_disabling)
+        displayChecked -> "On"
+        else -> "Off"
+    }
+
+    SegmentedSwitchItem(
+        icon = Icons.Filled.Bolt,
+        title = stringResource(R.string.tuning_sched_pelt_multiplier),
+        summary = summary,
+        checked = displayChecked,
+        enabled = !locked,
+        onCheckedChange = { value ->
+            pending = value
+            locked = true
+            onCheckedChange(value)
+        },
     )
 }
 

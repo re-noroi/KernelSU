@@ -33,6 +33,7 @@ fun TuningScreen(isRootTab: Boolean = false, bottomInnerPadding: Dp = 0.dp) {
         onSetPersist = viewModel::setPersist,
         // Scheduler — FakeDreamers
         onSetSkipHeadroom = viewModel::setSkipHeadroom,
+        onSetPeltMultiplier = viewModel::setPeltMultiplier,
         onSetHrScaling = viewModel::setHrScaling,
         onSetBoostHrLp = viewModel::setBoostHrLp,
         onSetBoostHrBig = viewModel::setBoostHrBig,

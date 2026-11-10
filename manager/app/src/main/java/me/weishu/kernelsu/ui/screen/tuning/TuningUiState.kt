@@ -6,6 +6,8 @@ import androidx.compose.runtime.Immutable
 data class SchedulerState(
     val skipHeadroomSupported: Boolean = false,
     val skipHeadroom: Int = 1,
+    val peltMultiplierSupported: Boolean = false,
+    val peltMultiplier: Int = 0,
     val hrScalingSupported: Boolean = false,
     val hrScaling: Int = 0,
     val boostHrLpSupported: Boolean = false,
@@ -74,6 +76,7 @@ data class TuningActions(
     val onSetPersist: (Boolean) -> Unit,
     // Scheduler — FakeDreamers
     val onSetSkipHeadroom: (Boolean) -> Unit,
+    val onSetPeltMultiplier: (Boolean) -> Unit,
     val onSetHrScaling: (Boolean) -> Unit,
     val onSetBoostHrLp: (Int) -> Unit,
     val onSetBoostHrBig: (Int) -> Unit,

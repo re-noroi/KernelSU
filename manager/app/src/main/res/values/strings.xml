@@ -345,6 +345,10 @@
     <string name="tuning_sched_skip_headroom">DVFS Headroom</string>
     <string name="tuning_sched_skip_headroom_on">Headroom enabled</string>
     <string name="tuning_sched_skip_headroom_off">Headroom disabled</string>
+    <string name="tuning_sched_pelt_multiplier">Pelt Multiplier Tweak</string>
+    <string name="tuning_sched_pelt_enabling">Enabling Feature</string>
+    <string name="tuning_sched_pelt_disabling">Disabling Feature</string>
+    <string name="tuning_sched_pelt_unsupported">Pelt Multiplier Tweak is not supported in this kernel.</string>
     <string name="tuning_sched_hr_scaling">DVFS Headroom Scaling</string>
     <string name="tuning_sched_boost_lp">Little Cores Scaling</string>
     <string name="tuning_sched_boost_big">Perf Cores Scaling</string>
