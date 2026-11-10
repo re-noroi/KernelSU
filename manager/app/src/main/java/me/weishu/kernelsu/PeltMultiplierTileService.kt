@@ -3,6 +3,7 @@ package me.weishu.kernelsu
 import android.content.ComponentName
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
+import com.topjohnwu.superuser.ShellUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -10,11 +11,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.weishu.kernelsu.ui.util.execKsudCommand
+import me.weishu.kernelsu.ui.util.getRootShell
 
 class PeltMultiplierTileService : TileService() {
 
     private val scope = CoroutineScope(Dispatchers.IO)
     private var busy = false
+    private var cachedSupport: Boolean? = null
 
     override fun onTileAdded() {
         super.onTileAdded()
@@ -28,26 +31,27 @@ class PeltMultiplierTileService : TileService() {
 
     override fun onClick() {
         super.onClick()
-        if (busy) return
+        // Don't do anything if busy or if the node doesn't exist (UNAVAILABLE)
+        if (busy || qsTile?.state == Tile.STATE_UNAVAILABLE) return
 
         val currentState = qsTile?.state ?: Tile.STATE_INACTIVE
         val newState = if (currentState == Tile.STATE_ACTIVE) Tile.STATE_INACTIVE else Tile.STATE_ACTIVE
         val enabling = newState == Tile.STATE_ACTIVE
 
         busy = true
-        // Visually show it's working (but don't set UNAVAILABLE, keep it active/inactive)
+        // Optimistically update the UI so it feels snappy
+        qsTile?.state = newState
         qsTile?.label = getString(
             if (enabling) R.string.tuning_sched_pelt_enabling
             else R.string.tuning_sched_pelt_disabling
         )
-        qsTile?.state = newState
         qsTile?.updateTile()
 
         scope.launch {
             val value = if (enabling) "1" else "0"
             val result = runCatching { execKsudCommand("tuning sched-pelt-multiplier $value") }.getOrNull()
 
-            // If the command failed (e.g. old ksud binary), revert the tile
+            // If the write fails, revert the visual state
             if (result == null || !result.isSuccess) {
                 withContext(Dispatchers.Main) {
                     busy = false
@@ -58,7 +62,7 @@ class PeltMultiplierTileService : TileService() {
                 return@launch
             }
 
-            // Hold the 2s lockout to prevent kernel cache issues
+            // Hold the lockout to prevent kernel cache issues
             delay(2000)
             withContext(Dispatchers.Main) {
                 busy = false
@@ -71,26 +75,36 @@ class PeltMultiplierTileService : TileService() {
 
     private fun updateTileState() {
         scope.launch {
-            val result = runCatching { execKsudCommand("tuning status") }.getOrNull()
-
-            if (result != null && result.isSuccess) {
-                val lines = result.out.lineSequence()
-
-                // We only care if it's currently active, just like the Bypass tile
-                val isActive = lines
-                    .firstOrNull { it.startsWith("sched_pelt_multiplier=") }
-                    ?.substringAfter("=")
-                    ?.trim()
-                    ?.toIntOrNull() == 1
-
+            // If we already checked and it's not supported, don't even run the command
+            if (cachedSupport == false) {
                 withContext(Dispatchers.Main) {
                     if (busy) return@withContext
-
-                    // Set state based on the boolean. No more UNAVAILABLE.
-                    qsTile?.state = if (isActive) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
-                    qsTile?.label = getString(R.string.tuning_sched_pelt_multiplier)
+                    qsTile?.state = Tile.STATE_UNAVAILABLE
                     qsTile?.updateTile()
                 }
+                return@launch
+            }
+
+            // Read the file directly to check support and state
+            val output = runCatching {
+                ShellUtils.fastCmd(getRootShell(true), "cat /proc/sys/kernel/sched_pelt_multiplier").trim()
+            }.getOrDefault("")
+
+            val isSupported = output.isNotEmpty()
+            cachedSupport = isSupported
+            val isActive = output == "1"
+
+            withContext(Dispatchers.Main) {
+                // Don't overwrite the tile if a click is currently in progress
+                if (busy) return@withContext
+
+                qsTile?.state = when {
+                    !isSupported -> Tile.STATE_UNAVAILABLE // Grayed out if file is missing
+                    isActive -> Tile.STATE_ACTIVE
+                    else -> Tile.STATE_INACTIVE
+                }
+                qsTile?.label = getString(R.string.tuning_sched_pelt_multiplier)
+                qsTile?.updateTile()
             }
         }
     }
