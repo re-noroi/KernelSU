@@ -42,7 +42,7 @@ fun MaterialKernelSUTheme(
     val animatedColorScheme = colorScheme.animateAsState()
 
     val finalColorScheme = if (minimal) {
-        animatedColorScheme.copy(
+        val minimalColorScheme = animatedColorScheme.copy(
             background = Color.Transparent,
             surface = Color.Transparent,
             surfaceContainer = Color.Black.copy(alpha = 0.75f),
@@ -55,6 +55,18 @@ fun MaterialKernelSUTheme(
             onSurfaceVariant = Color.LightGray,
             onBackground = Color.White,
         )
+        if (appSettings.minimalMonet) {
+            minimalColorScheme
+        } else {
+            // Monet disabled: use a white accent so icons fall back to plain white.
+            minimalColorScheme.copy(
+                primary = Color.White,
+                onPrimary = Color.Black,
+                primaryContainer = Color.White.copy(alpha = 0.18f),
+                onPrimaryContainer = Color.White,
+                inversePrimary = Color.White,
+            )
+        }
     } else {
         animatedColorScheme
     }
