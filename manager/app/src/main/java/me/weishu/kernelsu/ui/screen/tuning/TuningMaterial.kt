@@ -71,6 +71,11 @@ import me.weishu.kernelsu.ui.component.material.expressiveTopAppBarColors
 import me.weishu.kernelsu.ui.navigation3.LocalNavigator
 import me.weishu.kernelsu.ui.viewmodel.TuningUiState
 import kotlin.math.roundToInt
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.layout.Box
 
 @Composable
 fun TuningScreenMaterial(
@@ -661,7 +666,7 @@ private fun IntInputItem(
     title: String,
     value: Int,
     range: IntRange,
-    enabled: Boolean = true, // <-- ADD THIS
+    enabled: Boolean = true,
     onValueChange: (Int) -> Unit,
 ) {
     var text by remember(value) { mutableStateOf(value.toString()) }
@@ -694,25 +699,42 @@ private fun IntInputItem(
             )
         }
         
-        OutlinedTextField(
+        BasicTextField(
             value = text,
             onValueChange = { new ->
                 if (enabled && new.length <= 4 && new.all { it.isDigit() }) text = new
             },
             singleLine = true,
             enabled = enabled,
+            textStyle = MaterialTheme.typography.bodyMedium.copy(
+                color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                textAlign = TextAlign.Center
+            ),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { commit() }),
             modifier = Modifier
-                .width(60.dp)
-                .height(48.dp)
+                .width(64.dp)
+                .height(40.dp)
+                .border(
+                    width = 1.dp,
+                    color = if (enabled) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                    shape = RoundedCornerShape(8.dp)
+                ),
+            decorationBox = { innerTextField ->
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    innerTextField()
+                }
+            }
         )
         
         Button(
             onClick = { commit() },
             enabled = enabled,
             modifier = Modifier
-                .width(52.dp)
+                .width(56.dp)
                 .height(40.dp),
             contentPadding = PaddingValues(0.dp)
         ) { 
