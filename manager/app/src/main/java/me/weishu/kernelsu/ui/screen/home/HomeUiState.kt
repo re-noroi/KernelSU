@@ -46,6 +46,7 @@ data class HomeUiState(
     val latestKsuDriverInfo: LatestKsuDriverInfo = LatestKsuDriverInfo(),
     val hasCrashLog: Boolean = false,
     val pendingReboot: List<PendingChange> = emptyList(),
+    val showGpuVersion: Boolean = true,
 ) {
     val isSELinuxPermissive: Boolean
         get() = systemInfo.selinuxStatus == "Permissive"

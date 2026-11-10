@@ -645,6 +645,15 @@ fun ColorPaletteScreenMaterial(
                                     leadingContent = { Icon(Icons.Rounded.Delete, null) },
                                 )
                             }
+                            item {
+                                SegmentedSwitchItem(
+                                    icon = Icons.Rounded.DeveloperBoard,
+                                    title = "Show GPU Version",
+                                    summary = "Display GPU model on the dashboard",
+                                    checked = uiState.showGpuVersion,
+                                    onCheckedChange = actions.onSetShowGpuVersion,
+                                )
+                            }
                         }
                     }
                 }
