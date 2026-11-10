@@ -350,38 +350,33 @@ fun TuningScreenMaterial(
             if (state.zram.supported) {
                 item { SectionHeader("zRAM") }
                 item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text("State", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            if (state.zram.swapActive) "Active" else "Inactive",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (state.zram.swapActive)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+                
+                item {
                     SegmentedColumn(
                         modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
                     ) {
-                        // State row (read-only)
-                        item {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                            ) {
-                                Text("State", style = MaterialTheme.typography.bodyMedium)
-                                Text(
-                                    if (state.zram.swapActive) "Active" else "Inactive",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = if (state.zram.swapActive)
-                                        MaterialTheme.colorScheme.primary
-                                    else
-                                        MaterialTheme.colorScheme.error,
-                                )
-                            }
-                        }
-
                         // Size dropdown
                         item {
                             val currentGb = (state.zram.disksize / (1024L * 1024L * 1024L)).coerceAtLeast(0L)
-
-                            // Added 0L for Auto
                             val sizes = listOf(0L, 2L, 3L, 4L, 6L, 8L)
                             val labels = listOf("Auto (init default)", "2 GB", "3 GB", "4 GB", "6 GB", "8 GB")
-
-                            // If the current size isn't in the list, default to index 0 (Auto)
                             val selectedIdx = sizes.indexOf(currentGb).takeIf { it >= 0 } ?: 0
 
                             SegmentedDropdownItem(
@@ -504,17 +499,17 @@ fun TuningScreenMaterial(
                     item { SubHeader(stringResource(R.string.tuning_section_cgroup)) }
                     state.cgroups.forEach { cg ->
                         item {
+                            Text(
+                                text = cgroupLabel(cg.name),
+                                style = MaterialTheme.typography.titleSmall,
+                                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
+                            )
+                        }
+                        
+                        item {
                             SegmentedColumn(
-                                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 13.dp, bottom = 13.dp),
+                                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
                             ) {
-                                item {
-                                    Text(
-                                        text = cgroupLabel(cg.name),
-                                        style = MaterialTheme.typography.titleSmall,
-                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                    )
-                                }
-                                
                                 // UClamp Min & Max
                                 if (cg.uclampMinSupported && cg.uclampMaxSupported) {
                                     item {
