@@ -59,6 +59,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -66,6 +67,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import me.weishu.kernelsu.R
+import me.weishu.kernelsu.ui.LocalUiMode
+import me.weishu.kernelsu.ui.UiMode
 import me.weishu.kernelsu.ui.component.ScrollToTopOnChange
 import me.weishu.kernelsu.ui.component.bottombar.KernelTool
 import me.weishu.kernelsu.ui.component.bottombar.KernelToolNavigationIconMaterial
@@ -97,6 +100,7 @@ fun KernelModuleScreenMaterial(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     val snackbarHostState = remember { SnackbarHostState() }
     val pullToRefreshState = rememberPullToRefreshState()
+    val isMinimal = LocalUiMode.current == UiMode.Minimal
     val isRefreshing = moduleUiState.isLoading || blockUiState.loading
     val showApplyFab = blockUiState.hasPendingChanges &&
         !blockUiState.loading &&
@@ -127,6 +131,7 @@ fun KernelModuleScreenMaterial(
     )
 
     ExpressiveScaffold(
+        containerColor = if (isMinimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
         topBar = {
             SearchAppBar(
                 title = {
