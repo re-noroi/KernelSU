@@ -8,6 +8,24 @@
         android:name="ring_group"
         android:animation="@animator/anim_midorisu_ring" />
     <target
+        android:name="ring_main"
+        android:animation="@animator/anim_midorisu_ring_draw" />
+    <target
+        android:name="ring_streak_outer_1"
+        android:animation="@animator/anim_midorisu_streaks" />
+    <target
+        android:name="ring_streak_outer_2"
+        android:animation="@animator/anim_midorisu_streaks" />
+    <target
+        android:name="ring_streak_outer_3"
+        android:animation="@animator/anim_midorisu_streaks" />
+    <target
+        android:name="ring_streak_inner_1"
+        android:animation="@animator/anim_midorisu_streaks" />
+    <target
+        android:name="ring_streak_inner_2"
+        android:animation="@animator/anim_midorisu_streaks" />
+    <target
         android:name="glyph_group"
         android:animation="@animator/anim_midorisu_glyph" />
 </animated-vector>
