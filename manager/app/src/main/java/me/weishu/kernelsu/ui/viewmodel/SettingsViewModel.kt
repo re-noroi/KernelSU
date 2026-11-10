@@ -123,6 +123,7 @@ class SettingsViewModel(
                     miuixMonet = miuixMonet,
                     minimalMonet = minimalMonet,
                     minimalWallpaper = minimalWallpaper,
+                    showGpuVersion = repo.showGpuVersion,
                     keyColor = keyColor,
                     appIconMode = appIconMode,
                     modernBento = modernBento,

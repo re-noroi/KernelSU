@@ -351,21 +351,30 @@ class HomeViewModel(
 
         val modulesJson = if (checkShell) listModules() else "[]"
 
-        val glesInfo = if (checkShell && isManager) {
+        val gpuVersion = if (checkShell && isManager) {
             runCatching {
-                com.topjohnwu.superuser.ShellUtils.fastCmd(
+                // Exclude the "RE GLES" line and grab the actual "GLES: " line
+                val gles = com.topjohnwu.superuser.ShellUtils.fastCmd(
                     getRootShell(true),
-                    "dumpsys SurfaceFlinger | grep GLES | head -n 1"
+                    "dumpsys SurfaceFlinger | grep 'GLES:' | grep -v 'RE GLES' | head -n 1"
                 ).trim()
+                
+                if (gles.contains(",")) {
+                    gles.removePrefix("GLES: ")
+                        .substringBefore(", OpenGL ES")
+                        .replace(", ", " ")
+                        .trim()
+                } else {
+                    // Fallback if the format is weird
+                    val vulkan = com.topjohnwu.superuser.ShellUtils.fastCmd(getRootShell(true), "getprop ro.hardware.vulkan").trim()
+                    val egl = com.topjohnwu.superuser.ShellUtils.fastCmd(getRootShell(true), "getprop ro.hardware.egl").trim()
+                    when {
+                        vulkan.isNotEmpty() -> vulkan
+                        egl.isNotEmpty() -> egl
+                        else -> ""
+                    }
+                }
             }.getOrDefault("")
-        } else ""
-
-        val gpuVersion = if (glesInfo.contains(",")) {
-            glesInfo
-                .removePrefix("GLES: ")
-                .substringBefore(", OpenGL ES")
-                .replace(", ", " ")
-                .trim()
         } else ""
 
         return HomeUiState(
@@ -378,6 +387,7 @@ class HomeViewModel(
             isLkmBundled = isLkmBundled,
             lkmVariant = lkmVariant,
             isManager = isManager,
+            showGpuVersion = settingsRepo.showGpuVersion,
             isManagerPrBuild = BuildConfig.IS_PR_BUILD,
             isKernelPrBuild = Natives.isPrBuild,
             requiresNewKernel = false,
