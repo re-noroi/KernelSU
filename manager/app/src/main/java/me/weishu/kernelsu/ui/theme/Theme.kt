@@ -74,6 +74,7 @@ data class AppSettings(
     val scrollAnimation: Boolean,
     val modernBento: Boolean = false,
     val minimalMonet: Boolean = true,
+    val showGpuVersion: Boolean = true,
 )
 
 val PaletteStyle.supportsSpec2025: Boolean
@@ -131,8 +132,9 @@ object ThemeController {
         val showSwitchIcon = repo.showSwitchIcon
         val scrollAnimation = repo.scrollAnimation
         val minimalMonet = repo.minimalMonet
+        val showGpuVersion = repo.showGpuVersion
 
-        return AppSettings(colorMode, keyColor, paletteStyle, colorSpec, appIconMode, classicUi, showSwitchIcon, scrollAnimation, modernBento, minimalMonet)
+        return AppSettings(colorMode, keyColor, paletteStyle, colorSpec, appIconMode, classicUi, showSwitchIcon, scrollAnimation, modernBento, minimalMonet, showGpuVersion)
     }
 }
 

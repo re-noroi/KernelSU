@@ -21,6 +21,7 @@ data class ColorPaletteScreenActions(
     val onSetMiuixMonet: (Boolean) -> Unit,
     val onSetMinimalMonet: (Boolean) -> Unit,
     val onSetMinimalWallpaper: (String) -> Unit,
+    val onSetShowGpuVersion: (Boolean) -> Unit,
     val onSetKeyColor: (Int) -> Unit,
     val onSetColorMode: (ColorMode) -> Unit,
     val onSetColorStyle: (String) -> Unit,
