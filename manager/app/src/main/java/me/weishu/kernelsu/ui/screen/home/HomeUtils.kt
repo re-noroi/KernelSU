@@ -41,6 +41,7 @@ data class SystemInfo(
     val deviceModel: String,
     val socInfo: String,
     val fingerprint: String,
+    val gpuVersion: String = "",
     val androidVersion: String,
     val securityPatch: String,
     val hookType: String,

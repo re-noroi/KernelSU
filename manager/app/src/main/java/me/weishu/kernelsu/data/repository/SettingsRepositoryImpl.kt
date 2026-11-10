@@ -244,6 +244,10 @@ class SettingsRepositoryImpl : SettingsRepository {
         get() = prefs.getBoolean("bottom_bar_tool_tips_shown", false)
         set(value) = prefs.edit { putBoolean("bottom_bar_tool_tips_shown", value) }
 
+    override var showGpuVersion: Boolean
+        get() = prefs.getBoolean("show_gpu_version", true)
+        set(value) = prefs.edit { putBoolean("show_gpu_version", value) }
+
     override val intentToken: String
         get() {
         val existing = prefs.getString(INTENT_TOKEN_KEY, null)

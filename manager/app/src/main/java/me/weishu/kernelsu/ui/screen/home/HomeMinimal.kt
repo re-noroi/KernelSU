@@ -553,6 +553,13 @@ private fun MinimalSpecsCard(state: HomeUiState) {
                 stringResource(R.string.home_fingerprint),
                 info.fingerprint
             )
+            if (state.showGpuVersion && info.gpuVersion.isNotEmpty()) {
+                MinimalSpecRow(
+                    Icons.Rounded.DeveloperBoard,
+                    "GPU Version",
+                    info.gpuVersion
+                )
+            }
             if (info.hookType.isNotEmpty() && info.hookType != "N/A" && info.hookType != "Unknown") {
                 MinimalSpecRow(
                     Icons.Outlined.Link,
