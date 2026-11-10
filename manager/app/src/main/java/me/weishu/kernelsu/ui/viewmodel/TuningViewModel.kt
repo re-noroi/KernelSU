@@ -394,10 +394,10 @@ class TuningViewModel : ViewModel() {
             val success = args != null && execKsudCommand(args).isSuccess
 
             _uiState.update { it.copy(isApplying = false) }
-            refreshInternal()
 
             if (!success) {
                 _uiState.update { it.copy(errorMessage = "Failed: $type") }
+                refreshInternal()
             }
         }
     }
