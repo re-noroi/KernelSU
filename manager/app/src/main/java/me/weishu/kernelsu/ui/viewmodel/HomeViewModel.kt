@@ -351,6 +351,28 @@ class HomeViewModel(
 
         val modulesJson = if (checkShell) listModules() else "[]"
 
+        val gpuVersion = if (checkShell && isManager) {
+            runCatching {
+                val gles = com.topjohnwu.superuser.ShellUtils.fastCmd(
+                    getRootShell(true),
+                    "dumpsys SurfaceFlinger | grep 'GLES:' | grep -v 'RE GLES' | head -n 1"
+                ).trim()
+                
+                if (gles.isNotEmpty()) {
+                    gles.removePrefix("GLES: ").trim()
+                } else {
+                    // Fallback if the command fails
+                    val vulkan = com.topjohnwu.superuser.ShellUtils.fastCmd(getRootShell(true), "getprop ro.hardware.vulkan").trim()
+                    val egl = com.topjohnwu.superuser.ShellUtils.fastCmd(getRootShell(true), "getprop ro.hardware.egl").trim()
+                    when {
+                        vulkan.isNotEmpty() -> vulkan
+                        egl.isNotEmpty() -> egl
+                        else -> ""
+                    }
+                }
+            }.getOrDefault("")
+        } else ""
+
         return HomeUiState(
             appName = appName,
             modernBento = modernBento,
@@ -361,6 +383,7 @@ class HomeViewModel(
             isLkmBundled = isLkmBundled,
             lkmVariant = lkmVariant,
             isManager = isManager,
+            showGpuVersion = settingsRepo.showGpuVersion,
             isManagerPrBuild = BuildConfig.IS_PR_BUILD,
             isKernelPrBuild = Natives.isPrBuild,
             requiresNewKernel = false,
@@ -399,6 +422,7 @@ class HomeViewModel(
                 deviceModel = resolveDeviceName(),
                 socInfo = getSocInfo(),
                 fingerprint = Build.FINGERPRINT,
+                gpuVersion = gpuVersion,
                 androidVersion = if (codename.isNotEmpty()) {
                     "${Build.VERSION.RELEASE} (${codename}, SDK ${Build.VERSION.SDK_INT})"
                 } else {

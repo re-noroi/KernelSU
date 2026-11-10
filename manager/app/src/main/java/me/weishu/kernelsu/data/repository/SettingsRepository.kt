@@ -9,6 +9,7 @@ interface SettingsRepository {
     var miuixMonet: Boolean
     var minimalMonet: Boolean
     var minimalWallpaper: String
+    var showGpuVersion: Boolean
     var keyColor: Int
     var colorStyle: String
     var colorSpec: String

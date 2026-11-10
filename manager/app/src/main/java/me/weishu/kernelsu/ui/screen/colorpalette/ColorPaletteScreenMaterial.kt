@@ -66,6 +66,7 @@ import androidx.compose.material.icons.rounded.Swipe
 import androidx.compose.material.icons.rounded.ToggleOn
 import androidx.compose.material.icons.rounded.ViewCarousel
 import androidx.compose.material.icons.rounded.Wallpaper
+import androidx.compose.material.icons.rounded.DeveloperBoard
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LargeFlexibleTopAppBar
@@ -643,6 +644,15 @@ fun ColorPaletteScreenMaterial(
                                     onClick = { actions.onSetMinimalWallpaper("") },
                                     headlineContent = { Text(stringResource(R.string.settings_minimal_wallpaper_clear)) },
                                     leadingContent = { Icon(Icons.Rounded.Delete, null) },
+                                )
+                            }
+                            item {
+                                SegmentedSwitchItem(
+                                    icon = Icons.Rounded.DeveloperBoard,
+                                    title = "Show GPU Version",
+                                    summary = "Display GPU model on the dashboard",
+                                    checked = uiState.showGpuVersion,
+                                    onCheckedChange = actions.onSetShowGpuVersion,
                                 )
                             }
                         }
