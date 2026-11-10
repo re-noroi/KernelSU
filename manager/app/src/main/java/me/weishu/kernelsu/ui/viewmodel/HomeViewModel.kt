@@ -351,6 +351,23 @@ class HomeViewModel(
 
         val modulesJson = if (checkShell) listModules() else "[]"
 
+        val glesInfo = if (checkShell && isManager) {
+            runCatching {
+                com.topjohnwu.superuser.ShellUtils.fastCmd(
+                    getRootShell(true),
+                    "dumpsys SurfaceFlinger | grep GLES | head -n 1"
+                ).trim()
+            }.getOrDefault("")
+        } else ""
+
+        val gpuVersion = if (glesInfo.contains(",")) {
+            glesInfo
+                .removePrefix("GLES: ")
+                .substringBefore(", OpenGL ES")
+                .replace(", ", " ")
+                .trim()
+        } else ""
+
         return HomeUiState(
             appName = appName,
             modernBento = modernBento,
@@ -399,6 +416,7 @@ class HomeViewModel(
                 deviceModel = resolveDeviceName(),
                 socInfo = getSocInfo(),
                 fingerprint = Build.FINGERPRINT,
+                gpuVersion = gpuVersion,
                 androidVersion = if (codename.isNotEmpty()) {
                     "${Build.VERSION.RELEASE} (${codename}, SDK ${Build.VERSION.SDK_INT})"
                 } else {
