@@ -12,7 +12,7 @@
         android:scaleY="0.60">
         <path
             android:fillColor="@color/ic_splash_background"
-            android:pathData="M135,25h230a110,110 0 0 1 110,110v230a110,110 0 0 1 -110,110h-230a110,110 0 0 1 -110,-110v-230a110,110 0 0 1 110,-110z" />
+            android:pathData="M250,250m-240,0a240,240 0,1 1,480 0a240,240 0,1 1,-480 0" />
         <group
             android:pivotX="250"
             android:pivotY="250"

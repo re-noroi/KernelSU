@@ -2,19 +2,24 @@
 <set xmlns:android="http://schemas.android.com/apk/res/android"
     android:ordering="together">
     <objectAnimator
-        android:duration="420"
+        android:duration="340"
         android:interpolator="@android:interpolator/overshoot"
         android:propertyName="scaleX"
-        android:startOffset="80"
-        android:valueFrom="0"
+        android:valueFrom="0.55"
         android:valueTo="1"
         android:valueType="floatType" />
     <objectAnimator
-        android:duration="420"
+        android:duration="340"
         android:interpolator="@android:interpolator/overshoot"
         android:propertyName="scaleY"
-        android:startOffset="80"
-        android:valueFrom="0"
+        android:valueFrom="0.55"
         android:valueTo="1"
+        android:valueType="floatType" />
+    <objectAnimator
+        android:duration="340"
+        android:interpolator="@android:interpolator/fast_out_slow_in"
+        android:propertyName="rotation"
+        android:valueFrom="-10"
+        android:valueTo="0"
         android:valueType="floatType" />
 </set>
