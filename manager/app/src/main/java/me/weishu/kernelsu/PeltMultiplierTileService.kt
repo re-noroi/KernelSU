@@ -15,7 +15,6 @@ class PeltMultiplierTileService : TileService() {
 
     private val scope = CoroutineScope(Dispatchers.IO)
     private var busy = false
-    private var isSupported = false
 
     override fun onTileAdded() {
         super.onTileAdded()
@@ -29,26 +28,26 @@ class PeltMultiplierTileService : TileService() {
 
     override fun onClick() {
         super.onClick()
-        // Don't do anything if we are already processing a click, or if the kernel doesn't support it
-        if (busy || !isSupported) return
+        if (busy) return
 
         val currentState = qsTile?.state ?: Tile.STATE_INACTIVE
         val newState = if (currentState == Tile.STATE_ACTIVE) Tile.STATE_INACTIVE else Tile.STATE_ACTIVE
         val enabling = newState == Tile.STATE_ACTIVE
 
         busy = true
-        qsTile?.state = Tile.STATE_UNAVAILABLE
+        // Visually show it's working (but don't set UNAVAILABLE, keep it active/inactive)
         qsTile?.label = getString(
             if (enabling) R.string.tuning_sched_pelt_enabling
             else R.string.tuning_sched_pelt_disabling
         )
+        qsTile?.state = newState
         qsTile?.updateTile()
 
         scope.launch {
             val value = if (enabling) "1" else "0"
-            // Wrap in try-catch to ensure busy is reset if ksud fails to launch
             val result = runCatching { execKsudCommand("tuning sched-pelt-multiplier $value") }.getOrNull()
 
+            // If the command failed (e.g. old ksud binary), revert the tile
             if (result == null || !result.isSuccess) {
                 withContext(Dispatchers.Main) {
                     busy = false
@@ -59,7 +58,7 @@ class PeltMultiplierTileService : TileService() {
                 return@launch
             }
 
-            // Hold the lockout so rapid taps cannot race the kernel cache.
+            // Hold the 2s lockout to prevent kernel cache issues
             delay(2000)
             withContext(Dispatchers.Main) {
                 busy = false
@@ -76,11 +75,8 @@ class PeltMultiplierTileService : TileService() {
 
             if (result != null && result.isSuccess) {
                 val lines = result.out.lineSequence()
-                isSupported = lines
-                    .firstOrNull { it.startsWith("sched_pelt_multiplier_supported=") }
-                    ?.substringAfter("=")
-                    ?.trim()
-                    ?.toIntOrNull() == 1
+
+                // We only care if it's currently active, just like the Bypass tile
                 val isActive = lines
                     .firstOrNull { it.startsWith("sched_pelt_multiplier=") }
                     ?.substringAfter("=")
@@ -90,11 +86,8 @@ class PeltMultiplierTileService : TileService() {
                 withContext(Dispatchers.Main) {
                     if (busy) return@withContext
 
-                    qsTile?.state = when {
-                        !isSupported -> Tile.STATE_UNAVAILABLE
-                        isActive -> Tile.STATE_ACTIVE
-                        else -> Tile.STATE_INACTIVE
-                    }
+                    // Set state based on the boolean. No more UNAVAILABLE.
+                    qsTile?.state = if (isActive) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
                     qsTile?.label = getString(R.string.tuning_sched_pelt_multiplier)
                     qsTile?.updateTile()
                 }
