@@ -30,11 +30,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Android
+import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.DeveloperBoard
 import androidx.compose.material.icons.rounded.Extension
+import androidx.compose.material.icons.rounded.Fingerprint
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.Smartphone
@@ -59,6 +61,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -503,6 +506,7 @@ private fun MinimalTile(
 
 @Composable
 private fun MinimalSpecsCard(state: HomeUiState) {
+    val context = LocalContext.current
     val info = state.systemInfo
     val modelText = if (info.socInfo.isNotEmpty()) {
         "${info.deviceModel} (${info.socInfo})"
@@ -544,6 +548,18 @@ private fun MinimalSpecsCard(state: HomeUiState) {
                 stringResource(R.string.home_android_version),
                 "${info.androidVersion}$patch"
             )
+            MinimalSpecRow(
+                Icons.Rounded.Fingerprint,
+                stringResource(R.string.home_fingerprint),
+                info.fingerprint
+            )
+            if (info.hookType.isNotEmpty() && info.hookType != "N/A" && info.hookType != "Unknown") {
+                MinimalSpecRow(
+                    Icons.Outlined.Link,
+                    stringResource(R.string.home_hook_type),
+                    getHookTypeDisplayName(info.hookType, context)
+                )
+            }
             MinimalSpecRow(Icons.Outlined.Security, stringResource(R.string.home_selinux_status), selinuxDisplay)
             MinimalSpecRow(Icons.Rounded.CheckCircle, stringResource(R.string.home_seccomp_status), seccompDisplay)
         }
@@ -588,25 +604,52 @@ private fun MinimalSpecRow(
 @Composable
 private fun MinimalFooter(actions: HomeActions) {
     val learnUrl = stringResource(R.string.home_learn_kernelsu_url)
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        MinimalFooterLink(
+            text = stringResource(R.string.home_learn_kernelsu),
+            onClick = { actions.onOpenUrl(learnUrl) },
+        )
+        MinimalFooterLink(
+            text = stringResource(R.string.home_support_title),
+            supportingText = stringResource(R.string.home_support_content),
+            onClick = { actions.onOpenUrl("https://patreon.com/weishu") },
+        )
+    }
+}
+
+@Composable
+private fun MinimalFooterLink(
+    text: String,
+    onClick: () -> Unit,
+    supportingText: String? = null,
+) {
     Surface(
         shape = RoundedCornerShape(20.dp),
         color = Color.Transparent,
         modifier = Modifier
             .fillMaxWidth()
-            .clickable {
-                actions.onOpenUrl(learnUrl)
-            },
+            .clickable(onClick = onClick),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = stringResource(R.string.home_learn_kernelsu),
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.LightGray,
-                modifier = Modifier.weight(1f),
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.LightGray,
+                )
+                if (supportingText != null) {
+                    Text(
+                        text = supportingText,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.LightGray.copy(alpha = 0.7f),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
             Icon(
                 imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
                 contentDescription = null,
