@@ -353,19 +353,16 @@ class HomeViewModel(
 
         val gpuVersion = if (checkShell && isManager) {
             runCatching {
-                // Exclude the "RE GLES" line and grab the actual "GLES: " line
                 val gles = com.topjohnwu.superuser.ShellUtils.fastCmd(
                     getRootShell(true),
                     "dumpsys SurfaceFlinger | grep 'GLES:' | grep -v 'RE GLES' | head -n 1"
                 ).trim()
                 
-                if (gles.contains(",")) {
-                    gles.removePrefix("GLES: ")
-                        .substringBefore(", OpenGL ES")
-                        .replace(", ", " ")
-                        .trim()
+                if (gles.isNotEmpty()) {
+                    // Only remove the "GLES: " prefix and keep the rest exactly as is
+                    gles.removePrefix("GLES: ").trim()
                 } else {
-                    // Fallback if the format is weird
+                    // Fallback if the command fails
                     val vulkan = com.topjohnwu.superuser.ShellUtils.fastCmd(getRootShell(true), "getprop ro.hardware.vulkan").trim()
                     val egl = com.topjohnwu.superuser.ShellUtils.fastCmd(getRootShell(true), "getprop ro.hardware.egl").trim()
                     when {
