@@ -14,17 +14,12 @@ import me.weishu.kernelsu.ui.util.execKsudCommand
 class PeltMultiplierTileService : TileService() {
 
     private val scope = CoroutineScope(Dispatchers.IO)
-
-    // The kernel keeps a fast-path cache for sched_pelt_multiplier, so we
-    // ignore taps for 2s after a change (same guard as the KTune switch).
     private var busy = false
+    private var isSupported = false
 
     override fun onTileAdded() {
         super.onTileAdded()
-        requestListeningState(
-            this,
-            ComponentName(this, PeltMultiplierTileService::class.java)
-        )
+        requestListeningState(this, ComponentName(this, PeltMultiplierTileService::class.java))
     }
 
     override fun onStartListening() {
@@ -34,21 +29,14 @@ class PeltMultiplierTileService : TileService() {
 
     override fun onClick() {
         super.onClick()
-        if (busy) return
+        // Don't do anything if we are already processing a click, or if the kernel doesn't support it
+        if (busy || !isSupported) return
 
         val currentState = qsTile?.state ?: Tile.STATE_INACTIVE
-        if (currentState == Tile.STATE_UNAVAILABLE) return
-
-        // Optimistically update the UI to feel snappy
-        val newState = if (currentState == Tile.STATE_ACTIVE) {
-            Tile.STATE_INACTIVE
-        } else {
-            Tile.STATE_ACTIVE
-        }
+        val newState = if (currentState == Tile.STATE_ACTIVE) Tile.STATE_INACTIVE else Tile.STATE_ACTIVE
         val enabling = newState == Tile.STATE_ACTIVE
+
         busy = true
-        // Gray the tile out and ignore taps for 2s so the write cannot race
-        // the kernel's fast-path cache (mirrors the KTune switch).
         qsTile?.state = Tile.STATE_UNAVAILABLE
         qsTile?.label = getString(
             if (enabling) R.string.tuning_sched_pelt_enabling
@@ -58,9 +46,10 @@ class PeltMultiplierTileService : TileService() {
 
         scope.launch {
             val value = if (enabling) "1" else "0"
-            val result = execKsudCommand("tuning sched-pelt-multiplier $value")
+            // Wrap in try-catch to ensure busy is reset if ksud fails to launch
+            val result = runCatching { execKsudCommand("tuning sched-pelt-multiplier $value") }.getOrNull()
 
-            if (!result.isSuccess) {
+            if (result == null || !result.isSuccess) {
                 withContext(Dispatchers.Main) {
                     busy = false
                     qsTile?.state = currentState
@@ -83,21 +72,26 @@ class PeltMultiplierTileService : TileService() {
 
     private fun updateTileState() {
         scope.launch {
-            val result = execKsudCommand("tuning status")
-            if (result.isSuccess) {
+            val result = runCatching { execKsudCommand("tuning status") }.getOrNull()
+
+            if (result != null && result.isSuccess) {
                 val lines = result.out.lineSequence()
-                val supported = lines
+                isSupported = lines
                     .firstOrNull { it.startsWith("sched_pelt_multiplier_supported=") }
                     ?.substringAfter("=")
+                    ?.trim()
                     ?.toIntOrNull() == 1
                 val isActive = lines
                     .firstOrNull { it.startsWith("sched_pelt_multiplier=") }
                     ?.substringAfter("=")
+                    ?.trim()
                     ?.toIntOrNull() == 1
 
                 withContext(Dispatchers.Main) {
+                    if (busy) return@withContext
+
                     qsTile?.state = when {
-                        !supported -> Tile.STATE_UNAVAILABLE
+                        !isSupported -> Tile.STATE_UNAVAILABLE
                         isActive -> Tile.STATE_ACTIVE
                         else -> Tile.STATE_INACTIVE
                     }
