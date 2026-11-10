@@ -452,9 +452,8 @@ pub fn set_bypass(enabled: bool) -> Result<()> {
 ///
 /// Note the *reverse* convention: 0 = enabled, 1 = disabled.
 pub fn set_sched_skip_headroom(value: u8) -> Result<()> {
-    let raw = if value != 0 { 0 } else { 1 };
-    write_i32_str(SCHED_SKIP_HEADROOM, raw)?;
-    update_config("sched_skip_headroom", &raw.to_string())?;
+    write_i32_str(SCHED_SKIP_HEADROOM, value as i32)?;
+    update_config("sched_skip_headroom", &value.to_string())?;
     println!("ok");
     Ok(())
 }
