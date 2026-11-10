@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import me.weishu.kernelsu.ui.util.execKsudCommand
+import me.weishu.kernelsu.ui.util.TuningSignal
 import me.weishu.kernelsu.ui.screen.tuning.SchedulerState
 import me.weishu.kernelsu.ui.screen.tuning.CgroupState
 import me.weishu.kernelsu.ui.screen.tuning.NetworkState
@@ -44,6 +45,14 @@ data class TuningUiState(
 class TuningViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(TuningUiState())
     val uiState: StateFlow<TuningUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            TuningSignal.changes.collect {
+                refreshInternal()
+            }
+        }
+    }
 
     private val thermalProfiles = listOf(
         ThermalProfile(10, "Dynamic"),
@@ -402,6 +411,8 @@ class TuningViewModel : ViewModel() {
             }
 
             val success = args != null && execKsudCommand(args).isSuccess
+
+            if (success) TuningSignal.notifyChanged()
 
             _uiState.update { it.copy(isApplying = false) }
 
