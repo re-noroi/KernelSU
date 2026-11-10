@@ -1,5 +1,7 @@
 package me.weishu.kernelsu.ui.screen.home
 
+import android.os.SystemClock
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,9 +18,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -37,6 +41,7 @@ import androidx.compose.material.icons.rounded.Smartphone
 import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -44,23 +49,32 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import me.weishu.kernelsu.MainActivity
 import me.weishu.kernelsu.Natives
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.LocalKernelTool
 import me.weishu.kernelsu.ui.component.bottombar.RegisterTabReselect
 import me.weishu.kernelsu.ui.navigation3.Navigator
+import me.weishu.kernelsu.ui.theme.LocalAppIconMode
 
 @Suppress("UNUSED_PARAMETER")
 @Composable
@@ -80,31 +94,9 @@ fun HomePagerMinimal(
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            text = state.appName,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color.White
-                        )
-                        Text(
-                            text = state.systemInfo.deviceModel,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.LightGray,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    scrolledContainerColor = Color.Transparent,
-                ),
-                windowInsets = WindowInsets.safeDrawing.only(
-                    WindowInsetsSides.Top + WindowInsetsSides.Horizontal
-                ),
+            MinimalTopBar(
+                appName = state.appName,
+                isCurrentPage = isCurrentPage,
             )
         },
         contentWindowInsets = WindowInsets.safeDrawing.only(
@@ -137,11 +129,85 @@ fun HomePagerMinimal(
 }
 
 @Composable
+private fun MinimalTopBar(
+    appName: String,
+    isCurrentPage: Boolean,
+) {
+    val scale = remember { Animatable(1f) }
+    val rotation = remember { Animatable(0f) }
+    val coroutineScope = rememberCoroutineScope()
+    val haptic = LocalHapticFeedback.current
+    val appIconMode = LocalAppIconMode.current
+
+    LaunchedEffect(isCurrentPage) {
+        if (!isCurrentPage) return@LaunchedEffect
+        val elapsed = if (MainActivity.splashStartedAt > 0L) {
+            SystemClock.uptimeMillis() - MainActivity.splashStartedAt
+        } else 0L
+        val delayMs = (1000L - elapsed).coerceAtLeast(150L)
+        if (delayMs > 0L) {
+            delay(delayMs)
+        }
+        wobbleHomeIcon(scale, rotation)
+    }
+
+    TopAppBar(
+        title = {
+            Text(
+                text = appName,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        navigationIcon = {
+            IconButton(
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.VirtualKey)
+                    coroutineScope.launch { wobbleHomeIcon(scale, rotation) }
+                }
+            ) {
+                Icon(
+                    painter = painterResource(
+                        when (appIconMode) {
+                            1 -> R.drawable.ic_launcher_kowsu
+                            2 -> R.drawable.ic_launcher_monochrome
+                            else -> R.drawable.ic_launcher_midorisu
+                        }
+                    ),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .wrapContentSize(unbounded = true)
+                        .requiredSize(48.dp)
+                        .graphicsLayer {
+                            scaleX = scale.value
+                            scaleY = scale.value
+                            rotationZ = rotation.value
+                        },
+                    tint = Color.White,
+                )
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = Color.Transparent,
+            scrolledContainerColor = Color.Transparent,
+        ),
+        windowInsets = WindowInsets.safeDrawing.only(
+            WindowInsetsSides.Top + WindowInsetsSides.Horizontal
+        ),
+    )
+}
+
+@Composable
 private fun MinimalStatusCard(
     state: HomeUiState,
     actions: HomeActions,
 ) {
     val haptic = LocalHapticFeedback.current
+    val accentColor = MaterialTheme.colorScheme.primary
     val statusText = when {
         state.ksuVersion == null -> stringResource(R.string.home_not_installed)
         state.isLateLoadMode -> stringResource(R.string.jailbreak_mode)
@@ -152,7 +218,7 @@ private fun MinimalStatusCard(
         state.ksuVersion == null -> MaterialTheme.colorScheme.error
         state.isLateLoadMode -> MaterialTheme.colorScheme.tertiary
         !state.isRootAvailable -> MaterialTheme.colorScheme.error
-        else -> MaterialTheme.colorScheme.primary
+        else -> accentColor
     }
     val versionText = state.ksuVersion?.let {
         stringResource(R.string.home_working_version, "KernelSU $it")
@@ -164,7 +230,7 @@ private fun MinimalStatusCard(
         color = Color.Black.copy(alpha = 0.75f), 
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = state.ksuVersion == null) {
+            .clickable(enabled = !state.isLateLoadMode) {
                 haptic.performHapticFeedback(HapticFeedbackType.VirtualKey)
                 actions.onInstallClick()
             },
@@ -195,7 +261,7 @@ private fun MinimalStatusCard(
                     Icon(
                         imageVector = Icons.Rounded.SystemUpdate,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = accentColor,
                         modifier = Modifier.size(18.dp),
                     )
                 }
@@ -238,7 +304,7 @@ private fun MinimalStatusCard(
                 MinimalNoticeRow(
                     icon = Icons.Rounded.Refresh,
                     text = stringResource(R.string.pending_reboot_card_title, state.pendingReboot.size),
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = accentColor,
                 )
             } else if (state.hasCrashLog) {
                 MinimalNoticeRow(
@@ -379,6 +445,7 @@ private fun MinimalTile(
         Color.Black.copy(alpha = 0.75f) // 25% transparent
     }
     val content = if (accent) MaterialTheme.colorScheme.error else Color.White
+    val iconTint = if (accent) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
 
     Surface(
         shape = RoundedCornerShape(22.dp),
@@ -396,7 +463,7 @@ private fun MinimalTile(
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = if (accent) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                    tint = iconTint,
                     modifier = Modifier.size(20.dp),
                 )
                 if (value != null) {
