@@ -36,6 +36,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -65,6 +66,7 @@ import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.util.BlurredBar
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
 import me.weishu.kernelsu.ui.viewmodel.TuningUiState
+import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -432,13 +434,26 @@ fun TuningScreenMiuix(
                 }
 
                 // ---- SCHEDULERS ----
-                if (state.scheduler.skipHeadroomSupported || state.cgroups.isNotEmpty()) {
+                if (state.scheduler.skipHeadroomSupported || state.scheduler.peltMultiplierSupported || state.cgroups.isNotEmpty()) {
                     item { SectionHeaderMiuix(stringResource(R.string.tuning_section_schedulers)) }
 
                     // FakeDreamers
                     item { SubHeaderMiuix(stringResource(R.string.tuning_section_fakedreamers)) }
                     item {
                         Card(modifier = Modifier.fillMaxWidth()) {
+                            if (state.scheduler.peltMultiplierSupported) {
+                                PeltMultiplierSwitchMiuix(
+                                    checked = state.scheduler.peltMultiplier != 0,
+                                    onCheckedChange = actions.onSetPeltMultiplier,
+                                )
+                            } else if (state.scheduler.skipHeadroomSupported) {
+                                Text(
+                                    stringResource(R.string.tuning_sched_pelt_unsupported),
+                                    color = colorScheme.error,
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                )
+                            }
                             if (state.scheduler.skipHeadroomSupported) {
                                 SwitchPreference(
                                     title = stringResource(R.string.tuning_sched_skip_headroom),
@@ -487,7 +502,7 @@ fun TuningScreenMiuix(
                                         }
                                     }
                                 }
-                            } else {
+                            } else if (!state.scheduler.peltMultiplierSupported) {
                                 Text(
                                     "Not Supported, this is not a FakeDreamer Kernel.",
                                     color = colorScheme.error,
@@ -627,6 +642,43 @@ private fun SubHeaderMiuix(text: String) {
         modifier = Modifier.padding(start = 12.dp, top = 8.dp, bottom = 4.dp),
         color = colorScheme.onSurfaceVariantSummary,
         fontSize = 14.sp,
+    )
+}
+
+@Composable
+private fun PeltMultiplierSwitchMiuix(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    var locked by remember { mutableStateOf(false) }
+    var pending by remember { mutableStateOf<Boolean?>(null) }
+
+    LaunchedEffect(locked) {
+        if (locked) {
+            delay(2000)
+            locked = false
+            pending = null
+        }
+    }
+
+    val displayChecked = pending ?: checked
+    val summary = when {
+        locked && displayChecked -> stringResource(R.string.tuning_sched_pelt_enabling)
+        locked -> stringResource(R.string.tuning_sched_pelt_disabling)
+        displayChecked -> "On"
+        else -> "Off"
+    }
+
+    SwitchPreference(
+        title = stringResource(R.string.tuning_sched_pelt_multiplier),
+        summary = summary,
+        enabled = !locked,
+        checked = displayChecked,
+        onCheckedChange = { value ->
+            pending = value
+            locked = true
+            onCheckedChange(value)
+        },
     )
 }
 

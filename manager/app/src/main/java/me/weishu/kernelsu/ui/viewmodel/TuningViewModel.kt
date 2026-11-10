@@ -109,6 +109,7 @@ class TuningViewModel : ViewModel() {
         }
 
         val skipRaw = execRootCommand("cat /proc/sys/kernel/sched_skip_headroom")
+        val peltRaw = execRootCommand("cat /proc/sys/kernel/sched_pelt_multiplier")
         val hrRaw = execRootCommand("cat /proc/sys/kernel/sched_hr_scaling")
         val lpRaw = execRootCommand("cat /proc/sys/kernel/sched_boost_hr_lp")
         val bigRaw = execRootCommand("cat /proc/sys/kernel/sched_boost_hr_big")
@@ -117,6 +118,8 @@ class TuningViewModel : ViewModel() {
         val scheduler = SchedulerState(
             skipHeadroomSupported = skipRaw.isNotEmpty(),
             skipHeadroom = skipRaw.toIntOrNull() ?: 1,
+            peltMultiplierSupported = peltRaw.isNotEmpty(),
+            peltMultiplier = peltRaw.toIntOrNull() ?: 0,
             hrScalingSupported = hrRaw.isNotEmpty(),
             hrScaling = hrRaw.toIntOrNull() ?: 0,
             boostHrLpSupported = lpRaw.isNotEmpty(),
@@ -270,6 +273,12 @@ class TuningViewModel : ViewModel() {
         apply("sched_skip_headroom", v.toString())
     }
 
+    fun setPeltMultiplier(enabled: Boolean) {
+        val v = if (enabled) 1 else 0
+        _uiState.update { it.copy(scheduler = it.scheduler.copy(peltMultiplier = v)) }
+        apply("sched_pelt_multiplier", v.toString())
+    }
+
     fun setHrScaling(enabled: Boolean) {
         val v = if (enabled) 1 else 0
         _uiState.update { it.copy(scheduler = it.scheduler.copy(hrScaling = v)) }
@@ -366,6 +375,7 @@ class TuningViewModel : ViewModel() {
                 type == "bypass" -> "tuning bypass $value"
                 type == "persist" -> "tuning persist $value"
                 type == "sched_skip_headroom" -> "tuning sched-skip-headroom $value"
+                type == "sched_pelt_multiplier" -> "tuning sched-pelt-multiplier $value"
                 type == "sched_hr_scaling" -> "tuning sched-hr-scaling $value"
                 type == "sched_boost_hr_lp" -> "tuning sched-boost-hr-lp $value"
                 type == "sched_boost_hr_big" -> "tuning sched-boost-hr-big $value"

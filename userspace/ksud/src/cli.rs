@@ -548,6 +548,9 @@ enum TuningCmd {
     /// Toggle DVFS headroom (0 = enable, 1 = disable)
     SchedSkipHeadroom { value: u8 },
 
+    /// Toggle PELT multiplier (0 = disable, 1 = enable)
+    SchedPeltMultiplier { value: u8 },
+
     /// Toggle DVFS headroom scaling (0 = off, 1 = on)
     SchedHrScaling { value: u8 },
 
@@ -950,6 +953,9 @@ pub fn run() -> Result<()> {
             TuningCmd::Bypass { value } => crate::tuning::set_bypass(value != 0),
             TuningCmd::SchedSkipHeadroom { value } => {
                 crate::tuning::set_sched_skip_headroom(value)
+            }
+            TuningCmd::SchedPeltMultiplier { value } => {
+                crate::tuning::set_sched_pelt_multiplier(value)
             }
             TuningCmd::SchedHrScaling { value } => {
                 crate::tuning::set_sched_hr_scaling(value)
