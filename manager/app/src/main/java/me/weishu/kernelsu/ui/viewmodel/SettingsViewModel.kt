@@ -274,7 +274,7 @@ class SettingsViewModel(
     fun setShowGpuVersion(enabled: Boolean) {
         repo.showGpuVersion = enabled
         _uiState.update { it.copy(showGpuVersion = enabled) }
-}
+    }
     fun setKeyColor(color: Int) {
         repo.keyColor = color
         _uiState.update { it.copy(keyColor = color) }
