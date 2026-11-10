@@ -415,25 +415,27 @@ fun ColorPaletteScreenMaterial(
             item {
                 SegmentedColumn(
                     modifier = Modifier.padding(horizontal = 16.dp),
-                    content = listOf(
-                        {
-                            SegmentedSwitchItem(
-                                icon = Icons.Rounded.Dashboard,
-                                title = stringResource(R.string.settings_modern_bento),
-                                summary = stringResource(R.string.settings_modern_bento_summary),
-                                checked = uiState.modernBento,
-                                onCheckedChange = actions.onSetModernBento
-                            )
-                        },
-                        {
+                    content = buildList<@Composable () -> Unit> {
+                        if (!isMinimal) {
+                            add {
+                                SegmentedSwitchItem(
+                                    icon = Icons.Rounded.Dashboard,
+                                    title = stringResource(R.string.settings_modern_bento),
+                                    summary = stringResource(R.string.settings_modern_bento_summary),
+                                    checked = uiState.modernBento,
+                                    onCheckedChange = actions.onSetModernBento
+                                )
+                            }
+                        }
+                        add {
                             SegmentedSwitchItem(
                                 icon = Icons.Rounded.CallToAction,
                                 title = stringResource(id = R.string.settings_floating_bottom_bar),
                                 checked = uiState.enableFloatingBottomBar,
                                 onCheckedChange = actions.onSetEnableFloatingBottomBar
                             )
-                        },
-                        {
+                        }
+                        add {
                             SegmentedSwitchItem(
                                 icon = Icons.Rounded.Pin,
                                 title = stringResource(id = R.string.settings_module_update_badge),
@@ -442,7 +444,7 @@ fun ColorPaletteScreenMaterial(
                                 onCheckedChange = actions.onSetEnableModuleUpdateBadge
                             )
                         }
-                    )
+                    }
                 )
             }
 

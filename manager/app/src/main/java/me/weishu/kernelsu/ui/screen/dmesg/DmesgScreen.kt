@@ -377,6 +377,7 @@ fun DmesgScreenMaterial(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     val snackbarHostState = remember { SnackbarHostState() }
     var localSearchText by remember { mutableStateOf(uiState.searchQuery) }
+    val isMinimal = LocalUiMode.current == UiMode.Minimal
     if (isRootTab) {
         RegisterTabReselect(2) {
             val target = if (localSearchText.isNotEmpty()) searchListState else listState
@@ -393,6 +394,7 @@ fun DmesgScreenMaterial(
     ScrollToTopOnChange(searchListState, uiState.order, localSearchText) { latestLines.value }
 
     ExpressiveScaffold(
+        containerColor = if (isMinimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
         topBar = {
             SearchAppBar(
                 snackbarHostState = snackbarHostState,
