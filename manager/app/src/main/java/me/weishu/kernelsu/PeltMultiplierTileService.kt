@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.weishu.kernelsu.ui.util.execKsudCommand
 import me.weishu.kernelsu.ui.util.getRootShell
+import me.weishu.kernelsu.ui.util.TuningSignal
 
 class PeltMultiplierTileService : TileService() {
 
@@ -61,6 +62,8 @@ class PeltMultiplierTileService : TileService() {
                 }
                 return@launch
             }
+
+            TuningSignal.notifyChanged()
 
             // Hold the lockout to prevent kernel cache issues
             delay(2000)
