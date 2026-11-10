@@ -66,11 +66,17 @@ import me.weishu.kernelsu.ui.component.material.ExpressiveScaffold
 import me.weishu.kernelsu.ui.component.material.SegmentedColumn
 import me.weishu.kernelsu.ui.component.material.SegmentedDropdownItem
 import me.weishu.kernelsu.ui.component.material.SegmentedSwitchItem
+import me.weishu.kernelsu.ui.component.material.TonalCard
 import me.weishu.kernelsu.ui.component.material.TopBarBackButton
 import me.weishu.kernelsu.ui.component.material.expressiveTopAppBarColors
 import me.weishu.kernelsu.ui.navigation3.LocalNavigator
 import me.weishu.kernelsu.ui.viewmodel.TuningUiState
 import kotlin.math.roundToInt
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.layout.Box
 
 @Composable
 fun TuningScreenMaterial(
@@ -237,11 +243,14 @@ fun TuningScreenMaterial(
             if (state.memory.supported) {
                 item { SectionHeader("Memory Management") }
                 item {
-                    SegmentedColumn(
-                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
+                    TonalCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
+                        shape = RoundedCornerShape(16.dp),
                     ) {
-                        // Swappiness — always exists, just might be RO
-                        item {
+                        Column {
+                            // Swappiness — always exists, just might be RO
                             IntInputItem(
                                 title = "Swappiness",
                                 value = state.memory.swappiness,
@@ -257,20 +266,16 @@ fun TuningScreenMaterial(
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                                 )
                             }
-                        }
 
-                        // VFS Cache Pressure
-                        if (state.memory.vfsSupported) {
-                            item {
+                            // VFS Cache Pressure
+                            if (state.memory.vfsSupported) {
                                 IntInputItem(
                                     title = "VFS Cache Pressure",
                                     value = state.memory.vfsCache,
                                     range = 0..1000,
                                     onValueChange = actions.onSetVfsCache,
                                 )
-                            }
-                        } else {
-                            item {
+                            } else {
                                 Text(
                                     "VFS Cache Pressure is not supported in this kernel.",
                                     color = MaterialTheme.colorScheme.error,
@@ -278,20 +283,16 @@ fun TuningScreenMaterial(
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                                 )
                             }
-                        }
 
-                        // kcompressd
-                        if (state.memory.kcompressdSupported) {
-                            item {
+                            // kcompressd
+                            if (state.memory.kcompressdSupported) {
                                 IntInputItem(
                                     title = "kcompressd",
                                     value = state.memory.kcompressd,
                                     range = 0..256,
                                     onValueChange = actions.onSetKcompressd,
                                 )
-                            }
-                        } else {
-                            item {
+                            } else {
                                 Text(
                                     "kcompressd is not supported in this kernel.",
                                     color = MaterialTheme.colorScheme.error,
@@ -299,11 +300,9 @@ fun TuningScreenMaterial(
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                                 )
                             }
-                        }
 
-                        // MGLRU
-                        if (state.memory.mglruSupported) {
-                            item {
+                            // MGLRU
+                            if (state.memory.mglruSupported) {
                                 SegmentedSwitchItem(
                                     icon = Icons.Filled.Memory,
                                     title = "MGLRU",
@@ -311,9 +310,7 @@ fun TuningScreenMaterial(
                                     checked = state.memory.mglruEnabled,
                                     onCheckedChange = actions.onSetMglru,
                                 )
-                            }
-                            if (state.memory.mglruEnabled) {
-                                item {
+                                if (state.memory.mglruEnabled) {
                                     IntInputItem(
                                         title = "MGLRU min_ttl_ms",
                                         value = state.memory.mglruTtl,
@@ -321,9 +318,7 @@ fun TuningScreenMaterial(
                                         onValueChange = actions.onSetMglruTtl,
                                     )
                                 }
-                            }
-                        } else {
-                            item {
+                            } else {
                                 Text(
                                     "MGLRU is not supported in this kernel.",
                                     color = MaterialTheme.colorScheme.error,
@@ -340,38 +335,33 @@ fun TuningScreenMaterial(
             if (state.zram.supported) {
                 item { SectionHeader("zRAM") }
                 item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text("State", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            if (state.zram.swapActive) "Active" else "Inactive",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (state.zram.swapActive)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+                
+                item {
                     SegmentedColumn(
                         modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
                     ) {
-                        // State row (read-only)
-                        item {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                            ) {
-                                Text("State", style = MaterialTheme.typography.bodyMedium)
-                                Text(
-                                    if (state.zram.swapActive) "Active" else "Inactive",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = if (state.zram.swapActive)
-                                        MaterialTheme.colorScheme.primary
-                                    else
-                                        MaterialTheme.colorScheme.error,
-                                )
-                            }
-                        }
-
                         // Size dropdown
                         item {
                             val currentGb = (state.zram.disksize / (1024L * 1024L * 1024L)).coerceAtLeast(0L)
-
-                            // Added 0L for Auto
                             val sizes = listOf(0L, 2L, 3L, 4L, 6L, 8L)
                             val labels = listOf("Auto (init default)", "2 GB", "3 GB", "4 GB", "6 GB", "8 GB")
-
-                            // If the current size isn't in the list, default to index 0 (Auto)
                             val selectedIdx = sizes.indexOf(currentGb).takeIf { it >= 0 } ?: 0
 
                             SegmentedDropdownItem(
@@ -494,66 +484,57 @@ fun TuningScreenMaterial(
                     item { SubHeader(stringResource(R.string.tuning_section_cgroup)) }
                     state.cgroups.forEach { cg ->
                         item {
-                            SegmentedColumn(
-                                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 13.dp, bottom = 13.dp),
+                            TonalCard(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 13.dp),
+                                shape = RoundedCornerShape(16.dp),
                             ) {
-                                item {
-                                    Text(
-                                        text = cgroupLabel(cg.name),
-                                        style = MaterialTheme.typography.titleSmall,
-                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                    )
-                                }
-                                
+                                Text(
+                                    text = cgroupLabel(cg.name),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
+                                )
+
                                 // UClamp Min & Max
                                 if (cg.uclampMinSupported && cg.uclampMaxSupported) {
-                                    item {
-                                        IntInputItem(
-                                            title = stringResource(R.string.tuning_sched_uclamp_min),
-                                            value = cg.uclampMin,
-                                            range = 0..100,
-                                            onValueChange = { actions.onSetCgroupUclampMin(cg.name, it) },
-                                        )
-                                    }
-                                    item {
-                                        IntInputItem(
-                                            title = stringResource(R.string.tuning_sched_uclamp_max),
-                                            value = cg.uclampMax,
-                                            range = 0..100,
-                                            onValueChange = { actions.onSetCgroupUclampMax(cg.name, it) },
-                                        )
-                                    }
+                                    IntInputItem(
+                                        title = stringResource(R.string.tuning_sched_uclamp_min),
+                                        value = cg.uclampMin,
+                                        range = 0..100,
+                                        onValueChange = { actions.onSetCgroupUclampMin(cg.name, it) },
+                                    )
+                                    IntInputItem(
+                                        title = stringResource(R.string.tuning_sched_uclamp_max),
+                                        value = cg.uclampMax,
+                                        range = 0..100,
+                                        onValueChange = { actions.onSetCgroupUclampMax(cg.name, it) },
+                                    )
                                 } else {
-                                    item {
-                                        Text(
-                                            "UClamp is not supported in this kernel.",
-                                            color = MaterialTheme.colorScheme.error,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                        )
-                                    }
+                                    Text(
+                                        "UClamp is not supported in this kernel.",
+                                        color = MaterialTheme.colorScheme.error,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                    )
                                 }
 
                                 // CPU Shares
                                 if (cg.sharesSupported) {
-                                    item {
-                                        IntSliderItem(
-                                            title = stringResource(R.string.tuning_sched_shares),
-                                            value = (cg.shares * 100 / 20480).coerceIn(5, 100),
-                                            range = 5..100,
-                                            step = 5,
-                                            onValueChange = { pct -> actions.onSetCgroupShares(cg.name, pct * 20480 / 100) },
-                                        )
-                                    }
+                                    IntSliderItem(
+                                        title = stringResource(R.string.tuning_sched_shares),
+                                        value = (cg.shares * 100 / 20480).coerceIn(5, 100),
+                                        range = 5..100,
+                                        step = 5,
+                                        onValueChange = { pct -> actions.onSetCgroupShares(cg.name, pct * 20480 / 100) },
+                                    )
                                 } else {
-                                    item {
-                                        Text(
-                                            "Fair group CPU scheduling is disabled in this kernel.",
-                                            color = MaterialTheme.colorScheme.error,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                        )
-                                    }
+                                    Text(
+                                        "Fair group CPU scheduling is disabled in this kernel.",
+                                        color = MaterialTheme.colorScheme.error,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                    )
                                 }
                             }
                         }
@@ -661,7 +642,7 @@ private fun IntInputItem(
     title: String,
     value: Int,
     range: IntRange,
-    enabled: Boolean = true, // <-- ADD THIS
+    enabled: Boolean = true,
     onValueChange: (Int) -> Unit,
 ) {
     var text by remember(value) { mutableStateOf(value.toString()) }
@@ -694,25 +675,42 @@ private fun IntInputItem(
             )
         }
         
-        OutlinedTextField(
+        BasicTextField(
             value = text,
             onValueChange = { new ->
                 if (enabled && new.length <= 4 && new.all { it.isDigit() }) text = new
             },
             singleLine = true,
             enabled = enabled,
+            textStyle = MaterialTheme.typography.bodyMedium.copy(
+                color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                textAlign = TextAlign.Center
+            ),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { commit() }),
             modifier = Modifier
-                .width(60.dp)
-                .height(48.dp)
+                .width(64.dp)
+                .height(40.dp)
+                .border(
+                    width = 1.dp,
+                    color = if (enabled) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                    shape = RoundedCornerShape(8.dp)
+                ),
+            decorationBox = { innerTextField ->
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    innerTextField()
+                }
+            }
         )
         
         Button(
             onClick = { commit() },
             enabled = enabled,
             modifier = Modifier
-                .width(52.dp)
+                .width(56.dp)
                 .height(40.dp),
             contentPadding = PaddingValues(0.dp)
         ) { 

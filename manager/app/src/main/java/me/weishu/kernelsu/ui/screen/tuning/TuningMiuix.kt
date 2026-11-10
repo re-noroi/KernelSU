@@ -77,6 +77,11 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import kotlin.math.roundToInt
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.TextStyle
 
 @Composable
 fun TuningScreenMiuix(
@@ -667,7 +672,7 @@ private fun IntInputMiuix(
     title: String,
     value: Int,
     range: IntRange,
-    enabled: Boolean = true, // <-- ADD THIS
+    enabled: Boolean = true,
     onValueChange: (Int) -> Unit,
 ) {
     var text by remember(value) { mutableStateOf(value.toString()) }
@@ -700,27 +705,36 @@ private fun IntInputMiuix(
             )
         }
         
-        OutlinedTextField(
+        BasicTextField(
             value = text,
             onValueChange = { new ->
                 if (enabled && new.length <= 4 && new.all { it.isDigit() }) text = new
             },
             singleLine = true,
             enabled = enabled,
+            textStyle = TextStyle(
+                color = if (enabled) colorScheme.onBackground else colorScheme.onBackground.copy(alpha = 0.5f),
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center
+            ),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { commit() }),
-            textStyle = LocalTextStyle.current.copy(color = colorScheme.onBackground),
-            colors = TextFieldDefaults.colors(
-                focusedTextColor = colorScheme.onBackground,
-                unfocusedTextColor = colorScheme.onBackground,
-                focusedContainerColor = Color.Transparent,
-                unfocusedContainerColor = Color.Transparent,
-                cursorColor = colorScheme.primary,
-                focusedIndicatorColor = colorScheme.primary
-            ),
             modifier = Modifier
-                .width(60.dp)
-                .height(48.dp)
+                .width(64.dp)
+                .height(40.dp)
+                .border(
+                    width = 1.dp,
+                    color = if (enabled) colorScheme.primary else colorScheme.primary.copy(alpha = 0.3f),
+                    shape = RoundedCornerShape(8.dp)
+                ),
+            decorationBox = { innerTextField ->
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    innerTextField()
+                }
+            }
         )
         
         Button(
@@ -731,7 +745,7 @@ private fun IntInputMiuix(
                 contentColor = colorScheme.onPrimary
             ),
             modifier = Modifier
-                .width(52.dp)
+                .width(56.dp)
                 .height(40.dp),
             contentPadding = PaddingValues(0.dp)
         ) { 
