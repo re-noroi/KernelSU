@@ -248,11 +248,14 @@ fun TuningScreenMaterial(
             if (state.memory.supported) {
                 item { SectionHeader("Memory Management") }
                 item {
-                    SegmentedColumn(
-                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
+                    TonalCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
+                        shape = RoundedCornerShape(16.dp),
                     ) {
-                        // Swappiness — always exists, just might be RO
-                        item {
+                        Column {
+                            // Swappiness — always exists, just might be RO
                             IntInputItem(
                                 title = "Swappiness",
                                 value = state.memory.swappiness,
@@ -268,20 +271,16 @@ fun TuningScreenMaterial(
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                                 )
                             }
-                        }
 
-                        // VFS Cache Pressure
-                        if (state.memory.vfsSupported) {
-                            item {
+                            // VFS Cache Pressure
+                            if (state.memory.vfsSupported) {
                                 IntInputItem(
                                     title = "VFS Cache Pressure",
                                     value = state.memory.vfsCache,
                                     range = 0..1000,
                                     onValueChange = actions.onSetVfsCache,
                                 )
-                            }
-                        } else {
-                            item {
+                            } else {
                                 Text(
                                     "VFS Cache Pressure is not supported in this kernel.",
                                     color = MaterialTheme.colorScheme.error,
@@ -289,20 +288,16 @@ fun TuningScreenMaterial(
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                                 )
                             }
-                        }
 
-                        // kcompressd
-                        if (state.memory.kcompressdSupported) {
-                            item {
+                            // kcompressd
+                            if (state.memory.kcompressdSupported) {
                                 IntInputItem(
                                     title = "kcompressd",
                                     value = state.memory.kcompressd,
                                     range = 0..256,
                                     onValueChange = actions.onSetKcompressd,
                                 )
-                            }
-                        } else {
-                            item {
+                            } else {
                                 Text(
                                     "kcompressd is not supported in this kernel.",
                                     color = MaterialTheme.colorScheme.error,
@@ -310,11 +305,9 @@ fun TuningScreenMaterial(
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                                 )
                             }
-                        }
 
-                        // MGLRU
-                        if (state.memory.mglruSupported) {
-                            item {
+                            // MGLRU
+                            if (state.memory.mglruSupported) {
                                 SegmentedSwitchItem(
                                     icon = Icons.Filled.Memory,
                                     title = "MGLRU",
@@ -322,9 +315,7 @@ fun TuningScreenMaterial(
                                     checked = state.memory.mglruEnabled,
                                     onCheckedChange = actions.onSetMglru,
                                 )
-                            }
-                            if (state.memory.mglruEnabled) {
-                                item {
+                                if (state.memory.mglruEnabled) {
                                     IntInputItem(
                                         title = "MGLRU min_ttl_ms",
                                         value = state.memory.mglruTtl,
@@ -332,9 +323,7 @@ fun TuningScreenMaterial(
                                         onValueChange = actions.onSetMglruTtl,
                                     )
                                 }
-                            }
-                        } else {
-                            item {
+                            } else {
                                 Text(
                                     "MGLRU is not supported in this kernel.",
                                     color = MaterialTheme.colorScheme.error,
