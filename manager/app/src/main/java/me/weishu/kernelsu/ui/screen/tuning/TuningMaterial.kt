@@ -69,6 +69,7 @@ import me.weishu.kernelsu.ui.component.material.ExpressiveScaffold
 import me.weishu.kernelsu.ui.component.material.SegmentedColumn
 import me.weishu.kernelsu.ui.component.material.SegmentedDropdownItem
 import me.weishu.kernelsu.ui.component.material.SegmentedSwitchItem
+import me.weishu.kernelsu.ui.component.material.TonalCard
 import me.weishu.kernelsu.ui.component.material.TopBarBackButton
 import me.weishu.kernelsu.ui.component.material.expressiveTopAppBarColors
 import me.weishu.kernelsu.ui.navigation3.LocalNavigator
@@ -499,66 +500,57 @@ fun TuningScreenMaterial(
                     item { SubHeader(stringResource(R.string.tuning_section_cgroup)) }
                     state.cgroups.forEach { cg ->
                         item {
-                            Text(
-                                text = cgroupLabel(cg.name),
-                                style = MaterialTheme.typography.titleSmall,
-                                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
-                            )
-                        }
-                        
-                        item {
-                            SegmentedColumn(
-                                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
+                            TonalCard(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 13.dp),
+                                shape = RoundedCornerShape(16.dp),
                             ) {
+                                Text(
+                                    text = cgroupLabel(cg.name),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
+                                )
+
                                 // UClamp Min & Max
                                 if (cg.uclampMinSupported && cg.uclampMaxSupported) {
-                                    item {
-                                        IntInputItem(
-                                            title = stringResource(R.string.tuning_sched_uclamp_min),
-                                            value = cg.uclampMin,
-                                            range = 0..100,
-                                            onValueChange = { actions.onSetCgroupUclampMin(cg.name, it) },
-                                        )
-                                    }
-                                    item {
-                                        IntInputItem(
-                                            title = stringResource(R.string.tuning_sched_uclamp_max),
-                                            value = cg.uclampMax,
-                                            range = 0..100,
-                                            onValueChange = { actions.onSetCgroupUclampMax(cg.name, it) },
-                                        )
-                                    }
+                                    IntInputItem(
+                                        title = stringResource(R.string.tuning_sched_uclamp_min),
+                                        value = cg.uclampMin,
+                                        range = 0..100,
+                                        onValueChange = { actions.onSetCgroupUclampMin(cg.name, it) },
+                                    )
+                                    IntInputItem(
+                                        title = stringResource(R.string.tuning_sched_uclamp_max),
+                                        value = cg.uclampMax,
+                                        range = 0..100,
+                                        onValueChange = { actions.onSetCgroupUclampMax(cg.name, it) },
+                                    )
                                 } else {
-                                    item {
-                                        Text(
-                                            "UClamp is not supported in this kernel.",
-                                            color = MaterialTheme.colorScheme.error,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                        )
-                                    }
+                                    Text(
+                                        "UClamp is not supported in this kernel.",
+                                        color = MaterialTheme.colorScheme.error,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                    )
                                 }
 
                                 // CPU Shares
                                 if (cg.sharesSupported) {
-                                    item {
-                                        IntSliderItem(
-                                            title = stringResource(R.string.tuning_sched_shares),
-                                            value = (cg.shares * 100 / 20480).coerceIn(5, 100),
-                                            range = 5..100,
-                                            step = 5,
-                                            onValueChange = { pct -> actions.onSetCgroupShares(cg.name, pct * 20480 / 100) },
-                                        )
-                                    }
+                                    IntSliderItem(
+                                        title = stringResource(R.string.tuning_sched_shares),
+                                        value = (cg.shares * 100 / 20480).coerceIn(5, 100),
+                                        range = 5..100,
+                                        step = 5,
+                                        onValueChange = { pct -> actions.onSetCgroupShares(cg.name, pct * 20480 / 100) },
+                                    )
                                 } else {
-                                    item {
-                                        Text(
-                                            "Fair group CPU scheduling is disabled in this kernel.",
-                                            color = MaterialTheme.colorScheme.error,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                        )
-                                    }
+                                    Text(
+                                        "Fair group CPU scheduling is disabled in this kernel.",
+                                        color = MaterialTheme.colorScheme.error,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                    )
                                 }
                             }
                         }
