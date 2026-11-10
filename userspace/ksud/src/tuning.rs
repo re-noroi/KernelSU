@@ -44,6 +44,7 @@ const BYPASS_NODES: &[&str] = &[
 
 // Scheduler sysfs nodes (FakeDreamers)
 const SCHED_SKIP_HEADROOM: &str = "/proc/sys/kernel/sched_skip_headroom";
+const SCHED_PELT_MULTIPLIER: &str = "/proc/sys/kernel/sched_pelt_multiplier";
 const SCHED_HR_SCALING: &str = "/proc/sys/kernel/sched_hr_scaling";
 const SCHED_BOOST_HR_LP: &str = "/proc/sys/kernel/sched_boost_hr_lp";
 const SCHED_BOOST_HR_BIG: &str = "/proc/sys/kernel/sched_boost_hr_big";
@@ -281,6 +282,7 @@ pub fn print_status() {
 
     // --- Scheduler ---
     let skip = read_i32_str(SCHED_SKIP_HEADROOM);
+    let pelt = read_i32_str(SCHED_PELT_MULTIPLIER);
     let hr = read_i32_str(SCHED_HR_SCALING);
     let lp = read_i32_str(SCHED_BOOST_HR_LP);
     let big = read_i32_str(SCHED_BOOST_HR_BIG);
@@ -288,6 +290,8 @@ pub fn print_status() {
 
     println!("sched_supported={}", i32::from(skip.is_some()));
     println!("sched_skip_headroom={}", skip.unwrap_or(1));
+    println!("sched_pelt_multiplier_supported={}", i32::from(pelt.is_some()));
+    println!("sched_pelt_multiplier={}", pelt.unwrap_or(0));
     println!("sched_hr_scaling={}", hr.unwrap_or(0));
     println!("sched_boost_hr_lp={}", lp.unwrap_or(0));
     println!("sched_boost_hr_big={}", big.unwrap_or(0));
@@ -454,6 +458,15 @@ pub fn set_bypass(enabled: bool) -> Result<()> {
 pub fn set_sched_skip_headroom(value: u8) -> Result<()> {
     write_i32_str(SCHED_SKIP_HEADROOM, value as i32)?;
     update_config("sched_skip_headroom", &value.to_string())?;
+    println!("ok");
+    Ok(())
+}
+
+/// Enable (1) / disable (0) the PELT multiplier via sched_pelt_multiplier.
+pub fn set_sched_pelt_multiplier(value: u8) -> Result<()> {
+    let raw = i32::from(value != 0);
+    write_i32_str(SCHED_PELT_MULTIPLIER, raw)?;
+    update_config("sched_pelt_multiplier", &raw.to_string())?;
     println!("ok");
     Ok(())
 }
@@ -778,6 +791,9 @@ pub fn apply_persisted() {
     // --- Restore scheduler ---
     if let Some(v) = config.get("sched_skip_headroom") {
         let _ = write_i32_str(SCHED_SKIP_HEADROOM, v.parse().unwrap_or(1));
+    }
+    if let Some(v) = config.get("sched_pelt_multiplier") {
+        let _ = write_i32_str(SCHED_PELT_MULTIPLIER, v.parse().unwrap_or(0));
     }
     if let Some(v) = config.get("sched_hr_scaling") {
         let _ = write_i32_str(SCHED_HR_SCALING, v.parse().unwrap_or(0));
