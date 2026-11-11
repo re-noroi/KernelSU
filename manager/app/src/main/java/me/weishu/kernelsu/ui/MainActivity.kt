@@ -82,6 +82,7 @@ import me.weishu.kernelsu.ui.screen.executemoduleaction.ExecuteModuleActionScree
 import me.weishu.kernelsu.ui.screen.flash.FlashScreen
 import me.weishu.kernelsu.ui.screen.home.HomePager
 import me.weishu.kernelsu.ui.screen.install.InstallScreen
+import me.weishu.kernelsu.ui.screen.memorymonitor.MemoryMonitorScreen
 import me.weishu.kernelsu.ui.screen.module.ModulePager
 import me.weishu.kernelsu.ui.screen.modulerepo.ModuleRepoDetailScreen
 import me.weishu.kernelsu.ui.screen.modulerepo.ModuleRepoScreen
@@ -261,6 +262,7 @@ open class MainActivity : ComponentActivity() {
                             entry<Route.Kallsyms>(swipeDismiss = swipeDismiss) { KallsymsScreen() }
                             entry<Route.Sulog>(swipeDismiss = swipeDismiss) { SulogScreen() }
                             entry<Route.Dmesg>(swipeDismiss = swipeDismiss) { DmesgScreen() }
+                            entry<Route.MemoryMonitor>(swipeDismiss = swipeDismiss) { MemoryMonitorScreen() }
                             entry<Route.KernelModule>(swipeDismiss = swipeDismiss) { KernelModuleScreen() }
                             entry<Route.CrashLog>(swipeDismiss = swipeDismiss) { CrashLogScreen() }
                             entry<Route.PayloadExtract>(swipeDismiss = swipeDismiss) { PayloadScreen() }
