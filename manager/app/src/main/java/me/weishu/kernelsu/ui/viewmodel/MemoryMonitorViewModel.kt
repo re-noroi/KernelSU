@@ -11,6 +11,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 
+data class MemInfoEntry(
+    val key: String,
+    val value: String,
+)
+
 data class MemoryMonitorUiState(
     val isLoading: Boolean = true,
     val ramTotalBytes: Long = 0L,
@@ -18,8 +23,10 @@ data class MemoryMonitorUiState(
     val swapTotalBytes: Long = 0L,
     val swapUsedBytes: Long = 0L,
     val zramSupported: Boolean = false,
+    val zramAlgorithm: String = "",
     val zramOriginalBytes: Long = 0L,
     val zramCompressedBytes: Long = 0L,
+    val memInfo: List<MemInfoEntry> = emptyList(),
 ) {
     val ramPercent: Float
         get() = if (ramTotalBytes <= 0L) 0f
@@ -67,14 +74,24 @@ class MemoryMonitorViewModel : ViewModel() {
                 " echo __MMSTAT__;" +
                 " cat /sys/block/zram0/mm_stat 2>/dev/null;" +
                 " echo __DISKSIZE__;" +
-                " cat /sys/block/zram0/disksize 2>/dev/null"
+                " cat /sys/block/zram0/disksize 2>/dev/null;" +
+                " echo __COMPALGO__;" +
+                " cat /sys/block/zram0/comp_algorithm 2>/dev/null"
         )
 
-        val parts = raw.split("__SWAPS__", "__MMSTAT__", "__DISKSIZE__")
+        val parts = raw.split("__SWAPS__", "__MMSTAT__", "__DISKSIZE__", "__COMPALGO__")
         val meminfo = parts.getOrNull(0).orEmpty()
         val swaps = parts.getOrNull(1).orEmpty()
         val mmStat = parts.getOrNull(2).orEmpty()
         val diskSize = parts.getOrNull(3).orEmpty().trim().toLongOrNull() ?: 0L
+        val compAlgorithmRaw = parts.getOrNull(4).orEmpty().trim()
+
+        // comp_algorithm is "lzo [lz4] zstd" — the active one is in brackets.
+        val zramAlgorithm = compAlgorithmRaw
+            .split(Regex("\\s+"))
+            .firstOrNull { it.startsWith("[") && it.endsWith("]") }
+            ?.trim('[', ']')
+            ?: compAlgorithmRaw.split(Regex("\\s+")).firstOrNull().orEmpty()
 
         fun memValue(key: String): Long =
             Regex("^$key:\\s*(\\d+)", RegexOption.MULTILINE)
@@ -111,6 +128,14 @@ class MemoryMonitorViewModel : ViewModel() {
             swapUsedKb = originalBytes / 1024L
         }
 
+        val memInfoEntries = meminfo.lines().mapNotNull { line ->
+            val separator = line.indexOf(':')
+            if (separator <= 0) return@mapNotNull null
+            val key = line.substring(0, separator).trim()
+            val value = line.substring(separator + 1).trim()
+            if (key.isEmpty() || value.isEmpty()) null else MemInfoEntry(key, value)
+        }
+
         _uiState.update {
             it.copy(
                 isLoading = false,
@@ -119,8 +144,10 @@ class MemoryMonitorViewModel : ViewModel() {
                 swapTotalBytes = swapTotalKb * 1024L,
                 swapUsedBytes = swapUsedKb * 1024L,
                 zramSupported = zramSupported,
+                zramAlgorithm = zramAlgorithm,
                 zramOriginalBytes = originalBytes,
                 zramCompressedBytes = compressedBytes,
+                memInfo = memInfoEntries,
             )
         }
     }

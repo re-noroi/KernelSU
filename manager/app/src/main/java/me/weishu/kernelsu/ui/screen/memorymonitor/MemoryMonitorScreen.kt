@@ -48,6 +48,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -174,6 +175,22 @@ private fun MemoryMonitorMaterial(state: MemoryMonitorUiState) {
                     )
                 }
             }
+
+            item { SectionHeader(stringResource(R.string.memory_monitor_meminfo_section)) }
+            item {
+                TonalCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
+                    shape = RoundedCornerShape(16.dp),
+                ) {
+                    MemoryInfoContent(
+                        state = state,
+                        labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        valueColor = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            }
         }
     }
 }
@@ -255,6 +272,17 @@ private fun MemoryMonitorMiuix(state: MemoryMonitorUiState) {
                             mutedColor = colorScheme.onSurfaceVariantSummary,
                             dividerColor = colorScheme.outline.copy(alpha = 0.4f),
                             valueColor = colorScheme.primary,
+                        )
+                    }
+                }
+
+                item { SectionHeaderMiuix(stringResource(R.string.memory_monitor_meminfo_section)) }
+                item {
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        MemoryInfoContent(
+                            state = state,
+                            labelColor = colorScheme.onSurfaceVariantSummary,
+                            valueColor = colorScheme.onBackground,
                         )
                     }
                 }
@@ -458,6 +486,13 @@ private fun ZramStatsContent(
         }
 
         StatRow(
+            label = stringResource(R.string.memory_monitor_compression_algorithm),
+            value = state.zramAlgorithm.ifEmpty { "—" },
+            labelColor = labelColor,
+            valueColor = valueColor,
+        )
+        StatDivider(dividerColor)
+        StatRow(
             label = stringResource(R.string.memory_monitor_original_size),
             value = formatBytes(state.zramOriginalBytes),
             labelColor = labelColor,
@@ -477,6 +512,46 @@ private fun ZramStatsContent(
             labelColor = labelColor,
             valueColor = valueColor,
         )
+    }
+}
+
+@Composable
+private fun MemoryInfoContent(
+    state: MemoryMonitorUiState,
+    labelColor: Color,
+    valueColor: Color,
+) {
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp)) {
+        if (state.memInfo.isEmpty()) {
+            Text(
+                text = stringResource(R.string.memory_monitor_meminfo_empty),
+                color = labelColor,
+                fontSize = 14.sp,
+            )
+            return@Column
+        }
+
+        state.memInfo.forEach { entry ->
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = entry.key,
+                    color = labelColor,
+                    fontSize = 13.sp,
+                    fontFamily = FontFamily.Monospace,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    text = entry.value,
+                    color = valueColor,
+                    fontSize = 13.sp,
+                    fontFamily = FontFamily.Monospace,
+                )
+            }
+        }
     }
 }
 

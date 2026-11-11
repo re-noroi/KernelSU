@@ -375,6 +375,9 @@
     <string name="memory_monitor_physical">Physical</string>
     <string name="memory_monitor_virtual">Virtual</string>
     <string name="memory_monitor_zram_section">zRAM</string>
+    <string name="memory_monitor_compression_algorithm">Compression Algorithm</string>
+    <string name="memory_monitor_meminfo_section">Memory Info</string>
+    <string name="memory_monitor_meminfo_empty">Memory info is unavailable.</string>
     <string name="memory_monitor_zram_unsupported">zRAM is not available on this device.</string>
     <string name="memory_monitor_original_size">Original Size</string>
     <string name="memory_monitor_compressed_size">Compressed Size</string>
