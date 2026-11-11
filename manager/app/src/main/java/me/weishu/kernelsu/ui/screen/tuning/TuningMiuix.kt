@@ -67,7 +67,6 @@ import me.weishu.kernelsu.ui.navigation3.LocalNavigator
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.util.BlurredBar
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
-import me.weishu.kernelsu.ui.viewmodel.BatteryUiState
 import me.weishu.kernelsu.ui.viewmodel.TuningUiState
 import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.Card
@@ -93,7 +92,6 @@ import androidx.compose.ui.text.TextStyle
 fun TuningScreenMiuix(
     state: TuningUiState,
     actions: TuningActions,
-    batteryState: BatteryUiState,
     isRootTab: Boolean = false,
     bottomInnerPadding: Dp = 0.dp,
 ) {
@@ -275,19 +273,7 @@ fun TuningScreenMiuix(
                             checked = state.bypassEnabled,
                             onCheckedChange = actions.onSetBypass,
                         )
-                    }
-                }
-
-                // ---- BATTERY ----
-                item { SectionHeaderMiuix(stringResource(R.string.tuning_section_battery)) }
-                item {
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        BatteryInfoRows(
-                            state = batteryState,
-                            labelColor = colorScheme.onSurfaceVariantSummary,
-                            valueColor = colorScheme.onBackground,
-                            dividerColor = colorScheme.outline.copy(alpha = 0.4f),
-                        )
+                        BatteryEntryMiuix(onClick = actions.onOpenBattery)
                     }
                 }
 
@@ -848,6 +834,40 @@ private fun MemoryMonitorEntryMiuix(onClick: () -> Unit) {
             )
             Text(
                 text = stringResource(R.string.memory_monitor_entry_summary),
+                fontSize = 12.sp,
+                color = colorScheme.onSurfaceVariantSummary,
+            )
+        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = colorScheme.onSurfaceVariantSummary,
+        )
+    }
+}
+
+@Composable
+private fun BatteryEntryMiuix(onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.BatteryChargingFull,
+            contentDescription = null,
+            tint = colorScheme.primary,
+        )
+        Spacer(Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.battery_title),
+                fontSize = 15.sp,
+            )
+            Text(
+                text = stringResource(R.string.battery_entry_summary),
                 fontSize = 12.sp,
                 color = colorScheme.onSurfaceVariantSummary,
             )

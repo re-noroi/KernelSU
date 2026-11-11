@@ -338,8 +338,7 @@
     <string name="tuning_profiles_unavailable">Thermal profiles unavailable</string>
     <string name="tuning_thermal_current">Current: %1$s</string>
     <string name="tuning_applying">Applying…</string>
-    <string name="tuning_section_thermals">Thermals</string>
-    <string name="tuning_section_battery">Battery</string>
+    <string name="tuning_section_thermals">Thermals and Battery</string>
     <string name="tuning_section_schedulers">Schedulers</string>
     <string name="tuning_section_fakedreamers">FakeDreamers</string>
     <string name="tuning_section_cgroup">CGroup</string>
@@ -371,6 +370,8 @@
     <string name="tuning_mem_mglru_ttl">MGLRU min_ttl_ms</string>
     <string name="tuning_section_zram">zRAM</string>
     <string name="memory_monitor_title">Memory Monitor</string>
+    <string name="battery_title">Battery</string>
+    <string name="battery_entry_summary">Battery status, health and capacity details</string>
     <string name="memory_monitor_entry_summary">RAM and zRAM usage overview</string>
     <string name="memory_monitor_average">Average</string>
     <string name="memory_monitor_physical">Physical</string>

@@ -77,7 +77,6 @@ import me.weishu.kernelsu.ui.component.material.TonalCard
 import me.weishu.kernelsu.ui.component.material.TopBarBackButton
 import me.weishu.kernelsu.ui.component.material.expressiveTopAppBarColors
 import me.weishu.kernelsu.ui.navigation3.LocalNavigator
-import me.weishu.kernelsu.ui.viewmodel.BatteryUiState
 import me.weishu.kernelsu.ui.viewmodel.TuningUiState
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
@@ -92,7 +91,6 @@ import androidx.compose.foundation.layout.Box
 fun TuningScreenMaterial(
     state: TuningUiState,
     actions: TuningActions,
-    batteryState: BatteryUiState,
     isRootTab: Boolean = false,
     bottomInnerPadding: Dp = 0.dp,
 ) {
@@ -249,24 +247,9 @@ fun TuningScreenMaterial(
                             onCheckedChange = actions.onSetBypass,
                         )
                     }
-                }
-            }
-
-            // ---- BATTERY ----
-            item { SectionHeader(stringResource(R.string.tuning_section_battery)) }
-            item {
-                TonalCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
-                    shape = RoundedCornerShape(16.dp),
-                ) {
-                    BatteryInfoRows(
-                        state = batteryState,
-                        labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        valueColor = MaterialTheme.colorScheme.onSurface,
-                        dividerColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                    )
+                    item {
+                        BatteryEntry(onClick = actions.onOpenBattery)
+                    }
                 }
             }
 
@@ -829,6 +812,40 @@ private fun MemoryMonitorEntry(onClick: () -> Unit) {
             )
             Text(
                 text = stringResource(R.string.memory_monitor_entry_summary),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun BatteryEntry(onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Filled.BatteryChargingFull,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.battery_title),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Text(
+                text = stringResource(R.string.battery_entry_summary),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
