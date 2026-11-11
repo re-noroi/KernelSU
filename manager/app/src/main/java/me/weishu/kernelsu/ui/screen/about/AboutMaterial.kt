@@ -2,6 +2,7 @@ package me.weishu.kernelsu.ui.screen.about
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -96,12 +97,32 @@ fun AboutScreenMaterial(
                         text = state.versionName,
                         fontSize = MaterialTheme.typography.bodyMedium.fontSize
                     )
+                    Text(
+                        modifier = Modifier
+                            .padding(top = 4.dp)
+                            .clickable { actions.onOpenLink(state.authorUrl) },
+                        text = state.authorText,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = MaterialTheme.typography.bodyMedium.fontSize
+                    )
                 }
             }
             item {
                 SegmentedColumn(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     content = state.links.map { linkInfo ->
+                        {
+                            SegmentedListItem(
+                                onClick = { actions.onOpenLink(linkInfo.url) },
+                                headlineContent = { Text(linkInfo.fullText) }
+                            )
+                        }
+                    }
+                )
+                SegmentedColumn(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    title = state.creditsTitle,
+                    content = state.credits.map { linkInfo ->
                         {
                             SegmentedListItem(
                                 onClick = { actions.onOpenLink(linkInfo.url) },

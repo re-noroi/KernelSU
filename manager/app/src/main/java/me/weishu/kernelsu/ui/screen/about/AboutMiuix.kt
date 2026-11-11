@@ -2,6 +2,7 @@ package me.weishu.kernelsu.ui.screen.about
 
 import android.os.Build
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -366,6 +367,16 @@ private fun AboutContent(
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center,
             )
+            Text(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp)
+                    .clickable { actions.onOpenLink(state.authorUrl) },
+                color = colorScheme.primary,
+                text = state.authorText,
+                fontSize = 14.sp,
+                textAlign = TextAlign.Center,
+            )
         }
 
         // Scrollable content
@@ -430,6 +441,40 @@ private fun AboutContent(
                         ),
                     ) {
                         state.links.forEach {
+                            ArrowPreference(
+                                title = it.fullText,
+                                onClick = {
+                                    actions.onOpenLink(it.url)
+                                }
+                            )
+                        }
+                    }
+                    Text(
+                        text = state.creditsTitle,
+                        modifier = Modifier.padding(start = 24.dp, top = 20.dp, bottom = 8.dp),
+                        color = colorScheme.onSurfaceVariantSummary,
+                        fontSize = 14.sp,
+                    )
+                    Card(
+                        modifier = Modifier
+                            .padding(horizontal = 12.dp)
+                            .then(
+                                if (enableBlur) {
+                                    Modifier.textureBlur(
+                                        backdrop = backdrop,
+                                        shape = RoundedCornerShape(16.dp),
+                                        blurRadius = 60f,
+                                        colors = BlurColors(blendColors = blendColors),
+                                        enabled = true,
+                                    )
+                                } else Modifier
+                            ),
+                        colors = CardDefaults.defaultColors(
+                            if (enableBlur) Color.Transparent else colorScheme.surfaceContainer,
+                            Color.Transparent,
+                        ),
+                    ) {
+                        state.credits.forEach {
                             ArrowPreference(
                                 title = it.fullText,
                                 onClick = {
