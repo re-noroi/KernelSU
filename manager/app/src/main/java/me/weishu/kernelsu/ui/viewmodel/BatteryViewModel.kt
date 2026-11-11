@@ -82,7 +82,7 @@ class BatteryViewModel : ViewModel() {
 
     private val batteryCommand: String = buildString {
         readNodes.forEach { (key, path) ->
-            append("echo __$key__; cat $path 2>/dev/null; ")
+            append("echo __${key}__; cat $path 2>/dev/null; ")
         }
     }
 
