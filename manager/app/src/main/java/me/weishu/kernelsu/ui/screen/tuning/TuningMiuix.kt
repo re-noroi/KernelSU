@@ -67,6 +67,7 @@ import me.weishu.kernelsu.ui.navigation3.LocalNavigator
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.util.BlurredBar
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
+import me.weishu.kernelsu.ui.viewmodel.BatteryUiState
 import me.weishu.kernelsu.ui.viewmodel.TuningUiState
 import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.Card
@@ -92,6 +93,7 @@ import androidx.compose.ui.text.TextStyle
 fun TuningScreenMiuix(
     state: TuningUiState,
     actions: TuningActions,
+    batteryState: BatteryUiState,
     isRootTab: Boolean = false,
     bottomInnerPadding: Dp = 0.dp,
 ) {
@@ -272,6 +274,19 @@ fun TuningScreenMiuix(
                             enabled = state.bypassSupported,
                             checked = state.bypassEnabled,
                             onCheckedChange = actions.onSetBypass,
+                        )
+                    }
+                }
+
+                // ---- BATTERY ----
+                item { SectionHeaderMiuix(stringResource(R.string.tuning_section_battery)) }
+                item {
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        BatteryInfoRows(
+                            state = batteryState,
+                            labelColor = colorScheme.onSurfaceVariantSummary,
+                            valueColor = colorScheme.onBackground,
+                            dividerColor = colorScheme.outline.copy(alpha = 0.4f),
                         )
                     }
                 }

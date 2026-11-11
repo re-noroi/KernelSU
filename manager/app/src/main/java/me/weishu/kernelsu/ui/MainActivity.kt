@@ -564,7 +564,11 @@ fun MainPage(
         0 -> HomePager(navigator, bottomInnerPadding, isCurrentPage)
         1 -> SuperUserPager(navigator, bottomInnerPadding, isCurrentPage)
         2 -> when (LocalKernelTool.current) {
-            KernelTool.Tuning -> TuningScreen(isRootTab = true, bottomInnerPadding = bottomInnerPadding)
+            KernelTool.Tuning -> TuningScreen(
+                isRootTab = true,
+                bottomInnerPadding = bottomInnerPadding,
+                isCurrentPage = isCurrentPage,
+            )
             KernelTool.Payload -> PayloadScreen(isRootTab = true, bottomInnerPadding = bottomInnerPadding)
             KernelTool.Dmesg -> DmesgScreen(isRootTab = true)
             KernelTool.Kallsyms -> KallsymsScreen(isRootTab = true)

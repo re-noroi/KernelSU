@@ -339,6 +339,7 @@
     <string name="tuning_thermal_current">Current: %1$s</string>
     <string name="tuning_applying">Applying…</string>
     <string name="tuning_section_thermals">Thermals</string>
+    <string name="tuning_section_battery">Battery</string>
     <string name="tuning_section_schedulers">Schedulers</string>
     <string name="tuning_section_fakedreamers">FakeDreamers</string>
     <string name="tuning_section_cgroup">CGroup</string>
