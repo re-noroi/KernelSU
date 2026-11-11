@@ -72,6 +72,7 @@ import me.weishu.kernelsu.ui.component.bottombar.RegisterTabReselect
 import me.weishu.kernelsu.ui.component.material.ExpressiveScaffold
 import me.weishu.kernelsu.ui.component.material.SegmentedColumn
 import me.weishu.kernelsu.ui.component.material.SegmentedDropdownItem
+import me.weishu.kernelsu.ui.component.material.SegmentedItemContainer
 import me.weishu.kernelsu.ui.component.material.SegmentedSwitchItem
 import me.weishu.kernelsu.ui.component.material.TonalCard
 import me.weishu.kernelsu.ui.component.material.TopBarBackButton
@@ -248,7 +249,9 @@ fun TuningScreenMaterial(
                         )
                     }
                     item {
-                        BatteryEntry(onClick = actions.onOpenBattery)
+                        SegmentedItemContainer {
+                            BatteryEntry(onClick = actions.onOpenBattery)
+                        }
                     }
                 }
             }
