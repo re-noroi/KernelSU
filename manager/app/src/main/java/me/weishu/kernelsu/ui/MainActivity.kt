@@ -9,6 +9,7 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -47,6 +48,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
@@ -54,6 +56,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -432,6 +435,28 @@ fun MainScreen(
         LocalMainPagerState provides mainPagerState
     ) {
         val contentReady = rememberContentReady()
+        // Material/Minimal keep every section composed inside the pager and fade the
+        // whole host through the background instead of cross-fading two screens.
+        // Cross-fading used to compose the incoming (heavy) dashboard/settings screen
+        // during the first frames of the animation, which caused the visible stutter.
+        val useFadePager = !scrollAnimation && uiMode != UiMode.Miuix
+        val fadeAlpha = remember { Animatable(1f) }
+        LaunchedEffect(mainPagerState.selectedPage, useFadePager) {
+            if (!useFadePager) {
+                if (fadeAlpha.value != 1f) fadeAlpha.snapTo(1f)
+                return@LaunchedEffect
+            }
+            if (mainPagerState.pagerState.currentPage == mainPagerState.selectedPage) {
+                if (fadeAlpha.value != 1f) fadeAlpha.animateTo(1f, tween(durationMillis = 200))
+                return@LaunchedEffect
+            }
+            // Fade out, swap pages while nothing is visible (the pager composes the
+            // target page up front via beyondViewportPageCount), then fade back in.
+            fadeAlpha.animateTo(0f, tween(durationMillis = 140))
+            mainPagerState.pagerState.scrollToPage(mainPagerState.selectedPage)
+            withFrameNanos { }
+            fadeAlpha.animateTo(1f, tween(durationMillis = 200))
+        }
         val pagerContent = @Composable { bottomInnerPadding: Dp ->
 
             val mainModifier = Modifier
@@ -473,7 +498,7 @@ fun MainScreen(
                             contentReady = contentReady
                         )
                     }
-                } else {
+                } else if (uiMode == UiMode.Miuix) {
                     AnimatedContent(
                         modifier = mainModifier,
                         targetState = mainPagerState.selectedPage,
@@ -483,6 +508,22 @@ fun MainScreen(
                         label = "MainScreenTransition"
                     ) { page ->
                         MainPage(page, navController, bottomInnerPadding, isCurrentPage = page == mainPagerState.selectedPage)
+                    }
+                } else {
+                    HorizontalPager(
+                        modifier = mainModifier.graphicsLayer { alpha = fadeAlpha.value },
+                        state = mainPagerState.pagerState,
+                        beyondViewportPageCount = if (contentReady) 3 else 0,
+                        overscrollEffect = null,
+                        userScrollEnabled = false,
+                    ) { page ->
+                        MainPage(
+                            page = page,
+                            navigator = navController,
+                            bottomInnerPadding = bottomInnerPadding,
+                            isCurrentPage = page == settledPage,
+                            contentReady = contentReady
+                        )
                     }
                 }
             }
