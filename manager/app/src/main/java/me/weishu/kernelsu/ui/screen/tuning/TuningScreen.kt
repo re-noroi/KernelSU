@@ -11,6 +11,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import me.weishu.kernelsu.ui.LocalUiMode
 import me.weishu.kernelsu.ui.UiMode
 import me.weishu.kernelsu.ui.navigation3.LocalNavigator
+import me.weishu.kernelsu.ui.navigation3.Route
 import me.weishu.kernelsu.ui.viewmodel.TuningViewModel
 
 @Composable
@@ -25,6 +26,7 @@ fun TuningScreen(isRootTab: Boolean = false, bottomInnerPadding: Dp = 0.dp) {
 
     val actions = TuningActions(
         onBack = dropUnlessResumed { navigator.pop() },
+        onOpenMemoryMonitor = dropUnlessResumed { navigator.push(Route.MemoryMonitor) },
         onSelectThermal = viewModel::selectThermal,
         onSetChargeWritable = viewModel::setChargeWritable,
         onSetChargeCurrent = viewModel::setChargeCurrent,
