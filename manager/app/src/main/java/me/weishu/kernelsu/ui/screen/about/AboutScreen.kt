@@ -17,15 +17,23 @@ fun AboutScreen() {
     val uriHandler = LocalUriHandler.current
     val htmlString = stringResource(
         id = R.string.about_source_code,
-        "<b><a href=\"https://github.com/re-noroi/KernelSU\">GitHub</a></b>",
-        "<b><a href=\"https://github.com/midori01/KernelSU\">Upstream</a></b>"
+        "<b><a href=\"https://github.com/re-noroi/KernelSU\">GitHub</a></b>"
     )
     val state = AboutUiState(
         title = stringResource(R.string.about),
         appName = AppInfo.appName(),
         appIconRes = AppInfo.appIconRes(),
         versionName = BuildConfig.VERSION_NAME,
+        authorText = stringResource(R.string.about_by_author, "re-noroi"),
+        authorUrl = "https://github.com/re-noroi",
+        creditsTitle = stringResource(R.string.about_credits),
         links = extractLinks(htmlString),
+        credits = listOf(
+            LinkInfo("tiann/KernelSU", "https://github.com/tiann/KernelSU"),
+            LinkInfo("KOWX712/KernelSU", "https://github.com/KOWX712/KernelSU"),
+            LinkInfo("backslashxx/KernelSU", "https://github.com/backslashxx/KernelSU"),
+            LinkInfo("midori01/KernelSU", "https://github.com/midori01/KernelSU"),
+        ),
     )
     val actions = AboutScreenActions(
         onBack = dropUnlessResumed { navigator.pop() },
