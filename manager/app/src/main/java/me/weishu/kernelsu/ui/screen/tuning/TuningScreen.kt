@@ -15,7 +15,10 @@ import me.weishu.kernelsu.ui.navigation3.Route
 import me.weishu.kernelsu.ui.viewmodel.TuningViewModel
 
 @Composable
-fun TuningScreen(isRootTab: Boolean = false, bottomInnerPadding: Dp = 0.dp) {
+fun TuningScreen(
+    isRootTab: Boolean = false,
+    bottomInnerPadding: Dp = 0.dp,
+) {
     val navigator = LocalNavigator.current
     val viewModel = viewModel<TuningViewModel>()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -27,6 +30,7 @@ fun TuningScreen(isRootTab: Boolean = false, bottomInnerPadding: Dp = 0.dp) {
     val actions = TuningActions(
         onBack = dropUnlessResumed { navigator.pop() },
         onOpenMemoryMonitor = dropUnlessResumed { navigator.push(Route.MemoryMonitor) },
+        onOpenBattery = dropUnlessResumed { navigator.push(Route.Battery) },
         onSelectThermal = viewModel::selectThermal,
         onSetChargeWritable = viewModel::setChargeWritable,
         onSetChargeCurrent = viewModel::setChargeCurrent,
