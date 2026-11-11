@@ -273,6 +273,7 @@ fun TuningScreenMiuix(
                             checked = state.bypassEnabled,
                             onCheckedChange = actions.onSetBypass,
                         )
+                        BatteryEntryMiuix(onClick = actions.onOpenBattery)
                     }
                 }
 
@@ -833,6 +834,40 @@ private fun MemoryMonitorEntryMiuix(onClick: () -> Unit) {
             )
             Text(
                 text = stringResource(R.string.memory_monitor_entry_summary),
+                fontSize = 12.sp,
+                color = colorScheme.onSurfaceVariantSummary,
+            )
+        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = colorScheme.onSurfaceVariantSummary,
+        )
+    }
+}
+
+@Composable
+private fun BatteryEntryMiuix(onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.BatteryChargingFull,
+            contentDescription = null,
+            tint = colorScheme.primary,
+        )
+        Spacer(Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.battery_title),
+                fontSize = 15.sp,
+            )
+            Text(
+                text = stringResource(R.string.battery_entry_summary),
                 fontSize = 12.sp,
                 color = colorScheme.onSurfaceVariantSummary,
             )

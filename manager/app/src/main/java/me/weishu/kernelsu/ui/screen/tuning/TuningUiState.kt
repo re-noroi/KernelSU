@@ -69,6 +69,7 @@ data class ZramState(
 data class TuningActions(
     val onBack: () -> Unit,
     val onOpenMemoryMonitor: () -> Unit,
+    val onOpenBattery: () -> Unit,
     val onSelectThermal: (Int) -> Unit,
     val onSetChargeWritable: (Boolean) -> Unit,
     val onSetChargeCurrent: (Long) -> Unit,
