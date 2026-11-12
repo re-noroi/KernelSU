@@ -15,6 +15,16 @@ data class ThermalZonePath(
     val tempPath: String,
 )
 
+/** Paths read by the Memory Monitor, with the resolved zRAM device. */
+@Immutable
+data class MemoryNodePaths(
+    val meminfo: String,
+    val swaps: String,
+    val zramMmStat: String,
+    val zramDisksize: String,
+    val zramCompAlgorithm: String,
+)
+
 /**
  * Every power supply node the Battery screen may read, with the key it is
  * reported under. Only the paths that actually exist are cached at warm-up.
@@ -52,11 +62,11 @@ val BatteryNodeCandidates: List<Pair<String, String>> = listOf(
 /**
  * Process-wide cache of the sysfs nodes used by the KTune monitors.
  *
- * Warming up once (when KTune is opened) enumerates the thermal zone paths and
- * the power supply paths that exist, so opening the Thermal/Battery tabs only
- * has to read live values instead of discovering everything again. The last
- * raw snapshot is kept too, which lets those tabs render instantly while the
- * first refresh runs.
+ * Warming up once (when KTune is opened) enumerates the thermal zone paths,
+ * the power supply paths that exist, and resolves the zRAM device, so opening
+ * the Memory/Battery/Thermal tabs only has to read live values instead of
+ * discovering everything again. The last raw snapshot is kept too, which lets
+ * those tabs render instantly while the first refresh runs.
  */
 object SysfsNodeCache {
     private val mutex = Mutex()
@@ -68,14 +78,21 @@ object SysfsNodeCache {
     private var batteryNodes: List<Pair<String, String>>? = null
 
     @Volatile
+    private var memoryPaths: MemoryNodePaths? = null
+
+    @Volatile
     private var thermalSnapshot: String? = null
 
     @Volatile
     private var batterySnapshot: String? = null
 
+    @Volatile
+    private var memorySnapshot: String? = null
+
     suspend fun warmUp() = withContext(Dispatchers.IO) {
         warmUpBattery()
         warmUpThermal()
+        warmUpMemory()
     }
 
     suspend fun warmUpThermal() = withContext(Dispatchers.IO) {
@@ -95,6 +112,15 @@ object SysfsNodeCache {
             val nodes = batteryNodes ?: discoverBatteryNodes().also { batteryNodes = it }
             if (nodes.isNotEmpty() && batterySnapshot == null) {
                 batterySnapshot = readBatteryNodes(nodes)
+            }
+        }
+    }
+
+    suspend fun warmUpMemory() = withContext(Dispatchers.IO) {
+        mutex.withLock {
+            val paths = memoryPaths ?: discoverMemoryPaths().also { memoryPaths = it }
+            if (memorySnapshot == null) {
+                memorySnapshot = readMemoryNodes(paths)
             }
         }
     }
@@ -120,6 +146,14 @@ object SysfsNodeCache {
         batterySnapshot = raw
     }
 
+    fun memoryNodePaths(): MemoryNodePaths = memoryPaths ?: defaultMemoryPaths
+
+    fun memorySnapshot(): String? = memorySnapshot
+
+    fun updateMemorySnapshot(raw: String) {
+        memorySnapshot = raw
+    }
+
     fun buildThermalCommand(zones: List<ThermalZonePath>): String = buildString {
         append("for z in ")
         zones.forEach { append("\"${it.tempPath}\" ") }
@@ -135,6 +169,17 @@ object SysfsNodeCache {
 
     fun readBatteryNodes(nodes: List<Pair<String, String>>): String =
         execRootCommand(buildBatteryCommand(nodes))
+
+    fun buildMemoryCommand(paths: MemoryNodePaths): String = buildString {
+        append("cat ${paths.meminfo} 2>/dev/null; ")
+        append("echo __SWAPS__; cat ${paths.swaps} 2>/dev/null; ")
+        append("echo __MMSTAT__; cat ${paths.zramMmStat} 2>/dev/null; ")
+        append("echo __DISKSIZE__; cat ${paths.zramDisksize} 2>/dev/null; ")
+        append("echo __COMPALGO__; cat ${paths.zramCompAlgorithm} 2>/dev/null")
+    }
+
+    fun readMemoryNodes(paths: MemoryNodePaths): String =
+        execRootCommand(buildMemoryCommand(paths))
 
     fun execRootCommand(cmd: String): String {
         return try {
@@ -181,6 +226,31 @@ object SysfsNodeCache {
         // behaves exactly like before and simply reads whatever is there.
         return resolved.ifEmpty { BatteryNodeCandidates }
     }
+
+    private fun discoverMemoryPaths(): MemoryNodePaths {
+        // Resolve the first zRAM device that exposes mm_stat; fall back to the
+        // conventional zram0 so behaviour matches the pre-cache implementation.
+        val base = execRootCommand(
+            "for z in /sys/block/zram*; do " +
+                "if [ -e \"\$z/mm_stat\" ]; then echo \"\$z\"; break; fi; " +
+                "done",
+        ).lineSequence().firstOrNull()?.trim().orEmpty().ifEmpty { "/sys/block/zram0" }
+        return MemoryNodePaths(
+            meminfo = "/proc/meminfo",
+            swaps = "/proc/swaps",
+            zramMmStat = "$base/mm_stat",
+            zramDisksize = "$base/disksize",
+            zramCompAlgorithm = "$base/comp_algorithm",
+        )
+    }
+
+    private val defaultMemoryPaths = MemoryNodePaths(
+        meminfo = "/proc/meminfo",
+        swaps = "/proc/swaps",
+        zramMmStat = "/sys/block/zram0/mm_stat",
+        zramDisksize = "/sys/block/zram0/disksize",
+        zramCompAlgorithm = "/sys/block/zram0/comp_algorithm",
+    )
 
     private val ignoredThermalTypes = setOf("unused", "invalid", "none")
 }
