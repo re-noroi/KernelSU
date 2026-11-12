@@ -144,17 +144,40 @@ private fun GameHost(
                     MiniGame.FLAPPY -> FlappyBirdGame(state = session.flappy)
                     MiniGame.SNAKE -> SnakeGame(state = session.snake)
                     MiniGame.DINO -> DinoGame(state = session.dino)
+                    MiniGame.MINESWEEPER -> MinesweeperGame(state = session.minesweeper)
+                    MiniGame.GAME_2048 -> Game2048(state = session.game2048)
                 }
 
                 GameHapticsEffect(state)
 
                 if (state.isGameOver) {
+                    val win = (state as? MinesweeperState)?.won == true ||
+                        (state as? Game2048State)?.won == true
                     GameOverOverlay(
                         score = state.score,
                         highScore = state.highScore,
                         onRestart = { state.restart() },
                         modifier = Modifier.matchParentSize(),
+                        title = if (win) {
+                            stringResource(R.string.mini_game_you_win)
+                        } else {
+                            stringResource(R.string.mini_game_game_over)
+                        },
                     )
+                }
+            }
+        }
+
+        if (game.needsControls) {
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center,
+            ) {
+                when (game) {
+                    MiniGame.SNAKE -> SnakeControls(state = session.snake)
+                    MiniGame.DINO -> DinoControls(state = session.dino)
+                    MiniGame.GAME_2048 -> Game2048Controls(state = session.game2048)
+                    else -> Unit
                 }
             }
         }

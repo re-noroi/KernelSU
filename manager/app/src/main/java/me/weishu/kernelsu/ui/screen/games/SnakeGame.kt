@@ -2,7 +2,6 @@ package me.weishu.kernelsu.ui.screen.games
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -22,21 +21,18 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
-import kotlin.math.abs
 import kotlin.math.max
 import kotlin.random.Random
 import kotlinx.coroutines.delay
 import me.weishu.kernelsu.R
 
 private const val SNAKE_GRID = 20
-private const val SNAKE_SWIPE_THRESHOLD = 30f
 
 @Stable
 class SnakeGameState(
@@ -62,12 +58,13 @@ class SnakeGameState(
 
     val tickMs: Long get() = max(80L, 180L - score * 5L)
 
-    fun swipe(dir: SnakeDir) {
-        if (dir != direction.opposite) pendingDir = dir
+    fun turn(dir: SnakeDir) {
+        if (isGameOver) return
         if (!isStarted) {
             isStarted = true
             GameAudio.start()
         }
+        if (dir != direction.opposite) pendingDir = dir
     }
 
     fun tick() {
@@ -149,30 +146,24 @@ fun SnakeGame(state: SnakeGameState) {
     SnakeCanvas(state = state, modifier = Modifier.fillMaxSize())
 }
 
+/** D-pad shown under the board; replaces the old swipe gesture. */
+@Composable
+fun SnakeControls(state: SnakeGameState, modifier: Modifier = Modifier) {
+    GamePad(
+        onUp = { state.turn(SnakeDir.UP) },
+        onDown = { state.turn(SnakeDir.DOWN) },
+        onLeft = { state.turn(SnakeDir.LEFT) },
+        onRight = { state.turn(SnakeDir.RIGHT) },
+        modifier = modifier,
+    )
+}
+
 @Composable
 private fun SnakeCanvas(state: SnakeGameState, modifier: Modifier) {
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(20.dp))
-            .background(SnakeBg)
-            .pointerInput(Unit) {
-                var drag = Offset.Zero
-                detectDragGestures(
-                    onDragStart = { drag = Offset.Zero },
-                    onDragEnd = {
-                        if (abs(drag.x) > abs(drag.y)) {
-                            if (drag.x > SNAKE_SWIPE_THRESHOLD) state.swipe(SnakeDir.RIGHT)
-                            else if (drag.x < -SNAKE_SWIPE_THRESHOLD) state.swipe(SnakeDir.LEFT)
-                        } else {
-                            if (drag.y > SNAKE_SWIPE_THRESHOLD) state.swipe(SnakeDir.DOWN)
-                            else if (drag.y < -SNAKE_SWIPE_THRESHOLD) state.swipe(SnakeDir.UP)
-                        }
-                    },
-                ) { change, amount ->
-                    change.consume()
-                    drag += amount
-                }
-            },
+            .background(SnakeBg),
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             val cellW = size.width / SNAKE_GRID
@@ -201,7 +192,7 @@ private fun SnakeCanvas(state: SnakeGameState, modifier: Modifier) {
         if (!state.isStarted && !state.isGameOver) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
-                    text = stringResource(R.string.mini_game_snake_swipe_to_start),
+                    text = stringResource(R.string.mini_game_snake_press_to_start),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,

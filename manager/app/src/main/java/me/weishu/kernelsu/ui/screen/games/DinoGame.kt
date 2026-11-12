@@ -3,10 +3,15 @@ package me.weishu.kernelsu.ui.screen.games
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,6 +29,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -39,9 +45,13 @@ import me.weishu.kernelsu.R
 // All positional constants are fractions of canvas dimensions.
 private const val DINO_X = 0.12f       // left edge of dino
 private const val DINO_W = 0.07f       // width as fraction of canvas width
-private const val DINO_H = 0.13f       // height as fraction of canvas height
+private const val DINO_H = 0.13f       // standing height as fraction of canvas height
+private const val DINO_SLIDE_H = 0.06f // crouched height
 private const val GROUND_Y = 0.78f     // y where ground surface starts
 private const val CACTUS_W = 0.06f     // cactus width as fraction of canvas width
+private const val BIRD_W = 0.09f       // flying obstacle width as fraction of canvas width
+private const val BIRD_TOP = 0.55f     // wing top; high enough that jumping cannot clear it
+private const val BIRD_BOTTOM = 0.71f  // wing bottom; low enough that crouching passes under
 private const val BASE_SPEED = 0.35f   // canvas-widths per second at start
 private const val MAX_SPEED = 0.80f    // upper speed cap
 private const val GRAVITY = 2.8f       // canvas-height per second squared
@@ -53,10 +63,9 @@ data class DinoObstacle(
     val height: Float,  // fraction of canvas height; max 0.15 keeps it always clearable
 )
 
-data class DinoSeagull(
-    val x: Float,
-    val y: Float,
-    val wingPhase: Float,
+data class DinoBird(
+    val x: Float,           // left edge, fraction of canvas width
+    val wingPhase: Float,   // 0..1 flapping cycle
 )
 
 data class DinoCloud(
@@ -76,6 +85,8 @@ class DinoGameState(
         private set
     var obstacles by mutableStateOf<List<DinoObstacle>>(emptyList())
         private set
+    var birds by mutableStateOf<List<DinoBird>>(emptyList())
+        private set
     private val points = GameScore(initialHighScore, onHighScoreUpdated)
     override val haptics = GameHaptics()
     override val score get() = points.value
@@ -88,17 +99,22 @@ class DinoGameState(
         private set
     override var isPaused by mutableStateOf(false)
         private set
-    var seagulls by mutableStateOf<List<DinoSeagull>>(emptyList())
-        private set
     var clouds by mutableStateOf<List<DinoCloud>>(emptyList())
         private set
 
+    /** True while the down button is held; crouching only applies on the ground. */
+    var isSliding by mutableStateOf(false)
+        private set
+
+    val isSlidingNow: Boolean get() = isSliding && dinoJump == 0f
+    val dinoHeight: Float get() = if (isSlidingNow) DINO_SLIDE_H else DINO_H
+
     private var lastTickMs = 0L
     private var lastObstacleMs = 0L
+    private var lastBirdMs = 0L
+    private var lastCloudMs = 0L
     private var distanceTraveled = 0f
     private var elapsedSec = 0f
-    private var lastSeagullMs = 0L
-    private var lastCloudMs = 0L
 
     fun tap() {
         if (isGameOver) return
@@ -106,7 +122,23 @@ class DinoGameState(
             isStarted = true
             GameAudio.start()
         }
-        if (dinoJump == 0f) velocity = JUMP_VEL
+        if (dinoJump == 0f) {
+            isSliding = false
+            velocity = JUMP_VEL
+        }
+    }
+
+    fun startSlide() {
+        if (isGameOver) return
+        if (!isStarted) {
+            isStarted = true
+            GameAudio.start()
+        }
+        isSliding = true
+    }
+
+    fun stopSlide() {
+        isSliding = false
     }
 
     fun tick(nowMs: Long) {
@@ -143,7 +175,9 @@ class DinoGameState(
         val dinoLeft = DINO_X + DINO_W * 0.1f
         val dinoRight = DINO_X + DINO_W * 0.9f
         val dinoBottom = GROUND_Y - dinoJump - DINO_H * 0.1f
+        val dinoTop = GROUND_Y - dinoJump - dinoHeight + dinoHeight * 0.1f
         var hit = false
+
         val moved = mutableListOf<DinoObstacle>()
         for (obs in obstacles) {
             val nx = obs.x - speed * dt
@@ -152,6 +186,29 @@ class DinoGameState(
             moved += obs.copy(x = nx)
         }
         obstacles = moved
+
+        // Flying obstacles sit at head height: jump over is impossible, crouch under is required.
+        birds = birds.mapNotNull { bird ->
+            val nx = bird.x - speed * 0.8f * dt
+            if (nx + BIRD_W <= 0f) {
+                null
+            } else {
+                if (dinoRight > nx && dinoLeft < nx + BIRD_W &&
+                    dinoBottom > BIRD_TOP && dinoTop < BIRD_BOTTOM
+                ) {
+                    hit = true
+                }
+                bird.copy(x = nx, wingPhase = (bird.wingPhase + dt * 2.5f) % 1f)
+            }
+        }
+        if (lastBirdMs == 0L) lastBirdMs = nowMs
+        val birdGap = maxOf(3200L, (5200L - elapsedSec * 25).toLong())
+        val birdClear = obstacles.none { it.x > 0.55f }
+        if (elapsedSec > 8f && birdClear && nowMs - lastBirdMs >= birdGap) {
+            birds = birds + DinoBird(x = 1.05f, wingPhase = 0f)
+            lastBirdMs = nowMs
+        }
+
         if (hit) {
             points.commit()
             isGameOver = true
@@ -171,38 +228,28 @@ class DinoGameState(
             )
             lastCloudMs = nowMs
         }
-
-        seagulls = seagulls.mapNotNull { g ->
-            val nx = g.x - speed * 0.65f * dt
-            if (nx < -0.12f) null else g.copy(x = nx, wingPhase = (g.wingPhase + dt * 2.5f) % 1f)
-        }
-        if (lastSeagullMs == 0L) lastSeagullMs = nowMs
-        val seagullGap = maxOf(2500L, (5000L - elapsedSec * 20).toLong())
-        if (nowMs - lastSeagullMs >= seagullGap) {
-            seagulls = seagulls + DinoSeagull(1.05f, Random.nextFloat() * 0.28f + 0.04f, 0f)
-            lastSeagullMs = nowMs
-        }
     }
 
     override fun restart() {
         dinoJump = 0f
         velocity = 0f
         obstacles = emptyList()
+        birds = emptyList()
         points.reset()
         isGameOver = false
         isStarted = false
         isPaused = false
+        isSliding = false
         lastTickMs = 0L
         lastObstacleMs = 0L
+        lastBirdMs = 0L
         distanceTraveled = 0f
         elapsedSec = 0f
         legPhase = 0
-        seagulls = emptyList()
         clouds = listOf(
             DinoCloud(0.25f, Random.nextFloat() * 0.16f + 0.04f, Random.nextFloat() * 0.4f + 0.7f),
             DinoCloud(0.68f, Random.nextFloat() * 0.16f + 0.04f, Random.nextFloat() * 0.4f + 0.7f),
         )
-        lastSeagullMs = 0L
         lastCloudMs = 0L
     }
 
@@ -223,6 +270,28 @@ fun DinoGame(state: DinoGameState) {
         }
     }
     DinoCanvas(state = state, modifier = Modifier.fillMaxSize())
+}
+
+/** Jump and slide buttons, shown under the play field. */
+@Composable
+fun DinoControls(state: DinoGameState, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(24.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        GameHoldButton(
+            icon = Icons.Rounded.KeyboardArrowDown,
+            contentDescription = stringResource(R.string.mini_game_slide),
+            onPress = state::startSlide,
+            onRelease = state::stopSlide,
+        )
+        GameControlButton(
+            icon = Icons.Rounded.KeyboardArrowUp,
+            contentDescription = stringResource(R.string.mini_game_jump),
+            onClick = state::tap,
+        )
+    }
 }
 
 @Composable
@@ -257,17 +326,6 @@ private fun DinoCanvas(state: DinoGameState, modifier: Modifier) {
                 drawCircle(DinoCloudColor, r * 0.55f, Offset(cx + r * 0.55f, cy - r * 0.18f))
             }
 
-            for (gull in state.seagulls) {
-                val gx = gull.x * w
-                val sy = gull.y * h
-                val span = w * 0.028f
-                val p = gull.wingPhase
-                val dip = if (p < 0.5f) p * 2f else 2f - p * 2f
-                val tipY = sy - span * 0.55f * dip
-                drawLine(DinoGullColor, Offset(gx - span, tipY), Offset(gx, sy), strokeWidth = h * 0.006f)
-                drawLine(DinoGullColor, Offset(gx, sy), Offset(gx + span, tipY), strokeWidth = h * 0.006f)
-            }
-
             for (obs in state.obstacles) {
                 val ox = obs.x * w
                 val ow = CACTUS_W * w
@@ -277,11 +335,63 @@ private fun DinoCanvas(state: DinoGameState, modifier: Modifier) {
                 drawRect(DinoCactus, Offset(ox + ow * 0.63f, gy - oh * 0.52f), Size(ow * 0.37f, oh * 0.18f))
             }
 
+            for (bird in state.birds) {
+                val bx = bird.x * w
+                val bw = BIRD_W * w
+                val top = BIRD_TOP * h
+                val bottom = BIRD_BOTTOM * h
+                val midY = (top + bottom) / 2f
+                val flap = (kotlin.math.sin(bird.wingPhase * 2f * Math.PI.toFloat()) + 1f) / 2f
+                val upperTip = top + (bottom - top) * 0.12f * flap
+                val lowerTip = bottom - (bottom - top) * 0.12f * flap
+
+                drawPath(
+                    path = Path().apply {
+                        moveTo(bx + bw * 0.48f, midY)
+                        lineTo(bx + bw * 0.10f, upperTip)
+                        lineTo(bx + bw * 0.82f, midY)
+                        close()
+                    },
+                    color = DinoBirdWing,
+                )
+                drawPath(
+                    path = Path().apply {
+                        moveTo(bx + bw * 0.48f, midY)
+                        lineTo(bx + bw * 0.10f, lowerTip)
+                        lineTo(bx + bw * 0.82f, midY)
+                        close()
+                    },
+                    color = DinoBirdWing,
+                )
+                drawRect(DinoBirdBody, Offset(bx + bw * 0.20f, midY - h * 0.012f), Size(bw * 0.55f, h * 0.024f))
+                drawPath(
+                    path = Path().apply {
+                        moveTo(bx + bw * 0.75f, midY - h * 0.020f)
+                        lineTo(bx + bw * 1.00f, midY)
+                        lineTo(bx + bw * 0.75f, midY + h * 0.020f)
+                        close()
+                    },
+                    color = DinoBirdBeak,
+                )
+                drawCircle(DinoBirdEye, h * 0.008f, Offset(bx + bw * 0.70f, midY - h * 0.010f))
+            }
+
             val dx = DINO_X * w
-            val dy = (GROUND_Y - DINO_H) * h - state.dinoJump * h
+            val dh = state.dinoHeight * h
+            val dy = (GROUND_Y - state.dinoHeight) * h - state.dinoJump * h
             val dw = DINO_W * w
-            val dh = DINO_H * h
             val dinoBottom = dy + dh
+
+            if (state.isSlidingNow) {
+                // Crouched silhouette: long body, head forward, legs tucked.
+                drawRect(DinoBody, Offset(dx, dy + dh * 0.30f), Size(dw * 1.05f, dh * 0.62f))
+                drawRect(DinoBody, Offset(dx + dw * 0.55f, dy + dh * 0.05f), Size(dw * 0.50f, dh * 0.42f))
+                drawRect(DinoBody, Offset(dx + dw * 0.05f, dy + dh * 0.78f), Size(dw * 0.16f, dh * 0.22f))
+                drawRect(DinoBody, Offset(dx + dw * 0.34f, dy + dh * 0.78f), Size(dw * 0.16f, dh * 0.22f))
+                drawCircle(DinoBg, dw * 0.105f, Offset(dx + dw * 0.88f, dy + dh * 0.15f))
+                drawCircle(DinoEye, dw * 0.065f, Offset(dx + dw * 0.90f, dy + dh * 0.16f))
+                return@Canvas
+            }
 
             drawRect(DinoBody, Offset(dx, dy + dh * 0.33f), Size(dw * 0.16f, dh * 0.18f))
             drawRect(DinoBody, Offset(dx, dy + dh * 0.49f), Size(dw * 0.10f, dh * 0.14f))
@@ -343,4 +453,7 @@ private val DinoEye = Color(0xFF212121)
 private val DinoSkyTop = Color(0xFF5DA0CF)
 private val DinoSkyHorizon = Color(0xFFB4D6EC)
 private val DinoCloudColor = Color(0xFFFFFFFF)
-private val DinoGullColor = Color(0xFF4A7A99)
+private val DinoBirdWing = Color(0xFF4A7A99)
+private val DinoBirdBody = Color(0xFF33566B)
+private val DinoBirdBeak = Color(0xFFE0A000)
+private val DinoBirdEye = Color(0xFF1A1A1A)
