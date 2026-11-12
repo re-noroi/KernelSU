@@ -31,6 +31,7 @@ fun TuningScreen(
         onBack = dropUnlessResumed { navigator.pop() },
         onOpenMemoryMonitor = dropUnlessResumed { navigator.push(Route.MemoryMonitor) },
         onOpenBattery = dropUnlessResumed { navigator.push(Route.Battery) },
+        onOpenThermalMonitor = dropUnlessResumed { navigator.push(Route.ThermalMonitor) },
         onSelectThermal = viewModel::selectThermal,
         onSetChargeWritable = viewModel::setChargeWritable,
         onSetChargeCurrent = viewModel::setChargeCurrent,
