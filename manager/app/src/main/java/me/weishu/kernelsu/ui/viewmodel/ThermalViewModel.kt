@@ -2,8 +2,6 @@ package me.weishu.kernelsu.ui.viewmodel
 
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
-import java.io.BufferedReader
-import java.io.InputStreamReader
 import java.util.Locale
 import kotlin.math.abs
 import kotlinx.coroutines.Dispatchers
@@ -11,6 +9,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
+import me.weishu.kernelsu.data.SysfsNodeCache
+import me.weishu.kernelsu.data.ThermalZonePath
 
 /** Display order of the sections in the Thermal Monitor screen. */
 enum class ThermalGroup {
@@ -43,58 +43,68 @@ data class ThermalUiState(
 )
 
 class ThermalViewModel : ViewModel() {
-    private val _uiState = MutableStateFlow(ThermalUiState())
+    // Seed from the cache warmed up when KTune was opened: the zone paths and
+    // the last snapshot are already known, so the tab renders immediately
+    // while the first live refresh runs.
+    private val _uiState = MutableStateFlow(seedFromCache())
     val uiState: StateFlow<ThermalUiState> = _uiState.asStateFlow()
 
     /** Reads every thermal zone once. Callers decide when/whether to repeat it. */
     suspend fun refresh() = withContext(Dispatchers.IO) {
-        val raw = execRootCommand(thermalCommand)
-        _uiState.value = ThermalUiState(zones = parseZones(raw), hasLoaded = true)
-    }
-
-    private fun execRootCommand(cmd: String): String {
-        return try {
-            val process = Runtime.getRuntime().exec(arrayOf("su", "-c", cmd))
-            val output = BufferedReader(InputStreamReader(process.inputStream)).readText().trim()
-            process.waitFor()
-            output
-        } catch (e: Exception) {
-            ""
+        var zones = SysfsNodeCache.thermalZonePaths().orEmpty()
+        if (zones.isEmpty()) {
+            // Cache was not warmed (screen opened directly); discover once.
+            SysfsNodeCache.warmUpThermal()
+            zones = SysfsNodeCache.thermalZonePaths().orEmpty()
         }
+
+        if (zones.isEmpty()) {
+            _uiState.value = ThermalUiState(hasLoaded = true)
+            return@withContext
+        }
+
+        var raw = SysfsNodeCache.readThermalTemperatures(zones)
+        var parsed = parseZones(zones, raw)
+        if (parsed.isEmpty()) {
+            // Stale paths (driver reloaded / zones renumbered): rediscover once.
+            SysfsNodeCache.invalidateThermal()
+            SysfsNodeCache.warmUpThermal()
+            zones = SysfsNodeCache.thermalZonePaths().orEmpty()
+            raw = SysfsNodeCache.thermalSnapshot().orEmpty()
+            parsed = parseZones(zones, raw)
+        }
+
+        SysfsNodeCache.updateThermalSnapshot(raw)
+        _uiState.value = ThermalUiState(zones = parsed, hasLoaded = true)
     }
 
-    // One shell pass over /sys/class/thermal/thermal_zone*, emitting
-    // "<index>|<type>|<temp>" per zone so a refresh spawns a single process.
-    private val thermalCommand: String =
-        "for z in /sys/class/thermal/thermal_zone*; do " +
-            "t=\$(cat \"\$z/type\" 2>/dev/null); " +
-            "v=\$(cat \"\$z/temp\" 2>/dev/null); " +
-            "echo \"\${z##*thermal_zone}|\$t|\$v\"; " +
-            "done"
+    private fun seedFromCache(): ThermalUiState {
+        val zones = SysfsNodeCache.thermalZonePaths().orEmpty()
+        val raw = SysfsNodeCache.thermalSnapshot()
+        if (zones.isEmpty() || raw == null) return ThermalUiState()
+        return ThermalUiState(zones = parseZones(zones, raw), hasLoaded = true)
+    }
 
-    private fun parseZones(raw: String): List<ThermalZoneInfo> {
+    // Output of SysfsNodeCache.buildThermalCommand: "<temp path> <temp>".
+    private fun parseZones(zones: List<ThermalZonePath>, raw: String): List<ThermalZoneInfo> {
+        if (raw.isBlank()) return emptyList()
+        val byPath = zones.associateBy { it.tempPath }
         return raw.lineSequence()
             .mapNotNull { line ->
-                val parts = line.split('|', limit = 3)
-                if (parts.size < 3) return@mapNotNull null
+                val parts = line.trim().split(' ', limit = 2)
+                if (parts.size < 2) return@mapNotNull null
 
-                val index = parts[0].trim().toIntOrNull() ?: return@mapNotNull null
-                val type = parts[1].trim()
-                val rawTemp = parts[2].trim().toLongOrNull() ?: return@mapNotNull null
-
-                // Zones without a type are unused placeholders; skip them so only
-                // real sensors are listed.
-                if (type.isBlank()) return@mapNotNull null
-                if (type.lowercase() in ignoredTypes) return@mapNotNull null
+                val path = byPath[parts[0]] ?: return@mapNotNull null
+                val rawTemp = parts[1].trim().toLongOrNull() ?: return@mapNotNull null
 
                 val celsius = toCelsius(rawTemp)
                 if (celsius < MIN_CELSIUS || celsius > MAX_CELSIUS) return@mapNotNull null
 
-                index to ThermalZoneInfo(
-                    name = "tz$index",
-                    type = type,
+                path.index to ThermalZoneInfo(
+                    name = "tz${path.index}",
+                    type = path.type,
                     temperature = String.format(Locale.US, "%.1f °C", celsius),
-                    group = classify(type),
+                    group = classify(path.type),
                 )
             }
             .sortedBy { it.first }
@@ -131,7 +141,6 @@ class ThermalViewModel : ViewModel() {
     }
 
     private companion object {
-        val ignoredTypes = setOf("unused", "invalid", "none")
         const val MIN_CELSIUS = -40.0
         const val MAX_CELSIUS = 150.0
     }

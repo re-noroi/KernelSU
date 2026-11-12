@@ -1,16 +1,14 @@
 package me.weishu.kernelsu.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
-import java.io.BufferedReader
-import java.io.InputStreamReader
 import java.util.Locale
 import kotlin.math.abs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
+import me.weishu.kernelsu.data.SysfsNodeCache
 
 data class BatteryUiState(
     val supported: Boolean = false,
@@ -31,64 +29,31 @@ data class BatteryUiState(
 )
 
 class BatteryViewModel : ViewModel() {
-    private val _uiState = MutableStateFlow(BatteryUiState())
+    // Seed from the cache warmed up when KTune was opened so the tab shows the
+    // last known values immediately instead of blank placeholders.
+    private val _uiState = MutableStateFlow(
+        SysfsNodeCache.batterySnapshot()?.let { parseBattery(it) } ?: BatteryUiState(),
+    )
     val uiState: StateFlow<BatteryUiState> = _uiState.asStateFlow()
 
     /** Reads the battery nodes once. Callers decide when/whether to repeat it. */
     suspend fun refresh() = withContext(Dispatchers.IO) {
-        refreshInternal()
-    }
-
-    private fun execRootCommand(cmd: String): String {
-        return try {
-            val process = Runtime.getRuntime().exec(arrayOf("su", "-c", cmd))
-            val output = BufferedReader(InputStreamReader(process.inputStream)).readText().trim()
-            process.waitFor()
-            output
-        } catch (e: Exception) {
-            ""
+        var nodes = SysfsNodeCache.batteryNodePaths().orEmpty()
+        if (nodes.isEmpty()) {
+            // Cache was not warmed (screen opened directly); discover once.
+            SysfsNodeCache.warmUpBattery()
+            nodes = SysfsNodeCache.batteryNodePaths().orEmpty()
         }
+        if (nodes.isEmpty()) return@withContext
+
+        val raw = SysfsNodeCache.readBatteryNodes(nodes)
+        if (raw.isBlank()) return@withContext
+
+        SysfsNodeCache.updateBatterySnapshot(raw)
+        _uiState.value = parseBattery(raw)
     }
 
-    private val readNodes = listOf(
-        "battery_capacity" to "/sys/class/power_supply/battery/capacity",
-        "battery_health" to "/sys/class/power_supply/battery/health",
-        "battery_status" to "/sys/class/power_supply/battery/status",
-        "battery_technology" to "/sys/class/power_supply/battery/technology",
-        "battery_temp" to "/sys/class/power_supply/battery/temp",
-        "battery_voltage_now" to "/sys/class/power_supply/battery/voltage_now",
-        "battery_current_now" to "/sys/class/power_supply/battery/current_now",
-        "battery_charge_counter" to "/sys/class/power_supply/battery/charge_counter",
-        "battery_charge_full" to "/sys/class/power_supply/battery/charge_full",
-        "battery_charge_full_design" to "/sys/class/power_supply/battery/charge_full_design",
-        "battery_cycle_count" to "/sys/class/power_supply/battery/cycle_count",
-        "bms_capacity" to "/sys/class/power_supply/bms/capacity",
-        "bms_health" to "/sys/class/power_supply/bms/health",
-        "bms_status" to "/sys/class/power_supply/bms/status",
-        "bms_technology" to "/sys/class/power_supply/bms/technology",
-        "bms_temp" to "/sys/class/power_supply/bms/temp",
-        "bms_voltage_now" to "/sys/class/power_supply/bms/voltage_now",
-        "bms_current_now" to "/sys/class/power_supply/bms/current_now",
-        "bms_charge_counter" to "/sys/class/power_supply/bms/charge_counter",
-        "bms_charge_full" to "/sys/class/power_supply/bms/charge_full",
-        "bms_charge_full_design" to "/sys/class/power_supply/bms/charge_full_design",
-        "bms_cycle_count" to "/sys/class/power_supply/bms/cycle_count",
-        "bms_battery_type" to "/sys/class/power_supply/bms/battery_type",
-        "usb_online" to "/sys/class/power_supply/usb/online",
-        "ac_online" to "/sys/class/power_supply/ac/online",
-        "wireless_online" to "/sys/class/power_supply/wireless/online",
-        "dc_online" to "/sys/class/power_supply/dc/online",
-    )
-
-    private val batteryCommand: String = buildString {
-        readNodes.forEach { (key, path) ->
-            append("echo __${key}__; cat $path 2>/dev/null; ")
-        }
-    }
-
-    private fun refreshInternal() {
-        val raw = execRootCommand(batteryCommand)
-
+    private fun parseBattery(raw: String): BatteryUiState {
         fun node(key: String): String {
             val marker = "__${key}__"
             val start = raw.indexOf(marker)
@@ -187,24 +152,22 @@ class BatteryViewModel : ViewModel() {
         val kernelProfileUah = if (bmsChargeFullUah > 0L) bmsChargeFullUah else chargeFullUah
         val kernelProfile = if (kernelProfileUah > 0L) formatMah(kernelProfileUah) else "—"
 
-        _uiState.update {
-            BatteryUiState(
-                supported = supported,
-                level = level,
-                health = health.ifBlank { "—" },
-                status = status.ifBlank { "—" },
-                powerSource = powerSource,
-                technology = technology.ifBlank { "—" },
-                temperature = temperature,
-                voltage = voltageMv?.let { "$it mV" } ?: "—",
-                currentLabel = currentLabel,
-                currentValue = currentValue,
-                chargedUpTo = chargedUpTo,
-                designCapacity = designCapacity,
-                kernelProfile = kernelProfile,
-                model = model.ifBlank { "—" },
-                cycleCount = cycleCount?.toString() ?: "—",
-            )
-        }
+        return BatteryUiState(
+            supported = supported,
+            level = level,
+            health = health.ifBlank { "—" },
+            status = status.ifBlank { "—" },
+            powerSource = powerSource,
+            technology = technology.ifBlank { "—" },
+            temperature = temperature,
+            voltage = voltageMv?.let { "$it mV" } ?: "—",
+            currentLabel = currentLabel,
+            currentValue = currentValue,
+            chargedUpTo = chargedUpTo,
+            designCapacity = designCapacity,
+            kernelProfile = kernelProfile,
+            model = model.ifBlank { "—" },
+            cycleCount = cycleCount?.toString() ?: "—",
+        )
     }
 }
