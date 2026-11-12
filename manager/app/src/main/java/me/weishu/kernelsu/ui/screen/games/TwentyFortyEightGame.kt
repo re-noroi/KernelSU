@@ -1,6 +1,7 @@
 package me.weishu.kernelsu.ui.screen.games
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,9 +20,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.abs
 import kotlin.random.Random
 
 private const val BOARD_SIZE = 4
@@ -143,6 +146,33 @@ fun Game2048(state: Game2048State) {
             .fillMaxSize()
             .clip(RoundedCornerShape(20.dp))
             .background(Twenty48Board)
+            .pointerInput(Unit) {
+                // viewConfiguration.touchSlop keeps the threshold density-independent.
+                val threshold = viewConfiguration.touchSlop * 2f
+                var dx = 0f
+                var dy = 0f
+
+                detectDragGestures(
+                    onDragStart = { dx = 0f; dy = 0f },
+                    onDragEnd = { dx = 0f; dy = 0f },
+                    onDragCancel = { dx = 0f; dy = 0f },
+                ) { change, drag ->
+                    change.consume()
+                    dx += drag.x
+                    dy += drag.y
+
+                    if (abs(dx) >= threshold || abs(dy) >= threshold) {
+                        if (abs(dx) > abs(dy)) {
+                            state.move(if (dx > 0) TileDirection.RIGHT else TileDirection.LEFT)
+                        } else {
+                            state.move(if (dy > 0) TileDirection.DOWN else TileDirection.UP)
+                        }
+                        // reset so one long drag can chain several moves
+                        dx = 0f
+                        dy = 0f
+                    }
+                }
+            }
             .padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
@@ -175,17 +205,6 @@ fun Game2048(state: Game2048State) {
             }
         }
     }
-}
-
-@Composable
-fun Game2048Controls(state: Game2048State, modifier: Modifier = Modifier) {
-    GamePad(
-        onUp = { state.move(TileDirection.UP) },
-        onDown = { state.move(TileDirection.DOWN) },
-        onLeft = { state.move(TileDirection.LEFT) },
-        onRight = { state.move(TileDirection.RIGHT) },
-        modifier = modifier,
-    )
 }
 
 private fun tileColor(value: Int): Color = when (value) {

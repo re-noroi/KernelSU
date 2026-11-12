@@ -133,11 +133,14 @@ private fun GameHost(
                 .fillMaxWidth(),
         ) {
             val ratio = game.aspectRatio
-            val width = minOf(maxWidth, maxHeight * ratio)
+            // Strip reserved for the pad, so big buttons never cover the game.
+            val padStrip = if (game.needsControls) 176.dp else 0.dp
+            val width = minOf(maxWidth, (maxHeight - padStrip).coerceAtLeast(0.dp) * ratio)
+
             Box(
                 modifier = Modifier
                     .size(width, width / ratio)
-                    .align(Alignment.Center)
+                    .align(Alignment.TopCenter)
                     .clip(RoundedCornerShape(20.dp)),
             ) {
                 when (game) {
@@ -166,18 +169,19 @@ private fun GameHost(
                     )
                 }
             }
-        }
-
         if (game.needsControls) {
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center,
-            ) {
-                when (game) {
-                    MiniGame.SNAKE -> SnakeControls(state = session.snake)
-                    MiniGame.DINO -> DinoControls(state = session.dino)
-                    MiniGame.GAME_2048 -> Game2048Controls(state = session.game2048)
-                    else -> Unit
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    when (game) {
+                        MiniGame.SNAKE -> SnakeControls(state = session.snake)
+                        MiniGame.DINO -> DinoControls(state = session.dino)
+                        else -> Unit
+                    }
                 }
             }
         }

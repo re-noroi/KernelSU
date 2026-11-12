@@ -155,6 +155,7 @@ fun SnakeControls(state: SnakeGameState, modifier: Modifier = Modifier) {
         onLeft = { state.turn(SnakeDir.LEFT) },
         onRight = { state.turn(SnakeDir.RIGHT) },
         modifier = modifier,
+        keySize = 60.dp,
     )
 }
 

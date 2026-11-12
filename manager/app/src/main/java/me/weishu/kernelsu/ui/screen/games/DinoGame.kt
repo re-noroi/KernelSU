@@ -5,7 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -272,24 +272,26 @@ fun DinoGame(state: DinoGameState) {
     DinoCanvas(state = state, modifier = Modifier.fillMaxSize())
 }
 
-/** Jump and slide buttons, shown under the play field. */
+/** Jump (up) and slide (hold down), stacked vertically like a pad. */
 @Composable
 fun DinoControls(state: DinoGameState, modifier: Modifier = Modifier) {
-    Row(
+    Column(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(24.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        GameHoldButton(
+        GamePadKey(
+            icon = Icons.Rounded.KeyboardArrowUp,
+            contentDescription = stringResource(R.string.mini_game_jump),
+            onPress = state::tap,
+            size = 64.dp,
+        )
+        GamePadKey(
             icon = Icons.Rounded.KeyboardArrowDown,
             contentDescription = stringResource(R.string.mini_game_slide),
             onPress = state::startSlide,
             onRelease = state::stopSlide,
-        )
-        GameControlButton(
-            icon = Icons.Rounded.KeyboardArrowUp,
-            contentDescription = stringResource(R.string.mini_game_jump),
-            onClick = state::tap,
+            size = 64.dp,
         )
     }
 }
