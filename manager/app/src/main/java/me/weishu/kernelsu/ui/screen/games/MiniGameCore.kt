@@ -160,7 +160,8 @@ class MiniGameSession(context: Context) {
         GameAudio.enabled = soundEnabled
     }
 
-    fun setSoundEnabled(enabled: Boolean) {
+    fun toggleSound() {
+        val enabled = !soundEnabled
         soundEnabled = enabled
         GameAudio.enabled = enabled
         prefs.edit().putBoolean("sound_enabled", enabled).apply()

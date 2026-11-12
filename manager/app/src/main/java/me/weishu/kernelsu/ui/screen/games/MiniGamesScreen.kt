@@ -93,7 +93,7 @@ fun MiniGamesScreen() {
                     session = session,
                     game = selected,
                     soundEnabled = session.soundEnabled,
-                    onToggleSound = { session.setSoundEnabled(!session.soundEnabled) },
+                    onToggleSound = { session.toggleSound() },
                 )
             }
         }
