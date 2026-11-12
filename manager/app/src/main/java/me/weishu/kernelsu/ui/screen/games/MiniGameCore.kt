@@ -114,7 +114,7 @@ enum class MiniGame(
         R.string.mini_game_2048_subtitle,
         Icons.Rounded.Dialpad,
         Color(0xFFEDC22E),
-        needsControls = true,
+        needsControls = false,
     ),
 }
 
@@ -517,7 +517,53 @@ internal fun GameHoldButton(
     }
 }
 
-/** Four-way pad used by Snake and 2048. */
+private val PadKeySize = 56.dp
+private val PadKeyGap = 6.dp
+private val PadKeyBackground = Color(0xCC1F1F1F)
+private val PadCenterBackground = Color(0x99141414)
+
+/**
+ * One key of the on-screen pad.
+ * [onPress] fires as soon as the finger lands, [onRelease] when it lifts,
+ * so it works both as a plain tap button and as a hold button.
+ */
+@Composable
+internal fun GamePadKey(
+    icon: ImageVector,
+    contentDescription: String,
+    onPress: () -> Unit,
+    modifier: Modifier = Modifier,
+    onRelease: () -> Unit = {},
+    size: Dp = PadKeySize,
+) {
+    val press by rememberUpdatedState(onPress)
+    val release by rememberUpdatedState(onRelease)
+    Box(
+        modifier = modifier
+            .size(size)
+            .clip(RoundedCornerShape(size * 0.30f))
+            .background(PadKeyBackground)
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onPress = {
+                        press()
+                        tryAwaitRelease()
+                        release()
+                    },
+                )
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = Color.White,
+            modifier = Modifier.size(size * 0.62f),
+        )
+    }
+}
+
+/** Four-way cross pad, laid out like a PS1 d-pad. */
 @Composable
 internal fun GamePad(
     onUp: () -> Unit,
@@ -525,33 +571,52 @@ internal fun GamePad(
     onLeft: () -> Unit,
     onRight: () -> Unit,
     modifier: Modifier = Modifier,
+    keySize: Dp = PadKeySize,
 ) {
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(PadKeyGap),
     ) {
-        GameControlButton(
+        GamePadKey(
             icon = Icons.Rounded.KeyboardArrowUp,
             contentDescription = stringResource(R.string.mini_game_move_up),
-            onClick = onUp,
+            onPress = onUp,
+            size = keySize,
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            GameControlButton(
+        Row(horizontalArrangement = Arrangement.spacedBy(PadKeyGap)) {
+            GamePadKey(
                 icon = Icons.Rounded.KeyboardArrowLeft,
                 contentDescription = stringResource(R.string.mini_game_move_left),
-                onClick = onLeft,
+                onPress = onLeft,
+                size = keySize,
             )
-            GameControlButton(
-                icon = Icons.Rounded.KeyboardArrowDown,
-                contentDescription = stringResource(R.string.mini_game_move_down),
-                onClick = onDown,
-            )
-            GameControlButton(
+            Box(
+                modifier = Modifier
+                    .size(keySize)
+                    .clip(RoundedCornerShape(keySize * 0.30f))
+                    .background(PadCenterBackground),
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(
+                    Modifier
+                        .size(keySize * 0.22f)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.35f)),
+                )
+            }
+            GamePadKey(
                 icon = Icons.Rounded.KeyboardArrowRight,
                 contentDescription = stringResource(R.string.mini_game_move_right),
-                onClick = onRight,
+                onPress = onRight,
+                size = keySize,
             )
         }
+        GamePadKey(
+            icon = Icons.Rounded.KeyboardArrowDown,
+            contentDescription = stringResource(R.string.mini_game_move_down),
+            onPress = onDown,
+            size = keySize,
+        )
     }
 }
