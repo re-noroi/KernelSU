@@ -1,15 +1,13 @@
 package me.weishu.kernelsu.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
-import java.io.BufferedReader
-import java.io.InputStreamReader
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
+import me.weishu.kernelsu.data.SysfsNodeCache
 
 data class MemInfoEntry(
     val key: String,
@@ -47,38 +45,25 @@ data class MemoryMonitorUiState(
 }
 
 class MemoryMonitorViewModel : ViewModel() {
-    private val _uiState = MutableStateFlow(MemoryMonitorUiState())
+    // Seed from the cache warmed up when KTune was opened so the tab renders
+    // the last known values immediately instead of a loading state.
+    private val _uiState = MutableStateFlow(
+        SysfsNodeCache.memorySnapshot()?.let { parseMemory(it) } ?: MemoryMonitorUiState(),
+    )
     val uiState: StateFlow<MemoryMonitorUiState> = _uiState.asStateFlow()
 
     /** Reads the current values once. Callers decide when/whether to repeat it. */
     suspend fun refresh() = withContext(Dispatchers.IO) {
-        refreshInternal()
+        // Cheap no-op once warmed; otherwise resolves the zRAM device once.
+        SysfsNodeCache.warmUpMemory()
+        val raw = SysfsNodeCache.readMemoryNodes(SysfsNodeCache.memoryNodePaths())
+        if (raw.isBlank()) return@withContext
+
+        SysfsNodeCache.updateMemorySnapshot(raw)
+        _uiState.value = parseMemory(raw)
     }
 
-    private fun execRootCommand(cmd: String): String {
-        return try {
-            val process = Runtime.getRuntime().exec(arrayOf("su", "-c", cmd))
-            val output = BufferedReader(InputStreamReader(process.inputStream)).readText().trim()
-            process.waitFor()
-            output
-        } catch (e: Exception) {
-            ""
-        }
-    }
-
-    private fun refreshInternal() {
-        val raw = execRootCommand(
-            "cat /proc/meminfo 2>/dev/null;" +
-                " echo __SWAPS__;" +
-                " cat /proc/swaps 2>/dev/null;" +
-                " echo __MMSTAT__;" +
-                " cat /sys/block/zram0/mm_stat 2>/dev/null;" +
-                " echo __DISKSIZE__;" +
-                " cat /sys/block/zram0/disksize 2>/dev/null;" +
-                " echo __COMPALGO__;" +
-                " cat /sys/block/zram0/comp_algorithm 2>/dev/null"
-        )
-
+    private fun parseMemory(raw: String): MemoryMonitorUiState {
         val parts = raw.split("__SWAPS__", "__MMSTAT__", "__DISKSIZE__", "__COMPALGO__")
         val meminfo = parts.getOrNull(0).orEmpty()
         val swaps = parts.getOrNull(1).orEmpty()
@@ -136,19 +121,17 @@ class MemoryMonitorViewModel : ViewModel() {
             if (key.isEmpty() || value.isEmpty()) null else MemInfoEntry(key, value)
         }
 
-        _uiState.update {
-            it.copy(
-                isLoading = false,
-                ramTotalBytes = ramTotalBytes,
-                ramUsedBytes = ramUsedBytes,
-                swapTotalBytes = swapTotalKb * 1024L,
-                swapUsedBytes = swapUsedKb * 1024L,
-                zramSupported = zramSupported,
-                zramAlgorithm = zramAlgorithm,
-                zramOriginalBytes = originalBytes,
-                zramCompressedBytes = compressedBytes,
-                memInfo = memInfoEntries,
-            )
-        }
+        return MemoryMonitorUiState(
+            isLoading = false,
+            ramTotalBytes = ramTotalBytes,
+            ramUsedBytes = ramUsedBytes,
+            swapTotalBytes = swapTotalKb * 1024L,
+            swapUsedBytes = swapUsedKb * 1024L,
+            zramSupported = zramSupported,
+            zramAlgorithm = zramAlgorithm,
+            zramOriginalBytes = originalBytes,
+            zramCompressedBytes = compressedBytes,
+            memInfo = memInfoEntries,
+        )
     }
 }
