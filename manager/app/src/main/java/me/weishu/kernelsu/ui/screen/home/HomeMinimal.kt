@@ -2,6 +2,8 @@ package me.weishu.kernelsu.ui.screen.home
 
 import android.os.SystemClock
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -52,8 +54,12 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -77,6 +83,7 @@ import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.LocalKernelTool
 import me.weishu.kernelsu.ui.component.bottombar.RegisterTabReselect
 import me.weishu.kernelsu.ui.navigation3.Navigator
+import me.weishu.kernelsu.ui.navigation3.Route
 import me.weishu.kernelsu.ui.theme.LocalAppIconMode
 
 @Suppress("UNUSED_PARAMETER")
@@ -100,6 +107,7 @@ fun HomePagerMinimal(
             MinimalTopBar(
                 appName = state.appName,
                 isCurrentPage = isCurrentPage,
+                onOpenMiniGames = { navigator.push(Route.MiniGames) },
             )
         },
         contentWindowInsets = WindowInsets.safeDrawing.only(
@@ -135,12 +143,15 @@ fun HomePagerMinimal(
 private fun MinimalTopBar(
     appName: String,
     isCurrentPage: Boolean,
+    onOpenMiniGames: () -> Unit,
 ) {
     val scale = remember { Animatable(1f) }
     val rotation = remember { Animatable(0f) }
     val coroutineScope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
     val appIconMode = LocalAppIconMode.current
+    var tapCount by remember { mutableIntStateOf(0) }
+    var lastTapAt by remember { mutableLongStateOf(0L) }
 
     LaunchedEffect(isCurrentPage) {
         if (!isCurrentPage) return@LaunchedEffect
@@ -169,7 +180,26 @@ private fun MinimalTopBar(
             IconButton(
                 onClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.VirtualKey)
-                    coroutineScope.launch { wobbleHomeIcon(scale, rotation) }
+                    val now = SystemClock.uptimeMillis()
+                    tapCount = if (now - lastTapAt > 1200L) 1 else tapCount + 1
+                    lastTapAt = now
+
+                    if (tapCount >= 4) {
+                        // Easter egg: a full spin, then the mini-game hub.
+                        tapCount = 0
+                        coroutineScope.launch {
+                            scale.animateTo(0.82f, tween(90))
+                            scale.animateTo(1f, tween(180))
+                        }
+                        coroutineScope.launch {
+                            rotation.animateTo(0f, tween(1))
+                            rotation.animateTo(1080f, tween(700, easing = LinearEasing))
+                            onOpenMiniGames()
+                            rotation.snapTo(0f)
+                        }
+                    } else {
+                        coroutineScope.launch { wobbleHomeIcon(scale, rotation) }
+                    }
                 }
             ) {
                 Icon(
