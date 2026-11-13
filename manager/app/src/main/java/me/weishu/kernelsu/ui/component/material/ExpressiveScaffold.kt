@@ -23,7 +23,11 @@ fun ExpressiveScaffold(
     snackbarHost: @Composable () -> Unit = {},
     floatingActionButton: @Composable () -> Unit = {},
     floatingActionButtonPosition: FabPosition = FabPosition.End,
-    containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
+    containerColor: Color = if (LocalUiMode.current == UiMode.Minimal) {
+        Color.Transparent
+    } else {
+        MaterialTheme.colorScheme.surfaceContainer
+    },
     contentColor: Color = contentColorFor(containerColor),
     contentWindowInsets: WindowInsets = ScaffoldDefaults.contentWindowInsets,
     content: @Composable (PaddingValues) -> Unit,
