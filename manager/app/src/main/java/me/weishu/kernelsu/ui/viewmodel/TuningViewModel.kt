@@ -1,15 +1,17 @@
 package me.weishu.kernelsu.ui.viewmodel
 
+import com.topjohnwu.superuser.ShellUtils
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.io.BufferedReader
-import java.io.InputStreamReader
+import me.weishu.kernelsu.ui.util.getRootShell
 import me.weishu.kernelsu.ui.util.execKsudCommand
 import me.weishu.kernelsu.ui.util.TuningSignal
 import me.weishu.kernelsu.ui.screen.tuning.SchedulerState
@@ -44,15 +46,18 @@ data class TuningUiState(
     val zram: ZramState = ZramState(),
 )
 
+@OptIn(FlowPreview::class)
 class TuningViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(TuningUiState())
     val uiState: StateFlow<TuningUiState> = _uiState.asStateFlow()
 
     init {
-        viewModelScope.launch {
-            TuningSignal.changes.collect {
-                refreshInternal()
-            }
+        viewModelScope.launch(Dispatchers.IO) {
+            TuningSignal.changes
+                .debounce(500L)
+                .collect {
+                    refreshInternal()
+                }
         }
     }
 
@@ -82,10 +87,7 @@ class TuningViewModel : ViewModel() {
 
     private fun execRootCommand(cmd: String): String {
         return try {
-            val process = Runtime.getRuntime().exec(arrayOf("su", "-c", cmd))
-            val output = BufferedReader(InputStreamReader(process.inputStream)).readText().trim()
-            process.waitFor()
-            output
+            ShellUtils.fastCmd(getRootShell(true), cmd).trim()
         } catch (e: Exception) {
             ""
         }
