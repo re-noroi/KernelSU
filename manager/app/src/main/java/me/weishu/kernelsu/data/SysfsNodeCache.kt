@@ -1,6 +1,5 @@
 package me.weishu.kernelsu.data
 
-import com.topjohnwu.superuser.ShellUtils
 import androidx.compose.runtime.Immutable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -266,7 +265,9 @@ object SysfsNodeCache {
 
     fun execRootCommand(cmd: String): String {
         return try {
-            ShellUtils.fastCmd(getRootShell(true), cmd).trim()
+            val out = mutableListOf<String>()
+            getRootShell(true).newJob().add(cmd).to(out).exec()
+            out.joinToString("\n").trim()
         } catch (e: Exception) {
             ""
         }
