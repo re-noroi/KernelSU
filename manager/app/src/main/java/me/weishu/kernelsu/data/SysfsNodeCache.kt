@@ -1,12 +1,12 @@
 package me.weishu.kernelsu.data
 
+import com.topjohnwu.superuser.ShellUtils
 import androidx.compose.runtime.Immutable
-import java.io.BufferedReader
-import java.io.InputStreamReader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import me.weishu.kernelsu.ui.util.getRootShell
 
 @Immutable
 data class ThermalZonePath(
@@ -266,10 +266,7 @@ object SysfsNodeCache {
 
     fun execRootCommand(cmd: String): String {
         return try {
-            val process = Runtime.getRuntime().exec(arrayOf("su", "-c", cmd))
-            val output = BufferedReader(InputStreamReader(process.inputStream)).readText().trim()
-            process.waitFor()
-            output
+            ShellUtils.fastCmd(getRootShell(true), cmd).trim()
         } catch (e: Exception) {
             ""
         }
