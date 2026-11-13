@@ -166,30 +166,63 @@ fun KernelSUTheme(
             UiMode.Minimal -> {
                 val wallpaper = LocalMinimalWallpaper.current
                 val bitmap = rememberMinimalWallpaper(wallpaper)
-                
-                Box(modifier = Modifier.fillMaxSize()) {
-                    if (bitmap != null) {
-                        Image(
-                            bitmap = bitmap,
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                        // Dim the wallpaper so text is readable
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.Black.copy(alpha = 0.4f))
+
+                CompositionLocalProvider(LocalMinimalWallpaperBitmap provides bitmap) {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        if (bitmap != null) {
+                            Image(
+                                bitmap = bitmap,
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                            // Dim the wallpaper so text is readable
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Black.copy(alpha = MINIMAL_MAIN_WALLPAPER_DIM))
+                            )
+                        }
+                        MaterialKernelSUTheme(
+                            appSettings = appSettings,
+                            minimal = true,
+                            content = content
                         )
                     }
-                    MaterialKernelSUTheme(
-                        appSettings = appSettings,
-                        minimal = true,
-                        content = content
-                    )
                 }
             }
         }
+    }
+}
+
+/**
+ * Opaque wallpaper backdrop for pushed pages in the Minimal UI.
+ *
+ * The home screen lets the shared wallpaper show through at
+ * [MINIMAL_MAIN_WALLPAPER_DIM]. A pushed page draws the same wallpaper itself
+ * (so the page underneath can never show through while it fades) with an extra
+ * ~20% dim, which keeps it slightly darker than the home screen and readable.
+ */
+@Composable
+fun MinimalTabBackground(content: @Composable () -> Unit) {
+    val bitmap = LocalMinimalWallpaperBitmap.current
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (bitmap != null) {
+            Image(
+                bitmap = bitmap,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = MINIMAL_PAGE_WALLPAPER_DIM))
+            )
+        } else {
+            Box(modifier = Modifier.fillMaxSize().background(Color.Black))
+        }
+        content()
     }
 }
 
@@ -210,6 +243,15 @@ val LocalAppIconMode = staticCompositionLocalOf { 0 }
 val LocalModernBento = staticCompositionLocalOf { false }
 
 val LocalMinimalWallpaper = staticCompositionLocalOf { "" }
+
+/** Wallpaper bitmap shared by the Minimal home screen and every pushed page. */
+val LocalMinimalWallpaperBitmap = staticCompositionLocalOf<ImageBitmap?> { null }
+
+/** Dim applied to the wallpaper behind the Minimal home screen. */
+private const val MINIMAL_MAIN_WALLPAPER_DIM = 0.4f
+
+/** Pushed pages are ~20% dimmer than the home screen so their content stays readable. */
+private const val MINIMAL_PAGE_WALLPAPER_DIM = 1f - (1f - MINIMAL_MAIN_WALLPAPER_DIM) * 0.8f
 
 val LocalClassicUi = staticCompositionLocalOf { false }
 
