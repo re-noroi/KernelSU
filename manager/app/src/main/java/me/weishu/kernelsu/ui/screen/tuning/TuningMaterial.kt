@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Compress
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LargeFlexibleTopAppBar
@@ -167,6 +168,11 @@ fun TuningScreenMaterial(
                             enabled = true,
                             onCheckedChange = actions.onSetPersist,
                         )
+                    }
+                    item {
+                        SegmentedItemContainer {
+                            TuningDocsEntry(onClick = actions.onOpenTuningDocs)
+                        }
                     }
                 }
             }
@@ -1002,4 +1008,38 @@ private fun cgroupLabel(name: String): String = when (name) {
     "top-app" -> stringResource(R.string.tuning_sched_cgroup_top_app)
     "foreground" -> stringResource(R.string.tuning_sched_cgroup_foreground)
     else -> name
+}
+
+@Composable
+private fun TuningDocsEntry(onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Filled.MenuBook,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.tuning_docs_entry_title),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Text(
+                text = stringResource(R.string.tuning_docs_entry_summary),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }
