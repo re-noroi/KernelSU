@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.viewmodel
 
+import com.topjohnwu.superuser.ShellUtils
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -8,8 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.io.BufferedReader
-import java.io.InputStreamReader
+import me.weishu.kernelsu.ui.util.getRootShell
 import me.weishu.kernelsu.ui.util.execKsudCommand
 import me.weishu.kernelsu.ui.util.TuningSignal
 import me.weishu.kernelsu.ui.screen.tuning.SchedulerState
@@ -82,10 +82,7 @@ class TuningViewModel : ViewModel() {
 
     private fun execRootCommand(cmd: String): String {
         return try {
-            val process = Runtime.getRuntime().exec(arrayOf("su", "-c", cmd))
-            val output = BufferedReader(InputStreamReader(process.inputStream)).readText().trim()
-            process.waitFor()
-            output
+            ShellUtils.fastCmd(getRootShell(true), cmd).trim()
         } catch (e: Exception) {
             ""
         }
@@ -443,7 +440,6 @@ class TuningViewModel : ViewModel() {
 
             if (!success) {
                 _uiState.update { it.copy(errorMessage = "Failed: $type") }
-                refreshInternal()
             }
         }
     }
