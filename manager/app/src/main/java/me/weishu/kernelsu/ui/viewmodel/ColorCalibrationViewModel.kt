@@ -27,10 +27,13 @@ data class ColorCalibrationUiState(
     companion object {
         const val RGB_MIN = 0
         const val RGB_MAX = 256
-        const val SATURATION_MIN = 0
-        const val SATURATION_MAX = 255
-        const val HUE_MIN = -180
-        const val HUE_MAX = 180
+
+        // msm_drm KCAL treats 255 as neutral for saturation/value/contrast and
+        // allows roughly +/-128 around it.
+        const val SATURATION_MIN = 128
+        const val SATURATION_MAX = 383
+        const val HUE_MIN = 0
+        const val HUE_MAX = 1536
 
         const val DEFAULT_RED = 256
         const val DEFAULT_GREEN = 256
@@ -68,34 +71,44 @@ class ColorCalibrationViewModel : ViewModel() {
     }
 
     fun setEnabled(enabled: Boolean) {
+        val paths = SysfsNodeCache.colorNodePaths()
+        if (paths?.enable == null) return
         _uiState.value = _uiState.value.copy(enabled = enabled)
-        write { paths -> SysfsNodeCache.writeColorNode(paths.enable, if (enabled) "1" else "0") }
+        write { SysfsNodeCache.writeColorNode(paths.enable, if (enabled) "1" else "0") }
     }
 
-    fun setRed(value: Int) = updateRgb { it.copy(red = value.coerceIn(0, 256)) }
-    fun setGreen(value: Int) = updateRgb { it.copy(green = value.coerceIn(0, 256)) }
-    fun setBlue(value: Int) = updateRgb { it.copy(blue = value.coerceIn(0, 256)) }
+    fun setRed(value: Int) = updateRgb { it.copy(red = value.coerceIn(ColorCalibrationUiState.RGB_MIN, ColorCalibrationUiState.RGB_MAX)) }
+    fun setGreen(value: Int) = updateRgb { it.copy(green = value.coerceIn(ColorCalibrationUiState.RGB_MIN, ColorCalibrationUiState.RGB_MAX)) }
+    fun setBlue(value: Int) = updateRgb { it.copy(blue = value.coerceIn(ColorCalibrationUiState.RGB_MIN, ColorCalibrationUiState.RGB_MAX)) }
 
     fun setSaturation(value: Int) {
-        val next = _uiState.value.copy(saturation = value.coerceIn(0, 255))
+        val next = _uiState.value.copy(
+            saturation = value.coerceIn(ColorCalibrationUiState.SATURATION_MIN, ColorCalibrationUiState.SATURATION_MAX),
+        )
         _uiState.value = next
         write { SysfsNodeCache.writeColorNode(it.saturation, next.saturation.toString()) }
     }
 
     fun setValue(value: Int) {
-        val next = _uiState.value.copy(value = value.coerceIn(0, 255))
+        val next = _uiState.value.copy(
+            value = value.coerceIn(ColorCalibrationUiState.SATURATION_MIN, ColorCalibrationUiState.SATURATION_MAX),
+        )
         _uiState.value = next
         write { SysfsNodeCache.writeColorNode(it.value, next.value.toString()) }
     }
 
     fun setContrast(value: Int) {
-        val next = _uiState.value.copy(contrast = value.coerceIn(0, 255))
+        val next = _uiState.value.copy(
+            contrast = value.coerceIn(ColorCalibrationUiState.SATURATION_MIN, ColorCalibrationUiState.SATURATION_MAX),
+        )
         _uiState.value = next
         write { SysfsNodeCache.writeColorNode(it.contrast, next.contrast.toString()) }
     }
 
     fun setHue(value: Int) {
-        val next = _uiState.value.copy(hue = value.coerceIn(-180, 180))
+        val next = _uiState.value.copy(
+            hue = value.coerceIn(ColorCalibrationUiState.HUE_MIN, ColorCalibrationUiState.HUE_MAX),
+        )
         _uiState.value = next
         write { SysfsNodeCache.writeColorNode(it.hue, next.hue.toString()) }
     }
@@ -103,6 +116,7 @@ class ColorCalibrationViewModel : ViewModel() {
     /** Restores every calibration slider to the driver defaults. */
     fun reset() {
         val defaults = _uiState.value.copy(
+            enabled = true,
             red = ColorCalibrationUiState.DEFAULT_RED,
             green = ColorCalibrationUiState.DEFAULT_GREEN,
             blue = ColorCalibrationUiState.DEFAULT_BLUE,
@@ -113,7 +127,8 @@ class ColorCalibrationViewModel : ViewModel() {
         )
         _uiState.value = defaults
         write { paths ->
-            SysfsNodeCache.writeColorNode(paths.rgb, "${defaults.red} ${defaults.green} ${defaults.blue}")
+            writeRgb(paths, defaults)
+            SysfsNodeCache.writeColorNode(paths.enable, "1")
             SysfsNodeCache.writeColorNode(paths.saturation, defaults.saturation.toString())
             SysfsNodeCache.writeColorNode(paths.value, defaults.value.toString())
             SysfsNodeCache.writeColorNode(paths.contrast, defaults.contrast.toString())
@@ -124,7 +139,17 @@ class ColorCalibrationViewModel : ViewModel() {
     private fun updateRgb(transform: (ColorCalibrationUiState) -> ColorCalibrationUiState) {
         val next = transform(_uiState.value)
         _uiState.value = next
-        write { SysfsNodeCache.writeColorNode(it.rgb, "${next.red} ${next.green} ${next.blue}") }
+        write { paths -> writeRgb(paths, next) }
+    }
+
+    private fun writeRgb(paths: me.weishu.kernelsu.data.ColorNodePaths, state: ColorCalibrationUiState) {
+        if (paths.hasSeparateRgb) {
+            SysfsNodeCache.writeColorNode(paths.red, state.red.toString())
+            SysfsNodeCache.writeColorNode(paths.green, state.green.toString())
+            SysfsNodeCache.writeColorNode(paths.blue, state.blue.toString())
+        } else {
+            SysfsNodeCache.writeColorNode(paths.rgb, "${state.red} ${state.green} ${state.blue}")
+        }
     }
 
     private fun write(block: (me.weishu.kernelsu.data.ColorNodePaths) -> Unit) {
@@ -142,25 +167,36 @@ class ColorCalibrationViewModel : ViewModel() {
             return raw.substring(valueStart, if (next < 0) raw.length else next).trim()
         }
 
-        val rgb = node("RGB").split(Regex("\\s+")).mapNotNull { it.toIntOrNull() }
+        val redRaw = node("RED").toIntOrNull()
+        val greenRaw = node("GREEN").toIntOrNull()
+        val blueRaw = node("BLUE").toIntOrNull()
+        val combined = node("RGB").split(Regex("\\s+")).mapNotNull { it.toIntOrNull() }
+        val separateRgb = redRaw != null && greenRaw != null && blueRaw != null
+
         val enableRaw = node("ENABLE")
-        val enabled = enableRaw.toIntOrNull()?.let { it != 0 } ?: true
         val saturation = node("SATURATION").toIntOrNull()
         val value = node("VALUE").toIntOrNull()
         val contrast = node("CONTRAST").toIntOrNull()
         val hue = node("HUE").toIntOrNull()
 
         return ColorCalibrationUiState(
-            supported = rgb.size >= 3,
+            supported = separateRgb || combined.size >= 3,
             enableSupported = enableRaw.isNotBlank(),
-            enabled = enabled,
-            red = rgb.getOrNull(0)?.coerceIn(0, 256) ?: ColorCalibrationUiState.DEFAULT_RED,
-            green = rgb.getOrNull(1)?.coerceIn(0, 256) ?: ColorCalibrationUiState.DEFAULT_GREEN,
-            blue = rgb.getOrNull(2)?.coerceIn(0, 256) ?: ColorCalibrationUiState.DEFAULT_BLUE,
-            saturation = saturation?.coerceIn(0, 255) ?: ColorCalibrationUiState.DEFAULT_SATURATION,
-            value = value?.coerceIn(0, 255) ?: ColorCalibrationUiState.DEFAULT_VALUE,
-            contrast = contrast?.coerceIn(0, 255) ?: ColorCalibrationUiState.DEFAULT_CONTRAST,
-            hue = hue?.coerceIn(-180, 180) ?: ColorCalibrationUiState.DEFAULT_HUE,
+            enabled = enableRaw.toIntOrNull()?.let { it != 0 } ?: true,
+            red = (redRaw ?: combined.getOrNull(0))?.coerceIn(ColorCalibrationUiState.RGB_MIN, ColorCalibrationUiState.RGB_MAX)
+                ?: ColorCalibrationUiState.DEFAULT_RED,
+            green = (greenRaw ?: combined.getOrNull(1))?.coerceIn(ColorCalibrationUiState.RGB_MIN, ColorCalibrationUiState.RGB_MAX)
+                ?: ColorCalibrationUiState.DEFAULT_GREEN,
+            blue = (blueRaw ?: combined.getOrNull(2))?.coerceIn(ColorCalibrationUiState.RGB_MIN, ColorCalibrationUiState.RGB_MAX)
+                ?: ColorCalibrationUiState.DEFAULT_BLUE,
+            saturation = saturation?.coerceIn(ColorCalibrationUiState.SATURATION_MIN, ColorCalibrationUiState.SATURATION_MAX)
+                ?: ColorCalibrationUiState.DEFAULT_SATURATION,
+            value = value?.coerceIn(ColorCalibrationUiState.SATURATION_MIN, ColorCalibrationUiState.SATURATION_MAX)
+                ?: ColorCalibrationUiState.DEFAULT_VALUE,
+            contrast = contrast?.coerceIn(ColorCalibrationUiState.SATURATION_MIN, ColorCalibrationUiState.SATURATION_MAX)
+                ?: ColorCalibrationUiState.DEFAULT_CONTRAST,
+            hue = hue?.coerceIn(ColorCalibrationUiState.HUE_MIN, ColorCalibrationUiState.HUE_MAX)
+                ?: ColorCalibrationUiState.DEFAULT_HUE,
         )
     }
 }
