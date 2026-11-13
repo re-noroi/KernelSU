@@ -4,9 +4,11 @@ import com.topjohnwu.superuser.ShellUtils
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import me.weishu.kernelsu.ui.util.getRootShell
@@ -44,15 +46,18 @@ data class TuningUiState(
     val zram: ZramState = ZramState(),
 )
 
+@OptIn(FlowPreview::class)
 class TuningViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(TuningUiState())
     val uiState: StateFlow<TuningUiState> = _uiState.asStateFlow()
 
     init {
-        viewModelScope.launch {
-            TuningSignal.changes.collect {
-                refreshInternal()
-            }
+        viewModelScope.launch(Dispatchers.IO) {
+            TuningSignal.changes
+                .debounce(500L)
+                .collect {
+                    refreshInternal()
+                }
         }
     }
 
@@ -440,6 +445,7 @@ class TuningViewModel : ViewModel() {
 
             if (!success) {
                 _uiState.update { it.copy(errorMessage = "Failed: $type") }
+                refreshInternal()
             }
         }
     }
