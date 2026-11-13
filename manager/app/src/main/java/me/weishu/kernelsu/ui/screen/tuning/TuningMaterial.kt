@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.Router
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Compress
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LargeFlexibleTopAppBar
@@ -42,6 +43,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
@@ -620,6 +622,66 @@ fun TuningScreenMaterial(
                     }
                 }
             }
+
+            // ---- MISCELLANEOUS ----
+            item { SectionHeader(stringResource(R.string.tuning_section_misc)) }
+            item {
+                SegmentedColumn(
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
+                ) {
+                    item {
+                        SegmentedItemContainer {
+                            ColorCalibrationEntry(onClick = actions.onOpenColorCalibration)
+                        }
+                    }
+                }
+            }
+            item {
+                TonalCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
+                    shape = RoundedCornerShape(16.dp),
+                ) {
+                    Column {
+                        IntInputItem(
+                            title = stringResource(R.string.tuning_pixel_density),
+                            value = state.densityOverride ?: state.physicalDensity,
+                            range = 240..1200,
+                            enabled = state.physicalDensity > 0,
+                            onValueChange = actions.onSetDensity,
+                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = state.densityOverride?.let { override ->
+                                    stringResource(
+                                        R.string.tuning_pixel_density_override,
+                                        override,
+                                        state.physicalDensity,
+                                    )
+                                } ?: stringResource(
+                                    R.string.tuning_pixel_density_physical,
+                                    state.physicalDensity,
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            TextButton(
+                                onClick = actions.onResetDensity,
+                                enabled = state.densityOverride != null,
+                            ) {
+                                Text(stringResource(R.string.tuning_reset))
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -854,6 +916,40 @@ private fun BatteryEntry(onClick: () -> Unit) {
             )
             Text(
                 text = stringResource(R.string.battery_entry_summary),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun ColorCalibrationEntry(onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Palette,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.tuning_color_calibration),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Text(
+                text = stringResource(R.string.tuning_color_calibration_summary),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
