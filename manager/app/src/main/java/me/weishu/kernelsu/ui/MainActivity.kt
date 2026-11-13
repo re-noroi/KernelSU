@@ -96,6 +96,7 @@ import me.weishu.kernelsu.ui.screen.modulerepo.ModuleRepoScreen
 import me.weishu.kernelsu.ui.screen.scriptrun.ScriptRunScreen
 import me.weishu.kernelsu.ui.screen.settings.SettingPager
 import me.weishu.kernelsu.ui.screen.sulog.SulogScreen
+import me.weishu.kernelsu.ui.screen.tuning.TuningDocsScreen
 import me.weishu.kernelsu.ui.screen.tuning.TuningScreen
 import me.weishu.kernelsu.ui.screen.dmesg.DmesgScreen
 import me.weishu.kernelsu.ui.screen.superuser.SuperUserPager
@@ -278,6 +279,7 @@ open class MainActivity : ComponentActivity() {
                             entry<Route.PayloadExtract>(swipeDismiss = swipeDismiss) { PayloadScreen() }
                             entry<Route.ColorPalette>(swipeDismiss = swipeDismiss) { ColorPaletteScreen() }
                             entry<Route.ColorCalibration>(swipeDismiss = swipeDismiss) { ColorCalibrationScreen() }
+                            entry<Route.TuningDocs>(swipeDismiss = swipeDismiss) { TuningDocsScreen() }
                             entry<Route.AppProfileTemplate>(swipeDismiss = swipeDismiss) { AppProfileTemplateScreen() }
                             entry<Route.TemplateEditor>(swipeDismiss = swipeDismiss) { key -> TemplateEditorScreen(key.template, key.readOnly) }
                             entry<Route.AppProfile>(swipeDismiss = swipeDismiss) { key -> AppProfileScreen(key.uid) }

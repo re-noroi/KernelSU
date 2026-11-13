@@ -48,6 +48,7 @@ fun TuningScreen(
         onSetBypass = viewModel::setBypass,
         // Persistence
         onSetPersist = viewModel::setPersist,
+        onOpenTuningDocs = dropUnlessResumed { navigator.push(Route.TuningDocs) },
         // Scheduler — FakeDreamers
         onSetSkipHeadroom = viewModel::setSkipHeadroom,
         onSetPeltMultiplier = viewModel::setPeltMultiplier,
