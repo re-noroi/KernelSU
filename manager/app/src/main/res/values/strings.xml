@@ -404,6 +404,9 @@
     <string name="tuning_persist_title">Persist on boot</string>
     <string name="tuning_persist_summary_on">Values are restored after reboot.</string>
     <string name="tuning_persist_summary_off">Kernel defaults are used on reboot.</string>
+    <string name="tuning_docs_title">Tuning guide</string>
+    <string name="tuning_docs_entry_title">Tuning guide</string>
+    <string name="tuning_docs_entry_summary">What each tuning does, its values and safe recommendations</string>
     <string name="settings_avc_spoof">AVC Log spoofing</string>
     <string name="settings_avc_spoof_summary">Fix selinux context leak caused by avc denial in audit log.</string>
     <string name="feature_status_unsupported_summary">Kernel does not support this feature</string>

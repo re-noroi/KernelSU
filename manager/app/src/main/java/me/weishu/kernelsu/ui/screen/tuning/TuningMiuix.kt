@@ -35,6 +35,7 @@ import androidx.compose.material.icons.rounded.Router
 import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material.icons.rounded.Compress
 import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.MenuBook
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
@@ -172,6 +173,11 @@ fun TuningScreenMiuix(
                             checked = state.persist,
                             onCheckedChange = actions.onSetPersist,
                         )
+                    }
+                }
+                item {
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        TuningDocsEntryMiuix(onClick = actions.onOpenTuningDocs)
                     }
                 }
 
@@ -990,6 +996,40 @@ private fun ThermalEntryMiuix(onClick: () -> Unit) {
             )
             Text(
                 text = stringResource(R.string.thermal_monitor_entry_summary),
+                fontSize = 12.sp,
+                color = colorScheme.onSurfaceVariantSummary,
+            )
+        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = colorScheme.onSurfaceVariantSummary,
+        )
+    }
+}
+
+@Composable
+private fun TuningDocsEntryMiuix(onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.MenuBook,
+            contentDescription = null,
+            tint = colorScheme.primary,
+        )
+        Spacer(Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.tuning_docs_entry_title),
+                fontSize = 15.sp,
+            )
+            Text(
+                text = stringResource(R.string.tuning_docs_entry_summary),
                 fontSize = 12.sp,
                 color = colorScheme.onSurfaceVariantSummary,
             )
