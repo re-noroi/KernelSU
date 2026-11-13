@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.debounce
 import me.weishu.kernelsu.ui.util.getRootShell
 import me.weishu.kernelsu.ui.util.execKsudCommand
 import me.weishu.kernelsu.ui.util.TuningSignal
@@ -48,12 +50,15 @@ class TuningViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(TuningUiState())
     val uiState: StateFlow<TuningUiState> = _uiState.asStateFlow()
 
+    @OptIn(FlowPreview::class)
     init {
         viewModelScope.launch {
-            TuningSignal.changes.collect {
-                refreshInternal()
-            }
-        }
+            TuningSignal.changes
+                .debounce(500L)
+                .collect {
+                    refreshInternal()
+                }
+    }
     }
 
     private val thermalProfiles = listOf(
@@ -93,35 +98,87 @@ class TuningViewModel : ViewModel() {
     }
 
     private fun refreshInternal() {
-        val thermalOut = execRootCommand("cat $thermalNode")
+        val cmd = """
+            echo __THERMAL__; cat $thermalNode 2>/dev/null
+            echo __CHARGE__; cat /sys/class/power_supply/battery/constant_charge_current_max 2>/dev/null
+            echo __CHARGE_PERM__; stat -c %a /sys/class/power_supply/battery/constant_charge_current_max 2>/dev/null
+            echo __BYPASS_BAT__; cat /sys/class/power_supply/battery/input_suspend 2>/dev/null
+            echo __BYPASS_BMS__; cat /sys/class/power_supply/bms/input_suspend 2>/dev/null
+            echo __SKIP__; cat /proc/sys/kernel/sched_skip_headroom 2>/dev/null
+            echo __PELT__; cat /proc/sys/kernel/sched_pelt_multiplier 2>/dev/null
+            echo __HR__; cat /proc/sys/kernel/sched_hr_scaling 2>/dev/null
+            echo __LP__; cat /proc/sys/kernel/sched_boost_hr_lp 2>/dev/null
+            echo __BIG__; cat /proc/sys/kernel/sched_boost_hr_big 2>/dev/null
+            echo __PRIME__; cat /proc/sys/kernel/sched_boost_hr_prime 2>/dev/null
+            echo __TCP_AVAIL__; cat /proc/sys/net/ipv4/tcp_available_congestion_control 2>/dev/null
+            echo __TCP_CUR__; cat /proc/sys/net/ipv4/tcp_congestion_control 2>/dev/null
+            echo __QDISC__; cat /proc/sys/net/core/default_qdisc 2>/dev/null
+            echo __SWAPP__; cat /proc/sys/vm/swappiness 2>/dev/null
+            echo __SWAPP_RO__; test -w /proc/sys/vm/swappiness && echo 1 || echo 0
+            echo __VFS__; cat /proc/sys/vm/vfs_cache_pressure 2>/dev/null
+            echo __KCOMP__; cat /proc/sys/vm/kcompressd 2>/dev/null
+            echo __MGLRU__; cat /sys/kernel/mm/lru_gen/enabled 2>/dev/null
+            echo __MGLRU_TTL__; cat /sys/kernel/mm/lru_gen/min_ttl_ms 2>/dev/null
+            echo __ZRAM_SIZE__; cat /sys/block/zram0/disksize 2>/dev/null
+            echo __ZRAM_COMP__; cat /sys/block/zram0/comp_algorithm 2>/dev/null
+            echo __SWAPS__; cat /proc/swaps 2>/dev/null
+            echo __PERSIST__; grep '^persist=' $configPath 2>/dev/null | cut -d= -f2
+            echo __DENSITY__; wm density 2>/dev/null
+            echo __CG_BG_MIN__; cat /dev/cpuctl/background/cpu.uclamp.min 2>/dev/null
+            echo __CG_BG_MAX__; cat /dev/cpuctl/background/cpu.uclamp.max 2>/dev/null
+            echo __CG_BG_SHARES__; cat /dev/cpuctl/background/cpu.shares 2>/dev/null
+            echo __CG_TOP_MIN__; cat /dev/cpuctl/top-app/cpu.uclamp.min 2>/dev/null
+            echo __CG_TOP_MAX__; cat /dev/cpuctl/top-app/cpu.uclamp.max 2>/dev/null
+            echo __CG_TOP_SHARES__; cat /dev/cpuctl/top-app/cpu.shares 2>/dev/null
+            echo __CG_FG_MIN__; cat /dev/cpuctl/foreground/cpu.uclamp.min 2>/dev/null
+            echo __CG_FG_MAX__; cat /dev/cpuctl/foreground/cpu.uclamp.max 2>/dev/null
+            echo __CG_FG_SHARES__; cat /dev/cpuctl/foreground/cpu.shares 2>/dev/null
+        """.trimIndent()
+
+        val raw = execRootCommand(cmd)
+
+        fun get(key: String): String {
+            val marker = "__${key}__"
+            val start = raw.indexOf(marker)
+            if (start < 0) return ""
+            val valueStart = start + marker.length
+            val next = raw.indexOf("__", valueStart)
+            return raw.substring(valueStart, if (next < 0) raw.length else next).trim()
+        }
+
+        // --- THERMALS ---
+        val thermalOut = get("THERMAL")
         val thermalSupported = thermalOut.isNotEmpty()
         val thermalCurrent = thermalOut.toIntOrNull() ?: -1
 
-        val chargeRaw = execRootCommand("cat /sys/class/power_supply/battery/constant_charge_current_max")
+        val chargeRaw = get("CHARGE")
         val chargeCurrentSupported = chargeRaw.isNotEmpty()
         val chargeCurrent = chargeRaw.toLongOrNull() ?: 0L
-        val chargePermRaw = execRootCommand("stat -c %a /sys/class/power_supply/battery/constant_charge_current_max")
+        val chargePermRaw = get("CHARGE_PERM")
         val chargeWritable = chargePermRaw.contains("6") || chargePermRaw.contains("7") || chargePermRaw.contains("2") || chargePermRaw.contains("3")
 
         var bypassSupported = false
         var bypassCurrent = false
         activeBypassNode = ""
-        for (node in bypassNodes) {
-            val out = execRootCommand("cat $node")
-            if (out.isNotEmpty()) {
-                bypassSupported = true
-                activeBypassNode = node
-                bypassCurrent = out != "0"
-                break
-            }
+        val batBypass = get("BYPASS_BAT")
+        val bmsBypass = get("BYPASS_BMS")
+        if (batBypass.isNotEmpty()) {
+            bypassSupported = true
+            activeBypassNode = bypassNodes[0]
+            bypassCurrent = batBypass != "0"
+        } else if (bmsBypass.isNotEmpty()) {
+            bypassSupported = true
+            activeBypassNode = bypassNodes[1]
+            bypassCurrent = bmsBypass != "0"
         }
 
-        val skipRaw = execRootCommand("cat /proc/sys/kernel/sched_skip_headroom")
-        val peltRaw = execRootCommand("cat /proc/sys/kernel/sched_pelt_multiplier")
-        val hrRaw = execRootCommand("cat /proc/sys/kernel/sched_hr_scaling")
-        val lpRaw = execRootCommand("cat /proc/sys/kernel/sched_boost_hr_lp")
-        val bigRaw = execRootCommand("cat /proc/sys/kernel/sched_boost_hr_big")
-        val primeRaw = execRootCommand("cat /proc/sys/kernel/sched_boost_hr_prime")
+        // --- SCHEDULERS ---
+        val skipRaw = get("SKIP")
+        val peltRaw = get("PELT")
+        val hrRaw = get("HR")
+        val lpRaw = get("LP")
+        val bigRaw = get("BIG")
+        val primeRaw = get("PRIME")
 
         val scheduler = SchedulerState(
             skipHeadroomSupported = skipRaw.isNotEmpty(),
@@ -138,30 +195,31 @@ class TuningViewModel : ViewModel() {
             boostHrPrime = primeRaw.toIntOrNull() ?: 0,
         )
 
-        val cgroups = cgroupNames.mapNotNull { name ->
-            val base = "/dev/cpuctl/$name"
-            val minRaw = execRootCommand("cat $base/cpu.uclamp.min")
-            val maxRaw = execRootCommand("cat $base/cpu.uclamp.max")
-            val sharesRaw = execRootCommand("cat $base/cpu.shares")
-
-            // Cgroup folder always exists on Android, but we check just in case
+        // --- CGroups ---
+        val cgroups = listOf(
+            Triple("background", "CG_BG", 0),
+            Triple("top-app", "CG_TOP", 100),
+            Triple("foreground", "CG_FG", 100)
+        ).mapNotNull { (name, prefix, defMax) ->
+            val minRaw = get("${prefix}_MIN")
+            val maxRaw = get("${prefix}_MAX")
+            val sharesRaw = get("${prefix}_SHARES")
             if (minRaw.isEmpty() && maxRaw.isEmpty() && sharesRaw.isEmpty()) return@mapNotNull null
-
             CgroupState(
                 name = name,
                 uclampMinSupported = minRaw.isNotEmpty(),
                 uclampMin = minRaw.toFloatOrNull()?.toInt() ?: 0,
                 uclampMaxSupported = maxRaw.isNotEmpty(),
-                uclampMax = maxRaw.toFloatOrNull()?.toInt() ?: 100,
+                uclampMax = maxRaw.toFloatOrNull()?.toInt() ?: defMax,
                 sharesSupported = sharesRaw.isNotEmpty(),
                 shares = sharesRaw.toIntOrNull() ?: 1024,
             )
         }
 
-        val tcpAvailStr = execRootCommand("cat /proc/sys/net/ipv4/tcp_available_congestion_control")
-        val tcpCur = execRootCommand("cat /proc/sys/net/ipv4/tcp_congestion_control")
-        val qdiscCur = execRootCommand("cat /proc/sys/net/core/default_qdisc")
-        
+        // --- NETWORK ---
+        val tcpAvailStr = get("TCP_AVAIL")
+        val tcpCur = get("TCP_CUR")
+        val qdiscCur = get("QDISC")
         val network = NetworkState(
             supported = tcpAvailStr.isNotEmpty(),
             tcpAvailable = tcpAvailStr.split(" ").filter { it.isNotBlank() },
@@ -169,14 +227,13 @@ class TuningViewModel : ViewModel() {
             qdiscCurrent = qdiscCur
         )
 
-        val swappOut = execRootCommand("cat /proc/sys/vm/swappiness")
-        val vfsOut = execRootCommand("cat /proc/sys/vm/vfs_cache_pressure")
-        val kcompOut = execRootCommand("cat /proc/sys/vm/kcompressd")
-        val mglruOut = execRootCommand("cat /sys/kernel/mm/lru_gen/enabled").trim()
-        val mglruTtlOut = execRootCommand("cat /sys/kernel/mm/lru_gen/min_ttl_ms")
-
-        // Swappiness always exists, we just check if it's writable
-        val memSwappinessRo = execRootCommand("test -w /proc/sys/vm/swappiness && echo 1").isEmpty()
+        // --- MEMORY ---
+        val swappOut = get("SWAPP")
+        val vfsOut = get("VFS")
+        val kcompOut = get("KCOMP")
+        val mglruOut = get("MGLRU")
+        val mglruTtlOut = get("MGLRU_TTL")
+        val memSwappinessRo = get("SWAPP_RO") != "1"
 
         val vfsSupported = vfsOut.isNotEmpty()
         val kcompSupported = kcompOut.isNotEmpty()
@@ -196,20 +253,14 @@ class TuningViewModel : ViewModel() {
             mglruTtl = mglruTtlOut.toIntOrNull() ?: 1000
         )
 
-        val zramSizeRaw = execRootCommand("cat /sys/block/zram0/disksize")
-        val zramCompRaw = execRootCommand("cat /sys/block/zram0/comp_algorithm").trim()
-        val swapsRaw = execRootCommand("cat /proc/swaps")
+        // --- ZRAM ---
+        val zramSizeRaw = get("ZRAM_SIZE")
+        val zramCompRaw = get("ZRAM_COMP")
+        val swapsRaw = get("SWAPS")
 
         val zramSupported = zramSizeRaw.isNotEmpty()
-        // comp_algorithm is "lzo [lz4] zstd" — active one is in brackets
-        val compCurrent = zramCompRaw
-            .split(Regex("\\s+"))
-            .firstOrNull { it.startsWith("[") && it.endsWith("]") }
-            ?.trim('[', ']') ?: ""
-        val compAvailable = zramCompRaw
-            .split(Regex("\\s+"))
-            .filter { it.isNotBlank() }
-            .map { it.trim('[', ']') }
+        val compCurrent = zramCompRaw.split(Regex("\\s+")).firstOrNull { it.startsWith("[") && it.endsWith("]") }?.trim('[', ']') ?: ""
+        val compAvailable = zramCompRaw.split(Regex("\\s+")).filter { it.isNotBlank() }.map { it.trim('[', ']') }
         val swapActive = swapsRaw.lines().any { it.contains("zram0") }
 
         val zram = ZramState(
@@ -220,16 +271,13 @@ class TuningViewModel : ViewModel() {
             swapActive = swapActive,
         )
 
-        val persistStr = execRootCommand(
-            "grep '^persist=' $configPath 2>/dev/null | cut -d= -f2"
-        )
+        // --- PERSIST & DENSITY ---
+        val persistStr = get("PERSIST")
         val persist = persistStr.isEmpty() || persistStr != "0"
 
-        val densityRaw = execRootCommand("wm density")
-        val physicalDensity = Regex("Physical density:\\s*(\\d+)")
-            .find(densityRaw)?.groupValues?.get(1)?.toIntOrNull() ?: 0
-        val densityOverride = Regex("Override density:\\s*(\\d+)")
-            .find(densityRaw)?.groupValues?.get(1)?.toIntOrNull()
+        val densityRaw = get("DENSITY")
+        val physicalDensity = Regex("Physical density:\\s*(\\d+)").find(densityRaw)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+        val densityOverride = Regex("Override density:\\s*(\\d+)").find(densityRaw)?.groupValues?.get(1)?.toIntOrNull()
 
         _uiState.update {
             it.copy(
@@ -440,6 +488,7 @@ class TuningViewModel : ViewModel() {
 
             if (!success) {
                 _uiState.update { it.copy(errorMessage = "Failed: $type") }
+                refreshInternal()
             }
         }
     }
