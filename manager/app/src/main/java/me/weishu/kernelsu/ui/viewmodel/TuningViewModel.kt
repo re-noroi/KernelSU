@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -84,6 +86,15 @@ class TuningViewModel : ViewModel() {
     private val configPath = "/data/adb/ksu/tuning.conf"
 
     private var activeBypassNode = ""
+
+    /**
+     * Per-type debounce jobs for writes. Rapid toggles of the same control
+     * cancel the previous pending write and reschedule 1s out, so we never
+     * push a new value into a sysfs node while the previous transition is
+     * still settling. This is what eliminates the "bounce back" when
+     * toggling during a transition.
+     */
+    private val applyJobs = mutableMapOf<String, Job>()
 
     private fun execRootCommand(cmd: String): String {
         return try {
@@ -399,7 +410,9 @@ class TuningViewModel : ViewModel() {
     }
 
     private fun apply(type: String, value: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        applyJobs[type]?.cancel()
+        applyJobs[type] = viewModelScope.launch(Dispatchers.IO) {
+            delay(1000L)
             _uiState.update { it.copy(isApplying = true, errorMessage = null) }
 
             // Route every write through ksud. It handles SELinux, sysfs formatting, 
@@ -438,8 +451,6 @@ class TuningViewModel : ViewModel() {
             }
 
             val success = args != null && execKsudCommand(args).isSuccess
-
-            if (success) TuningSignal.notifyChanged()
 
             _uiState.update { it.copy(isApplying = false) }
 
