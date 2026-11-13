@@ -197,6 +197,12 @@ private val tuningSections = listOf(
         title = "Schedulers - CGroup",
         items = listOf(
             DocItem(
+                name = "The three groups",
+                what = "Background: apps you are not using or cannot see; it gets the least CPU. Foreground: apps that are visible but not focused, such as split-screen or an app behind a dialog. Top App: the app currently on screen and receiving your touches; it should get the most CPU.",
+                values = "Background, Foreground and Top App are the task groups this kernel exposes.",
+                recommended = "No setup needed. Read this first, then tune each group with the three settings below.",
+            ),
+            DocItem(
                 name = "UClamp min",
                 what = "The lowest performance level (0-100% of a core's capacity) a task group is guaranteed. It sets a frequency floor.",
                 values = "0 to 100. 0 means no minimum.",
@@ -222,8 +228,8 @@ private val tuningSections = listOf(
             DocItem(
                 name = "TCP congestion algorithm",
                 what = "How the kernel reacts when the network is congested. Different algorithms trade speed against fairness.",
-                values = "The algorithms your kernel offers, such as cubic, bbr or westwood.",
-                recommended = "cubic (default) is safest. bbr can improve speed and latency on mobile data; switch back if downloads behave oddly.",
+                values = "The algorithms your kernel offers, such as westwood, cubic or bbr.",
+                recommended = "westwood (default) is tuned for mobile networks and is the safest choice. bbr can improve speed and latency on some networks; switch back if downloads behave oddly.",
             ),
             DocItem(
                 name = "Queueing discipline",
