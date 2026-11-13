@@ -46,13 +46,13 @@ data class TuningUiState(
     val zram: ZramState = ZramState(),
 )
 
+@OptIn(FlowPreview::class)
 class TuningViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(TuningUiState())
     val uiState: StateFlow<TuningUiState> = _uiState.asStateFlow()
 
-    @OptIn(FlowPreview::class)
     init {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             TuningSignal.changes
                 .debounce(500L)
                 .collect {
