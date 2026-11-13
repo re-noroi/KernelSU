@@ -87,6 +87,7 @@ import me.weishu.kernelsu.ui.screen.home.HomePager
 import me.weishu.kernelsu.ui.screen.install.InstallScreen
 import me.weishu.kernelsu.ui.screen.memorymonitor.MemoryMonitorScreen
 import me.weishu.kernelsu.ui.screen.battery.BatteryScreen
+import me.weishu.kernelsu.ui.screen.display.ColorCalibrationScreen
 import me.weishu.kernelsu.ui.screen.games.MiniGamesScreen
 import me.weishu.kernelsu.ui.screen.thermal.ThermalMonitorScreen
 import me.weishu.kernelsu.ui.screen.module.ModulePager
@@ -276,6 +277,7 @@ open class MainActivity : ComponentActivity() {
                             entry<Route.CrashLog>(swipeDismiss = swipeDismiss) { CrashLogScreen() }
                             entry<Route.PayloadExtract>(swipeDismiss = swipeDismiss) { PayloadScreen() }
                             entry<Route.ColorPalette>(swipeDismiss = swipeDismiss) { ColorPaletteScreen() }
+                            entry<Route.ColorCalibration>(swipeDismiss = swipeDismiss) { ColorCalibrationScreen() }
                             entry<Route.AppProfileTemplate>(swipeDismiss = swipeDismiss) { AppProfileTemplateScreen() }
                             entry<Route.TemplateEditor>(swipeDismiss = swipeDismiss) { key -> TemplateEditorScreen(key.template, key.readOnly) }
                             entry<Route.AppProfile>(swipeDismiss = swipeDismiss) { key -> AppProfileScreen(key.uid) }
