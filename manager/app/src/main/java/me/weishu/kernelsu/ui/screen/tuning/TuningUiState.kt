@@ -80,6 +80,7 @@ data class TuningActions(
     val onSetBypass: (Boolean) -> Unit,
     // Persistence
     val onSetPersist: (Boolean) -> Unit,
+    val onOpenTuningDocs: () -> Unit,
     // Scheduler — FakeDreamers
     val onSetSkipHeadroom: (Boolean) -> Unit,
     val onSetPeltMultiplier: (Boolean) -> Unit,
