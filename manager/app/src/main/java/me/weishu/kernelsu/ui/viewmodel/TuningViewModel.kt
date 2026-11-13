@@ -1,6 +1,5 @@
 package me.weishu.kernelsu.ui.viewmodel
 
-import com.topjohnwu.superuser.ShellUtils
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -98,7 +97,9 @@ class TuningViewModel : ViewModel() {
 
     private fun execRootCommand(cmd: String): String {
         return try {
-            ShellUtils.fastCmd(getRootShell(true), cmd).trim()
+            val out = mutableListOf<String>()
+            getRootShell(true).newJob().add(cmd).to(out).exec()
+            out.joinToString("\n").trim()
         } catch (e: Exception) {
             ""
         }
