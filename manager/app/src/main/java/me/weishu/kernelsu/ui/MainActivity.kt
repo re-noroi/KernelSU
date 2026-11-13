@@ -75,6 +75,7 @@ import me.weishu.kernelsu.ui.component.bottombar.rememberMainPagerState
 import me.weishu.kernelsu.ui.component.bottombar.useNavigationRail
 import me.weishu.kernelsu.ui.navigation3.IntentDispatcher
 import me.weishu.kernelsu.ui.navigation3.LocalNavigator
+import me.weishu.kernelsu.ui.navigation3.MinimalFadeTransition
 import me.weishu.kernelsu.ui.navigation3.Navigator
 import me.weishu.kernelsu.ui.navigation3.Route
 import me.weishu.kernelsu.ui.navigation3.rememberNavigator
@@ -117,6 +118,7 @@ import me.weishu.kernelsu.ui.theme.LocalEnableFloatingBottomBarBlur
 import me.weishu.kernelsu.ui.theme.LocalEnableModuleUpdateBadge
 import me.weishu.kernelsu.ui.theme.LocalModuleDescriptionMaxLines
 import me.weishu.kernelsu.ui.theme.LocalMinimalWallpaper
+import me.weishu.kernelsu.ui.theme.MinimalTabBackground
 import me.weishu.kernelsu.ui.util.LocalScrollAnimation
 import me.weishu.kernelsu.ui.util.LocalShowSwitchIcon
 import me.weishu.kernelsu.ui.util.install
@@ -133,6 +135,7 @@ import top.yukonga.miuix.kmp.nav.core.NavDisplay
 import top.yukonga.miuix.kmp.nav.core.NavDisplayEffects
 import top.yukonga.miuix.kmp.nav.core.rememberNavSystemCornerRadius
 import top.yukonga.miuix.kmp.nav.transition.NavSwipeDirection
+import top.yukonga.miuix.kmp.nav.transition.NavTransitions
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PagerGestureNestedScrollConnection
 import top.yukonga.miuix.kmp.utils.PagerInterceptionMode
@@ -248,10 +251,21 @@ open class MainActivity : ComponentActivity() {
                     }
 
                     val navDisplay = @Composable {
+                        val isMinimal = uiMode == UiMode.Minimal
                         Box(modifier = Modifier.fillMaxSize().background(Color.Transparent)) {
                             NavDisplay(
                                 backStack = navigator.backStack,
-                                effects = NavDisplayEffects(cornerClipRadius = rememberNavSystemCornerRadius()),
+                                transition = if (isMinimal) {
+                                    MinimalFadeTransition
+                                } else {
+                                    NavTransitions.MiuixDefault
+                                },
+                                effects = if (isMinimal) {
+                                    // Fade-only navigation: no corner clip and no dim scrim.
+                                    NavDisplayEffects(enableCornerClip = false, dimAmount = 0f)
+                                } else {
+                                    NavDisplayEffects(cornerClipRadius = rememberNavSystemCornerRadius())
+                                },
                                 onBack = {
                                     when (val top = navigator.current()) {
                                         is Route.TemplateEditor -> {
@@ -266,47 +280,59 @@ open class MainActivity : ComponentActivity() {
                                 }
                             ) {
                             entry<Route.Main>(swipeDismiss = swipeDismiss) { mainScreenEntry() }
-                            entry<Route.About>(swipeDismiss = swipeDismiss) { AboutScreen() }
-                            entry<Route.Kallsyms>(swipeDismiss = swipeDismiss) { KallsymsScreen() }
-                            entry<Route.Sulog>(swipeDismiss = swipeDismiss) { SulogScreen() }
-                            entry<Route.Dmesg>(swipeDismiss = swipeDismiss) { DmesgScreen() }
-                            entry<Route.MemoryMonitor>(swipeDismiss = swipeDismiss) { MemoryMonitorScreen() }
-                            entry<Route.Battery>(swipeDismiss = swipeDismiss) { BatteryScreen() }
-                            entry<Route.ThermalMonitor>(swipeDismiss = swipeDismiss) { ThermalMonitorScreen() }
-                            entry<Route.MiniGames>(swipeDismiss = swipeDismiss) { MiniGamesScreen() }
-                            entry<Route.KernelModule>(swipeDismiss = swipeDismiss) { KernelModuleScreen() }
-                            entry<Route.CrashLog>(swipeDismiss = swipeDismiss) { CrashLogScreen() }
-                            entry<Route.PayloadExtract>(swipeDismiss = swipeDismiss) { PayloadScreen() }
-                            entry<Route.ColorPalette>(swipeDismiss = swipeDismiss) { ColorPaletteScreen() }
-                            entry<Route.ColorCalibration>(swipeDismiss = swipeDismiss) { ColorCalibrationScreen() }
-                            entry<Route.TuningDocs>(swipeDismiss = swipeDismiss) { TuningDocsScreen() }
-                            entry<Route.AppProfileTemplate>(swipeDismiss = swipeDismiss) { AppProfileTemplateScreen() }
-                            entry<Route.TemplateEditor>(swipeDismiss = swipeDismiss) { key -> TemplateEditorScreen(key.template, key.readOnly) }
-                            entry<Route.AppProfile>(swipeDismiss = swipeDismiss) { key -> AppProfileScreen(key.uid) }
-                            entry<Route.ModuleRepo>(swipeDismiss = swipeDismiss) { ModuleRepoScreen() }
-                            entry<Route.ModuleRepoDetail>(swipeDismiss = swipeDismiss) { key -> ModuleRepoDetailScreen(key.module) }
-                            entry<Route.Install>(swipeDismiss = swipeDismiss) { InstallScreen() }
+                            entry<Route.About>(swipeDismiss = swipeDismiss) { MinimalPage(isMinimal) { AboutScreen() } }
+                            entry<Route.Kallsyms>(swipeDismiss = swipeDismiss) { MinimalPage(isMinimal) { KallsymsScreen() } }
+                            entry<Route.Sulog>(swipeDismiss = swipeDismiss) { MinimalPage(isMinimal) { SulogScreen() } }
+                            entry<Route.Dmesg>(swipeDismiss = swipeDismiss) { MinimalPage(isMinimal) { DmesgScreen() } }
+                            entry<Route.MemoryMonitor>(swipeDismiss = swipeDismiss) { MinimalPage(isMinimal) { MemoryMonitorScreen() } }
+                            entry<Route.Battery>(swipeDismiss = swipeDismiss) { MinimalPage(isMinimal) { BatteryScreen() } }
+                            entry<Route.ThermalMonitor>(swipeDismiss = swipeDismiss) { MinimalPage(isMinimal) { ThermalMonitorScreen() } }
+                            entry<Route.MiniGames>(swipeDismiss = swipeDismiss) { MinimalPage(isMinimal) { MiniGamesScreen() } }
+                            entry<Route.KernelModule>(swipeDismiss = swipeDismiss) { MinimalPage(isMinimal) { KernelModuleScreen() } }
+                            entry<Route.CrashLog>(swipeDismiss = swipeDismiss) { MinimalPage(isMinimal) { CrashLogScreen() } }
+                            entry<Route.PayloadExtract>(swipeDismiss = swipeDismiss) { MinimalPage(isMinimal) { PayloadScreen() } }
+                            entry<Route.ColorPalette>(swipeDismiss = swipeDismiss) { MinimalPage(isMinimal) { ColorPaletteScreen() } }
+                            entry<Route.ColorCalibration>(swipeDismiss = swipeDismiss) { MinimalPage(isMinimal) { ColorCalibrationScreen() } }
+                            entry<Route.TuningDocs>(swipeDismiss = swipeDismiss) { MinimalPage(isMinimal) { TuningDocsScreen() } }
+                            entry<Route.AppProfileTemplate>(swipeDismiss = swipeDismiss) { MinimalPage(isMinimal) { AppProfileTemplateScreen() } }
+                            entry<Route.TemplateEditor>(swipeDismiss = swipeDismiss) { key ->
+                                MinimalPage(isMinimal) { TemplateEditorScreen(key.template, key.readOnly) }
+                            }
+                            entry<Route.AppProfile>(swipeDismiss = swipeDismiss) { key ->
+                                MinimalPage(isMinimal) { AppProfileScreen(key.uid) }
+                            }
+                            entry<Route.ModuleRepo>(swipeDismiss = swipeDismiss) { MinimalPage(isMinimal) { ModuleRepoScreen() } }
+                            entry<Route.ModuleRepoDetail>(swipeDismiss = swipeDismiss) { key ->
+                                MinimalPage(isMinimal) { ModuleRepoDetailScreen(key.module) }
+                            }
+                            entry<Route.Install>(swipeDismiss = swipeDismiss) { MinimalPage(isMinimal) { InstallScreen() } }
                             entry<Route.Flash>(swipeDismiss = if (flashBackEnabled) swipeDismiss else NavSwipeDirection.None) { key ->
-                                FlashScreen(
-                                    key.flashIt,
-                                    onBackEnabledChange = { enabled ->
-                                        if (navigator.current() == key) flashBackEnabled = enabled
-                                    },
-                                )
+                                MinimalPage(isMinimal) {
+                                    FlashScreen(
+                                        key.flashIt,
+                                        onBackEnabledChange = { enabled ->
+                                            if (navigator.current() == key) flashBackEnabled = enabled
+                                        },
+                                    )
+                                }
                             }
                             entry<Route.ExecuteModuleAction>(swipeDismiss = swipeDismiss) { key ->
-                                ExecuteModuleActionScreen(
-                                    key.moduleId,
-                                    key.fromShortcut
-                                )
+                                MinimalPage(isMinimal) {
+                                    ExecuteModuleActionScreen(
+                                        key.moduleId,
+                                        key.fromShortcut
+                                    )
+                                }
                             }
                             entry<Route.ScriptRun>(swipeDismiss = scriptRunSwipeDismiss) { key ->
-                                ScriptRunScreen(
-                                    key.arg,
-                                    onBackEnabledChange = { enabled ->
-                                        if (navigator.current() == key) scriptRunBackEnabled = enabled
-                                    },
-                                )
+                                MinimalPage(isMinimal) {
+                                    ScriptRunScreen(
+                                        key.arg,
+                                        onBackEnabledChange = { enabled ->
+                                            if (navigator.current() == key) scriptRunBackEnabled = enabled
+                                        },
+                                    )
+                                }
                             }
                             entry<Route.Home>(swipeDismiss = swipeDismiss) { mainScreenEntry() }
                             entry<Route.SuperUser>(swipeDismiss = swipeDismiss) { mainScreenEntry() }
@@ -645,4 +671,18 @@ private fun MainScreenBackHandler(
             mainState.animateToPage(0)
         }
     )
+}
+
+/**
+ * Wraps a pushed page in the Minimal wallpaper backdrop when the Minimal UI is
+ * active. Root pager pages are not wrapped: they intentionally let the shared
+ * wallpaper show through at the home-screen dim.
+ */
+@Composable
+private fun MinimalPage(active: Boolean, content: @Composable () -> Unit) {
+    if (active) {
+        MinimalTabBackground(content = content)
+    } else {
+        content()
+    }
 }
