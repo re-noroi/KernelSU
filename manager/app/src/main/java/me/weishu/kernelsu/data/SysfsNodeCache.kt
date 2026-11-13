@@ -26,6 +26,33 @@ data class MemoryNodePaths(
 )
 
 /**
+ * KCAL/display calibration nodes. All fields are absolute paths; the node set
+ * is resolved once at warm-up so the Color Calibration tab does not have to
+ * search sysfs again on every open.
+ *
+ * Two layouts are supported: kernels that expose per-channel nodes
+ * (`kcal_red`, `kcal_green`, `kcal_blue`, as msm_drm does) and kernels that
+ * expose a single space-separated `kcal` node. Missing optional nodes
+ * (`kcal_enable`, or any of the sliders) are left as null.
+ */
+@Immutable
+data class ColorNodePaths(
+    val red: String?,
+    val green: String?,
+    val blue: String?,
+    val rgb: String?,
+    val enable: String?,
+    val saturation: String?,
+    val value: String?,
+    val contrast: String?,
+    val hue: String?,
+) {
+    val hasSeparateRgb: Boolean get() = red != null && green != null && blue != null
+
+    val supported: Boolean get() = hasSeparateRgb || rgb != null
+}
+
+/**
  * Every power supply node the Battery screen may read, with the key it is
  * reported under. Only the paths that actually exist are cached at warm-up.
  */
@@ -81,6 +108,12 @@ object SysfsNodeCache {
     private var memoryPaths: MemoryNodePaths? = null
 
     @Volatile
+    private var colorPaths: ColorNodePaths? = null
+
+    @Volatile
+    private var colorDiscovered = false
+
+    @Volatile
     private var thermalSnapshot: String? = null
 
     @Volatile
@@ -89,10 +122,14 @@ object SysfsNodeCache {
     @Volatile
     private var memorySnapshot: String? = null
 
+    @Volatile
+    private var colorSnapshot: String? = null
+
     suspend fun warmUp() = withContext(Dispatchers.IO) {
         warmUpBattery()
         warmUpThermal()
         warmUpMemory()
+        warmUpColor()
     }
 
     suspend fun warmUpThermal() = withContext(Dispatchers.IO) {
@@ -121,6 +158,19 @@ object SysfsNodeCache {
             val paths = memoryPaths ?: discoverMemoryPaths().also { memoryPaths = it }
             if (memorySnapshot == null) {
                 memorySnapshot = readMemoryNodes(paths)
+            }
+        }
+    }
+
+    suspend fun warmUpColor() = withContext(Dispatchers.IO) {
+        mutex.withLock {
+            if (!colorDiscovered) {
+                colorPaths = discoverColorNodes()
+                colorDiscovered = true
+            }
+            val paths = colorPaths
+            if (paths != null && colorSnapshot == null) {
+                colorSnapshot = readColorNodes(paths)
             }
         }
     }
@@ -180,6 +230,39 @@ object SysfsNodeCache {
 
     fun readMemoryNodes(paths: MemoryNodePaths): String =
         execRootCommand(buildMemoryCommand(paths))
+
+    fun colorNodePaths(): ColorNodePaths? = colorPaths
+
+    fun colorSnapshot(): String? = colorSnapshot
+
+    fun updateColorSnapshot(raw: String) {
+        colorSnapshot = raw
+    }
+
+    fun buildColorCommand(paths: ColorNodePaths): String = buildString {
+        fun read(key: String, path: String?) {
+            append("echo __${key}__; ")
+            if (path != null) append("cat \"$path\" 2>/dev/null; ")
+        }
+        read("RED", paths.red)
+        read("GREEN", paths.green)
+        read("BLUE", paths.blue)
+        read("RGB", paths.rgb)
+        read("ENABLE", paths.enable)
+        read("SATURATION", paths.saturation)
+        read("VALUE", paths.value)
+        read("CONTRAST", paths.contrast)
+        read("HUE", paths.hue)
+    }
+
+    fun readColorNodes(paths: ColorNodePaths): String =
+        execRootCommand(buildColorCommand(paths))
+
+    /** Writes a calibration value; values are numeric only, paths are cached constants. */
+    fun writeColorNode(path: String?, value: String) {
+        if (path == null) return
+        execRootCommand("echo $value > \"$path\" 2>/dev/null")
+    }
 
     fun execRootCommand(cmd: String): String {
         return try {
@@ -251,6 +334,57 @@ object SysfsNodeCache {
         zramDisksize = "/sys/block/zram0/disksize",
         zramCompAlgorithm = "/sys/block/zram0/comp_algorithm",
     )
+
+    /**
+     * Resolves the directory holding the KCAL nodes. The msm_drm module
+     * parameter layout (per-channel `kcal_red`/`kcal_green`/`kcal_blue`) is
+     * probed first, then the older combined `kcal` layout. If neither is found
+     * in a known base, a bounded find handles vendor-specific layouts.
+     */
+    private fun discoverColorNodes(): ColorNodePaths? {
+        val cmd = buildString {
+            append("dir=''; ")
+            append("for b in ")
+            append("/sys/module/msm_drm/parameters ")
+            append("/sys/devices/platform/kcal_ctrl.0 ")
+            append("/sys/devices/platform/*/kcal_ctrl.0 ")
+            append("/sys/class/display ")
+            append("/sys/class/graphics/fb0 ")
+            append("; do ")
+            append("if [ -e \"\$b/kcal_red\" ] || [ -e \"\$b/kcal\" ]; then dir=\"\$b\"; break; fi; ")
+            append("done; ")
+            append("if [ -z \"\$dir\" ]; then ")
+            append("f=\$(find /sys/module /sys/devices/platform -maxdepth 6 \\( -name kcal_red -o -name kcal \\) -print -quit 2>/dev/null); ")
+            append("[ -n \"\$f\" ] && dir=\$(dirname \"\$f\"); ")
+            append("fi; ")
+            append("[ -z \"\$dir\" ] && exit 0; ")
+            append("echo \"__DIR__\$dir\"; ")
+            append("for n in kcal_red kcal_green kcal_blue kcal kcal_enable kcal_sat kcal_val kcal_cont kcal_contrast kcal_hue; do ")
+            append("[ -e \"\$dir/\$n\" ] && echo \"\$n\"; done")
+        }
+        val lines = execRootCommand(cmd).lineSequence()
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .toList()
+        val base = lines.firstOrNull { it.startsWith("__DIR__") }
+            ?.removePrefix("__DIR__")
+            ?.trim()
+            .orEmpty()
+        if (base.isEmpty()) return null
+        val names = lines.filterNot { it.startsWith("__DIR__") }.toSet()
+        fun node(name: String): String? = if (name in names) "$base/$name" else null
+        return ColorNodePaths(
+            red = node("kcal_red"),
+            green = node("kcal_green"),
+            blue = node("kcal_blue"),
+            rgb = node("kcal"),
+            enable = node("kcal_enable"),
+            saturation = node("kcal_sat"),
+            value = node("kcal_val"),
+            contrast = node("kcal_cont") ?: node("kcal_contrast"),
+            hue = node("kcal_hue"),
+        ).takeIf { it.supported }
+    }
 
     private val ignoredThermalTypes = setOf("unused", "invalid", "none")
 }

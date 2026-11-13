@@ -756,4 +756,20 @@
     <string name="mini_game_snake_press_to_start">Press a direction to start</string>
     <string name="mini_game_dino_tap_to_start">Tap to start</string>
     <string name="mini_game_minesweeper_start">Tap a tile to start, long-press to flag</string>
+    <string name="tuning_section_misc">Miscellaneous</string>
+    <string name="tuning_color_calibration">Color Calibration</string>
+    <string name="tuning_color_calibration_summary">Adjust RGB, saturation, value, contrast and hue</string>
+    <string name="tuning_pixel_density">Pixel Density</string>
+    <string name="tuning_pixel_density_physical">Physical: %1$d dpi</string>
+    <string name="tuning_pixel_density_override">Override: %1$d dpi (physical %2$d dpi)</string>
+    <string name="tuning_reset">Reset</string>
+    <string name="color_calibration_title">Color Calibration</string>
+    <string name="color_calibration_unsupported">Color calibration is not available on this kernel.</string>
+    <string name="color_calibration_rgb">RGB adjustments</string>
+    <string name="color_calibration_always_on">This kernel does not expose an enable switch; adjustments are always on.</string>
+    <string name="color_calibration_saturation">Saturation</string>
+    <string name="color_calibration_value">Value</string>
+    <string name="color_calibration_contrast">Contrast</string>
+    <string name="color_calibration_hue">Hue</string>
+    <string name="color_calibration_reset">Reset to defaults</string>
 </resources>
