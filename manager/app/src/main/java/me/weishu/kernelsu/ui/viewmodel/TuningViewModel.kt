@@ -38,6 +38,8 @@ data class TuningUiState(
     val persist: Boolean = true,
     val network: NetworkState = NetworkState(),
     val memory: MemoryState = MemoryState(),
+    val physicalDensity: Int = 0,
+    val densityOverride: Int? = null,
     val errorMessage: String? = null,
     val zram: ZramState = ZramState(),
 )
@@ -226,6 +228,12 @@ class TuningViewModel : ViewModel() {
         )
         val persist = persistStr.isEmpty() || persistStr != "0"
 
+        val densityRaw = execRootCommand("wm density")
+        val physicalDensity = Regex("Physical density:\\s*(\\d+)")
+            .find(densityRaw)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+        val densityOverride = Regex("Override density:\\s*(\\d+)")
+            .find(densityRaw)?.groupValues?.get(1)?.toIntOrNull()
+
         _uiState.update {
             it.copy(
                 isLoading = false,
@@ -244,6 +252,8 @@ class TuningViewModel : ViewModel() {
                 persist = persist,
                 network = network,
                 memory = memory,
+                physicalDensity = physicalDensity,
+                densityOverride = densityOverride,
                 errorMessage = null,
                 zram = zram,
             )
@@ -274,6 +284,21 @@ class TuningViewModel : ViewModel() {
     fun setPersist(enabled: Boolean) {
         _uiState.update { it.copy(persist = enabled) }
         apply("persist", if (enabled) "1" else "0")
+    }
+
+    fun setDensity(value: Int) {
+        val density = value.coerceIn(240, 1200)
+        _uiState.update { it.copy(densityOverride = density) }
+        viewModelScope.launch(Dispatchers.IO) {
+            execRootCommand("wm density $density")
+        }
+    }
+
+    fun resetDensity() {
+        _uiState.update { it.copy(densityOverride = null) }
+        viewModelScope.launch(Dispatchers.IO) {
+            execRootCommand("wm density reset")
+        }
     }
 
     fun setSkipHeadroom(enabled: Boolean) {
