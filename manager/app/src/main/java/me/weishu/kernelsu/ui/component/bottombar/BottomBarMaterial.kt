@@ -2,8 +2,10 @@ package me.weishu.kernelsu.ui.component.bottombar
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
@@ -16,6 +18,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.indication
@@ -32,9 +35,11 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -62,18 +67,28 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.res.stringResource
@@ -83,13 +98,18 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import me.weishu.kernelsu.Natives
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
 import me.weishu.kernelsu.ui.LocalKernelTool
 import me.weishu.kernelsu.ui.LocalMainPagerState
+import me.weishu.kernelsu.ui.LocalUiMode
+import me.weishu.kernelsu.ui.UiMode
 import me.weishu.kernelsu.ui.theme.LocalEnableFloatingBottomBar
 
 @Composable
@@ -236,6 +256,60 @@ private fun FloatingBottomBarMaterial(
     val navBarBottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val bottomPadding = if (navBarBottomPadding != 0.dp) 12.dp + navBarBottomPadding else 20.dp
 
+    // Minimal-only: hold and slide along the floating dock to preview a tab, and only
+    // commit the page change once the finger is released (same feel as the Miuix dock).
+    val dragToSwitch = LocalUiMode.current == UiMode.Minimal
+    val animatePill = dragToSwitch
+    val density = LocalDensity.current
+    val barOriginX = remember { mutableFloatStateOf(0f) }
+    val itemBounds = remember { mutableStateMapOf<Int, Rect>() }
+    var containerOrigin by remember { mutableStateOf(Offset.Zero) }
+    var isDragging by remember { mutableStateOf(false) }
+    var dragPreviewIndex by remember { mutableIntStateOf(selectedPage) }
+    val latestSelectedPage by rememberUpdatedState(selectedPage)
+    val latestOnSelectPage by rememberUpdatedState(onSelectPage)
+    val activeIndex = if (isDragging) dragPreviewIndex else selectedPage
+
+    // One shared pill that glides between icons instead of each item fading its own background.
+    val pillLeft = remember { Animatable(0f) }
+    val pillWidth = remember { Animatable(0f) }
+    var pillInitialized by remember { mutableStateOf(false) }
+    val pillSpring = remember { spring<Float>(dampingRatio = 0.8f, stiffness = 500f) }
+    val activeBounds = if (animatePill) itemBounds[activeIndex] else null
+    val pillTop = activeBounds?.let { it.top - containerOrigin.y }
+    val pillHeight = activeBounds?.height
+
+    LaunchedEffect(activeBounds, containerOrigin) {
+        val bounds = activeBounds ?: return@LaunchedEffect
+        val targetLeft = bounds.left - containerOrigin.x
+        if (!pillInitialized) {
+            pillLeft.snapTo(targetLeft)
+            pillWidth.snapTo(bounds.width)
+            pillInitialized = true
+        } else {
+            launch { pillLeft.animateTo(targetLeft, pillSpring) }
+            launch { pillWidth.animateTo(bounds.width, pillSpring) }
+        }
+    }
+
+    fun indexAt(windowX: Float, bounds: Map<Int, Rect>): Int {
+        if (bounds.isEmpty()) return latestSelectedPage
+        var closest = latestSelectedPage
+        var closestDistance = Float.MAX_VALUE
+        bounds.forEach { (index, rect) ->
+            val distance = when {
+                windowX < rect.left -> rect.left - windowX
+                windowX > rect.right -> windowX - rect.right
+                else -> 0f
+            }
+            if (distance < closestDistance) {
+                closestDistance = distance
+                closest = index
+            }
+        }
+        return closest
+    }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -255,25 +329,95 @@ private fun FloatingBottomBarMaterial(
                     detectTapGestures { }
                 }
         ) {
-            Row(
-                modifier = Modifier
-                    .height(64.dp)
-                    .padding(horizontal = 6.dp, vertical = 6.dp)
-                    .selectableGroup(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(3.dp)
+            Box(
+                modifier = Modifier.onGloballyPositioned { coords ->
+                    val origin = coords.positionInWindow()
+                    if (containerOrigin != origin) containerOrigin = origin
+                }
             ) {
-                items.forEachIndexed { index, (label, selectedIcon, unselectedIcon) ->
+                if (animatePill && pillInitialized) {
+                    val top = pillTop
+                    val height = pillHeight
+                    if (top != null && height != null) {
+                        Box(
+                            modifier = Modifier
+                                .offset {
+                                    IntOffset(
+                                        pillLeft.value.roundToInt(),
+                                        top.roundToInt(),
+                                    )
+                                }
+                                .size(
+                                    width = with(density) { pillWidth.value.toDp() },
+                                    height = with(density) { height.toDp() },
+                                )
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primaryContainer)
+                        )
+                    }
+                }
+                Row(
+                    modifier = Modifier
+                        .height(64.dp)
+                        .padding(horizontal = 6.dp, vertical = 6.dp)
+                        .selectableGroup()
+                        .onGloballyPositioned { coords ->
+                            barOriginX.floatValue = coords.positionInWindow().x
+                        }
+                        .then(
+                            if (dragToSwitch) {
+                                Modifier.pointerInput(Unit) {
+                                    var frozenBounds: Map<Int, Rect> = emptyMap()
+                                    detectHorizontalDragGestures(
+                                        onDragStart = { offset ->
+                                            frozenBounds = itemBounds.toMap()
+                                            isDragging = true
+                                            dragPreviewIndex = indexAt(
+                                                barOriginX.floatValue + offset.x,
+                                                frozenBounds,
+                                            )
+                                        },
+                                        onHorizontalDrag = { change, _ ->
+                                            val index = indexAt(
+                                                barOriginX.floatValue + change.position.x,
+                                                frozenBounds,
+                                            )
+                                            if (index != dragPreviewIndex) {
+                                                dragPreviewIndex = index
+                                            }
+                                            change.consume()
+                                        },
+                                        onDragEnd = {
+                                            val target = dragPreviewIndex
+                                            isDragging = false
+                                            if (target != latestSelectedPage) {
+                                                latestOnSelectPage(target)
+                                            }
+                                        },
+                                        onDragCancel = {
+                                            isDragging = false
+                                        },
+                                    )
+                                }
+                            } else {
+                                Modifier
+                            }
+                        ),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(3.dp)
+                ) {
+                    items.forEachIndexed { index, (label, selectedIcon, unselectedIcon) ->
                     val selected = selectedPage == index
+                    val highlighted = activeIndex == index
                     val animationSpec = tween<Color>(durationMillis = 250, easing = FastOutSlowInEasing)
 
                     val bgColor by animateColorAsState(
-                        targetValue = if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                        targetValue = if (!animatePill && highlighted) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
                         animationSpec = animationSpec,
                         label = "floatingBarBgColor"
                     )
                     val contentColor by animateColorAsState(
-                        targetValue = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                        targetValue = if (highlighted) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
                         animationSpec = animationSpec,
                         label = "floatingBarContentColor"
                     )
@@ -289,6 +433,16 @@ private fun FloatingBottomBarMaterial(
                         modifier = Modifier
                             .fillMaxHeight()
                             .defaultMinSize(minWidth = if (selected) 56.dp else 46.dp)
+                            .onGloballyPositioned { coords ->
+                                val position = coords.positionInWindow()
+                                val rect = Rect(
+                                    position.x,
+                                    position.y,
+                                    position.x + coords.size.width,
+                                    position.y + coords.size.height,
+                                )
+                                if (itemBounds[index] != rect) itemBounds[index] = rect
+                            }
                             .then(
                                 if (index == 2) {
                                     Modifier.combinedClickable(
@@ -336,7 +490,7 @@ private fun FloatingBottomBarMaterial(
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     NavigationIconWithBadge(
-                                        icon = if (selected) selectedIcon else unselectedIcon,
+                                        icon = if (highlighted) selectedIcon else unselectedIcon,
                                         contentDescription = if (selected) null else stringResource(label),
                                         badge = badgeFor(index, navigationBadge),
                                     )
@@ -373,6 +527,7 @@ private fun FloatingBottomBarMaterial(
                         }
                     }
                 }
+            }
             }
         }
     }
