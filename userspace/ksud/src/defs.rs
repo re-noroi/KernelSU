@@ -63,6 +63,7 @@ mod android {
 
     // Thermal profile / bypass charging preferences
     pub const TUNING_CONFIG_PATH: &str = concatcp!(WORKING_DIR, "tuning.conf");
+    pub const THERMAL_WATCH_LOCK_PATH: &str = concatcp!(WORKING_DIR, "thermal_watch.lock");
 
     // Module config system
     pub const MODULE_CONFIG_DIR: &str = concatcp!(WORKING_DIR, "module_configs/");

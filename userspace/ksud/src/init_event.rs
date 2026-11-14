@@ -178,6 +178,11 @@ pub fn on_services() {
 
     // restore thermal / bypass charging preferences chosen in the manager
     crate::tuning::apply_persisted();
+
+    // start the per-app thermal watcher when mappings exist
+    if let Err(e) = crate::tuning::ensure_thermal_watch_running() {
+        log::warn!("failed to start thermal watcher: {e:#}");
+    }
 }
 
 pub fn on_boot_completed() {
