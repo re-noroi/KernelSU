@@ -224,7 +224,11 @@ fun TuningScreenMiuix(
                                 fontSize = 14.sp,
                             )
                         }
-                                                if (state.chargeCurrentSupported) {
+                        PerAppThermalEntryMiuix(
+                            count = state.thermalApps.size,
+                            onClick = actions.onOpenThermalApps,
+                        )
+                        if (state.chargeCurrentSupported) {
                             val tenths = (state.chargeCurrent / 100_000L).toInt()
                             val currentLabel = "${tenths / 10}.${tenths % 10} A"
                             SwitchPreference(
@@ -962,6 +966,47 @@ private fun ColorCalibrationEntryMiuix(onClick: () -> Unit) {
             )
             Text(
                 text = stringResource(R.string.tuning_color_calibration_summary),
+                fontSize = 12.sp,
+                color = colorScheme.onSurfaceVariantSummary,
+            )
+        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = colorScheme.onSurfaceVariantSummary,
+        )
+    }
+}
+
+@Composable
+private fun PerAppThermalEntryMiuix(
+    count: Int,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.Thermostat,
+            contentDescription = null,
+            tint = colorScheme.primary,
+        )
+        Spacer(Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.tuning_thermal_apps_title),
+                fontSize = 15.sp,
+            )
+            Text(
+                text = if (count == 0) {
+                    stringResource(R.string.tuning_thermal_apps_summary_none)
+                } else {
+                    stringResource(R.string.tuning_thermal_apps_summary_count, count)
+                },
                 fontSize = 12.sp,
                 color = colorScheme.onSurfaceVariantSummary,
             )
