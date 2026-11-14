@@ -98,6 +98,7 @@ import me.weishu.kernelsu.ui.screen.scriptrun.ScriptRunScreen
 import me.weishu.kernelsu.ui.screen.settings.SettingPager
 import me.weishu.kernelsu.ui.screen.sulog.SulogScreen
 import me.weishu.kernelsu.ui.screen.tuning.TuningDocsScreen
+import me.weishu.kernelsu.ui.screen.tuning.TuningThermalAppsScreen
 import me.weishu.kernelsu.ui.screen.tuning.TuningScreen
 import me.weishu.kernelsu.ui.screen.dmesg.DmesgScreen
 import me.weishu.kernelsu.ui.screen.superuser.SuperUserPager
@@ -294,6 +295,7 @@ open class MainActivity : ComponentActivity() {
                             entry<Route.ColorPalette>(swipeDismiss = swipeDismiss) { MinimalPage(isMinimal) { ColorPaletteScreen() } }
                             entry<Route.ColorCalibration>(swipeDismiss = swipeDismiss) { MinimalPage(isMinimal) { ColorCalibrationScreen() } }
                             entry<Route.TuningDocs>(swipeDismiss = swipeDismiss) { MinimalPage(isMinimal) { TuningDocsScreen() } }
+                            entry<Route.TuningThermalApps>(swipeDismiss = swipeDismiss) { MinimalPage(isMinimal) { TuningThermalAppsScreen() } }
                             entry<Route.AppProfileTemplate>(swipeDismiss = swipeDismiss) { MinimalPage(isMinimal) { AppProfileTemplateScreen() } }
                             entry<Route.TemplateEditor>(swipeDismiss = swipeDismiss) { key ->
                                 MinimalPage(isMinimal) { TemplateEditorScreen(key.template, key.readOnly) }

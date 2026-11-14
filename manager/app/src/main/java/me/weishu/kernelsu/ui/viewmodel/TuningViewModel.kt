@@ -19,6 +19,7 @@ import me.weishu.kernelsu.ui.screen.tuning.SchedulerState
 import me.weishu.kernelsu.ui.screen.tuning.CgroupState
 import me.weishu.kernelsu.ui.screen.tuning.NetworkState
 import me.weishu.kernelsu.ui.screen.tuning.MemoryState
+import me.weishu.kernelsu.ui.screen.tuning.ThermalAppMapping
 import me.weishu.kernelsu.ui.screen.tuning.ZramState
 
 data class ThermalProfile(val index: Int, val name: String)
@@ -36,6 +37,7 @@ data class TuningUiState(
     val bypassCurrent: Boolean = false,
     val bypassEnabled: Boolean = false,
     val profiles: List<ThermalProfile> = emptyList(),
+    val thermalApps: List<ThermalAppMapping> = emptyList(),
     val scheduler: SchedulerState = SchedulerState(),
     val cgroups: List<CgroupState> = emptyList(),
     val persist: Boolean = true,
@@ -248,6 +250,8 @@ class TuningViewModel : ViewModel() {
         val densityOverride = Regex("Override density:\\s*(\\d+)")
             .find(densityRaw)?.groupValues?.get(1)?.toIntOrNull()
 
+        val thermalApps = loadThermalAppMappings()
+
         _uiState.update {
             it.copy(
                 isLoading = false,
@@ -261,6 +265,7 @@ class TuningViewModel : ViewModel() {
                 bypassCurrent = bypassCurrent,
                 bypassEnabled = bypassCurrent,
                 profiles = thermalProfiles,
+                thermalApps = thermalApps,
                 scheduler = scheduler,
                 cgroups = cgroups,
                 persist = persist,
@@ -278,6 +283,46 @@ class TuningViewModel : ViewModel() {
         if (index < 0) return
         _uiState.update { it.copy(thermalIndex = index) }
         apply("thermal", index.toString())
+    }
+
+    private fun loadThermalAppMappings(): List<ThermalAppMapping> {
+        val raw = execRootCommand(
+            "grep '^thermal_apps=' $configPath 2>/dev/null | cut -d= -f2"
+        )
+        if (raw.isEmpty()) return emptyList()
+        return raw.split(',')
+            .mapNotNull { entry ->
+                val parts = entry.split(':')
+                if (parts.size != 2) return@mapNotNull null
+                val uid = parts[0].trim().toIntOrNull() ?: return@mapNotNull null
+                val index = parts[1].trim().toIntOrNull() ?: return@mapNotNull null
+                ThermalAppMapping(uid, index)
+            }
+            .sortedBy { it.uid }
+    }
+
+    fun setAppThermal(uid: Int, index: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = execKsudCommand("tuning app-thermal $uid $index")
+            if (result.isSuccess) {
+                refreshInternal()
+                TuningSignal.notifyChanged()
+            } else {
+                _uiState.update { it.copy(errorMessage = "Failed: per-app thermal") }
+            }
+        }
+    }
+
+    fun removeAppThermal(uid: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = execKsudCommand("tuning app-thermal-remove $uid")
+            if (result.isSuccess) {
+                refreshInternal()
+                TuningSignal.notifyChanged()
+            } else {
+                _uiState.update { it.copy(errorMessage = "Failed: per-app thermal") }
+            }
+        }
     }
 
     fun setChargeWritable(enabled: Boolean) {

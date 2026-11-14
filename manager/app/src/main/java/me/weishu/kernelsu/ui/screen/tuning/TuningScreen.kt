@@ -39,6 +39,7 @@ fun TuningScreen(
         onOpenMemoryMonitor = dropUnlessResumed { navigator.push(Route.MemoryMonitor) },
         onOpenBattery = dropUnlessResumed { navigator.push(Route.Battery) },
         onOpenThermalMonitor = dropUnlessResumed { navigator.push(Route.ThermalMonitor) },
+        onOpenThermalApps = dropUnlessResumed { navigator.push(Route.TuningThermalApps) },
         onOpenColorCalibration = dropUnlessResumed { navigator.push(Route.ColorCalibration) },
         onSetDensity = viewModel::setDensity,
         onResetDensity = viewModel::resetDensity,

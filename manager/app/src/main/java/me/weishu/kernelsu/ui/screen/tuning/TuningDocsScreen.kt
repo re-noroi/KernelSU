@@ -99,6 +99,12 @@ private val tuningSections = listOf(
                 recommended = "Keep the default profile. Choose a cooler profile if the phone gets too hot; expect lower performance.",
             ),
             DocItem(
+                name = "Per-app thermal",
+                what = "Assigns a different thermal profile to specific apps. The profile is applied while that app is in the foreground, then the global profile is restored.",
+                values = "Any installed app and any supported thermal profile, or the global default.",
+                recommended = "Use a cooler profile for games that heat the phone, and leave other apps on the global profile.",
+            ),
+            DocItem(
                 name = "Bypass charging",
                 what = "Runs the phone from the charger and stops charging the battery. Less charging means less heat while gaming.",
                 values = "On or off.",
