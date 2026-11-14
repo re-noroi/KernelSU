@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.tuning
 
+import android.content.pm.ApplicationInfo
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -55,6 +56,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.data.model.AppInfo
+import me.weishu.kernelsu.ksuApp
 import me.weishu.kernelsu.ui.LocalUiMode
 import me.weishu.kernelsu.ui.UiMode
 import me.weishu.kernelsu.ui.component.AppIconImage
@@ -93,7 +95,17 @@ fun TuningThermalAppsScreen() {
             .getOrNull()
             ?.first
             .orEmpty()
-            .filter { it.uid >= 10_000 && it.packageInfo.applicationInfo != null }
+            .filter { app ->
+                val info = app.packageInfo.applicationInfo ?: return@filter false
+                val flags = info.flags
+                // Hide stock system apps, but keep system apps the user updated
+                // (YouTube, Chrome, ...) since those are what people tune for.
+                val isStockSystemApp = flags and ApplicationInfo.FLAG_SYSTEM != 0 &&
+                    flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP == 0
+                app.uid >= 10_000 &&
+                    app.packageName != ksuApp.packageName &&
+                    !isStockSystemApp
+            }
             .distinctBy { it.uid }
             .sortedBy { it.label.lowercase() }
         apps = loaded
