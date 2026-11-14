@@ -66,11 +66,18 @@ data class ZramState(
 )
 
 @Immutable
+data class ThermalAppMapping(
+    val uid: Int,
+    val profileIndex: Int,
+)
+
+@Immutable
 data class TuningActions(
     val onBack: () -> Unit,
     val onOpenMemoryMonitor: () -> Unit,
     val onOpenBattery: () -> Unit,
     val onOpenThermalMonitor: () -> Unit,
+    val onOpenThermalApps: () -> Unit,
     val onOpenColorCalibration: () -> Unit,
     val onSetDensity: (Int) -> Unit,
     val onResetDensity: () -> Unit,

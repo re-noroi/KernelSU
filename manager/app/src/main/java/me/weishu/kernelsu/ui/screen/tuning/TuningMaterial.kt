@@ -208,6 +208,14 @@ fun TuningScreenMaterial(
                             },
                         )
                     }
+                    item {
+                        SegmentedItemContainer {
+                            PerAppThermalEntry(
+                                count = state.thermalApps.size,
+                                onClick = actions.onOpenThermalApps,
+                            )
+                        }
+                    }
                     if (state.chargeCurrentSupported) {
                         item {
                             val tenths = (state.chargeCurrent / 100_000L).toInt()
@@ -956,6 +964,47 @@ private fun ColorCalibrationEntry(onClick: () -> Unit) {
             )
             Text(
                 text = stringResource(R.string.tuning_color_calibration_summary),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun PerAppThermalEntry(
+    count: Int,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Thermostat,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.tuning_thermal_apps_title),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Text(
+                text = if (count == 0) {
+                    stringResource(R.string.tuning_thermal_apps_summary_none)
+                } else {
+                    stringResource(R.string.tuning_thermal_apps_summary_count, count)
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

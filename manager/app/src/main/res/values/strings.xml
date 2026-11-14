@@ -339,6 +339,15 @@
     <string name="tuning_unsupported">Not supported by this kernel</string>
     <string name="tuning_profiles_unavailable">Thermal profiles unavailable</string>
     <string name="tuning_thermal_current">Current: %1$s</string>
+    <string name="tuning_thermal_apps_title">Per-app thermal</string>
+    <string name="tuning_thermal_apps_summary_none">No apps mapped — global profile is used</string>
+    <string name="tuning_thermal_apps_summary_count">%1$d apps mapped</string>
+    <string name="tuning_thermal_apps_screen_title">Per-app thermal</string>
+    <string name="tuning_thermal_apps_search">Search apps</string>
+    <string name="tuning_thermal_apps_global">Global profile</string>
+    <string name="tuning_thermal_apps_empty">No apps match your search</string>
+    <string name="tuning_thermal_apps_hint">Choose a profile for an app. It is applied while the app is in the foreground and the global profile is restored when you leave it.</string>
+    <string name="tuning_thermal_apps_loading">Loading apps…</string>
     <string name="tuning_applying">Applying…</string>
     <string name="tuning_section_thermals">Thermals and Battery</string>
     <string name="tuning_section_schedulers">Schedulers</string>
