@@ -533,6 +533,30 @@ enum TuningCmd {
         index: i32,
     },
 
+    /// Per-app thermal: map an app UID to a thermal profile
+    AppThermal {
+        /// app UID
+        uid: u32,
+        /// profile index (see `ksud tuning list`)
+        index: i32,
+    },
+
+    /// Per-app thermal: remove an app mapping
+    AppThermalRemove {
+        /// app UID
+        uid: u32,
+    },
+
+    /// Per-app thermal: clear every mapping
+    AppThermalClear,
+
+    /// Per-app thermal: list mappings as uid=index
+    AppThermalList,
+
+    /// Run the per-app thermal watcher (internal daemon)
+    #[command(hide = true)]
+    Watch,
+
     /// Charging: toggle sysfs writable mode (1=0644, 0=0444)
     ChargeWritable { value: u8 },
 
@@ -946,6 +970,14 @@ pub fn run() -> Result<()> {
                 Ok(())
             }
             TuningCmd::Thermal { index } => crate::tuning::set_thermal(index),
+            TuningCmd::AppThermal { uid, index } => crate::tuning::set_app_thermal(uid, index),
+            TuningCmd::AppThermalRemove { uid } => crate::tuning::remove_app_thermal(uid),
+            TuningCmd::AppThermalClear => crate::tuning::clear_app_thermals(),
+            TuningCmd::AppThermalList => {
+                crate::tuning::print_app_thermals();
+                Ok(())
+            }
+            TuningCmd::Watch => crate::tuning::run_thermal_watch(),
             TuningCmd::ChargeWritable { value } => {
                 crate::tuning::set_charge_writable(value != 0)
             }
