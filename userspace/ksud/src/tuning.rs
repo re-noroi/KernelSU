@@ -8,7 +8,9 @@ use anyhow::{Context, Result, bail};
 use log::{info, warn};
 use std::collections::HashMap;
 use std::fs;
-use std::os::unix::fs::PermissionsExt;
+use std::os::fd::AsRawFd;
+use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
+use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::thread;
@@ -33,6 +35,19 @@ pub const THERMAL_PROFILES: &[(i32, &str)] = &[
 
 const THERMAL_NODES: &[&str] = &["/sys/class/thermal/thermal_message/sconfig"];
 const THERMAL_CONTEXT: &str = "u:object_r:sysfs_thermal:s0";
+
+// Per-app thermal overrides. The mapping is stored in tuning.conf as
+// `thermal_apps=uid:index,uid:index`. The watcher daemon applies a mapped
+// profile while one of those app UIDs is in the top-app cgroup and restores
+// the global profile once the app leaves the foreground.
+const THERMAL_APPS_KEY: &str = "thermal_apps";
+const THERMAL_WATCH_INTERVAL: Duration = Duration::from_millis(1500);
+const TOP_APP_CGROUP_NODES: &[&str] = &[
+    "/dev/cpuctl/top-app/cgroup.procs",
+    "/sys/fs/cgroup/top-app/cgroup.procs",
+    "/sys/fs/cgroup/cpu/top-app/cgroup.procs",
+];
+const MIN_APP_UID: u32 = 10000;
 
 const CHARGE_CURRENT_MAX: &str = "/sys/class/power_supply/battery/constant_charge_current_max";
 const CHARGE_CURRENT_MIN_UA: u64 = 1_000_000; // 1.0 A
@@ -161,6 +176,72 @@ fn write_node(node: &Path, value: &str, thermal: bool) -> Result<()> {
     set_mode(node, 0o444);
 
     Ok(())
+}
+
+fn parse_app_thermals(config: &HashMap<String, String>) -> HashMap<u32, i32> {
+    let Some(value) = config.get(THERMAL_APPS_KEY) else {
+        return HashMap::new();
+    };
+
+    value
+        .split(',')
+        .filter_map(|entry| {
+            let (uid, index) = entry.trim().split_once(':')?;
+            let uid = uid.trim().parse::<u32>().ok()?;
+            let index = index.trim().parse::<i32>().ok()?;
+            (profile_name(index).is_some() && index >= 0).then_some((uid, index))
+        })
+        .collect()
+}
+
+fn app_thermals_value(mappings: &HashMap<u32, i32>) -> String {
+    let mut entries: Vec<(u32, i32)> = mappings
+        .iter()
+        .map(|(uid, index)| (*uid, *index))
+        .collect();
+    entries.sort_unstable();
+    entries
+        .into_iter()
+        .map(|(uid, index)| format!("{uid}:{index}"))
+        .collect::<Vec<_>>()
+        .join(",")
+}
+
+fn read_proc_uid(pid: u32) -> Option<u32> {
+    let status = fs::read_to_string(format!("/proc/{pid}/status")).ok()?;
+    status.lines().find_map(|line| {
+        line.strip_prefix("Uid:")?
+            .split_whitespace()
+            .next()?
+            .parse::<u32>()
+            .ok()
+    })
+}
+
+fn foreground_uids() -> Vec<u32> {
+    for path in TOP_APP_CGROUP_NODES {
+        let Ok(content) = fs::read_to_string(path) else {
+            continue;
+        };
+
+        let mut uids = Vec::new();
+        for pid in content
+            .lines()
+            .filter_map(|line| line.trim().parse::<u32>().ok())
+        {
+            if let Some(uid) = read_proc_uid(pid)
+                && uid >= MIN_APP_UID
+                && !uids.contains(&uid)
+            {
+                uids.push(uid);
+                if uids.len() >= 8 {
+                    break;
+                }
+            }
+        }
+        return uids;
+    }
+    Vec::new()
 }
 
 fn load_config() -> HashMap<String, String> {
@@ -401,6 +482,173 @@ pub fn set_thermal(index: i32) -> Result<()> {
     );
     println!("ok");
     Ok(())
+}
+
+/// Map an app UID to a thermal profile. The value takes effect the next time
+/// the app is in the foreground (or immediately if it already is).
+pub fn set_app_thermal(uid: u32, index: i32) -> Result<()> {
+    if uid < MIN_APP_UID {
+        bail!("uid {uid} is not an app UID");
+    }
+    let Some(name) = profile_name(index) else {
+        bail!("unknown thermal profile index {index}");
+    };
+    if index < 0 {
+        bail!("cannot apply the '{name}' sentinel profile");
+    }
+
+    let mut mappings = parse_app_thermals(&load_config());
+    mappings.insert(uid, index);
+    update_config(THERMAL_APPS_KEY, &app_thermals_value(&mappings))?;
+    info!("app uid {uid} mapped to thermal profile {name} ({index})");
+    ensure_thermal_watch_running()?;
+    println!("ok");
+    Ok(())
+}
+
+/// Remove the per-app thermal override for an app UID.
+pub fn remove_app_thermal(uid: u32) -> Result<()> {
+    let mut mappings = parse_app_thermals(&load_config());
+    mappings.remove(&uid);
+    update_config(THERMAL_APPS_KEY, &app_thermals_value(&mappings))?;
+    info!("app uid {uid} thermal mapping removed");
+    println!("ok");
+    Ok(())
+}
+
+/// Remove every per-app thermal override.
+pub fn clear_app_thermals() -> Result<()> {
+    update_config(THERMAL_APPS_KEY, "")?;
+    info!("all per-app thermal mappings cleared");
+    println!("ok");
+    Ok(())
+}
+
+/// Print the per-app thermal mappings as `uid=index` lines.
+pub fn print_app_thermals() {
+    let mappings = parse_app_thermals(&load_config());
+    let mut entries: Vec<(u32, i32)> = mappings.into_iter().collect();
+    entries.sort_unstable();
+    for (uid, index) in entries {
+        println!("{uid}={index}");
+    }
+}
+
+struct ThermalWatchLock {
+    _file: fs::File,
+}
+
+impl ThermalWatchLock {
+    fn acquire() -> Result<Option<Self>> {
+        let path = Path::new(defs::THERMAL_WATCH_LOCK_PATH);
+        let file = fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .mode(0o600)
+            .open(path)
+            .with_context(|| format!("failed to open {}", path.display()))?;
+
+        let ret = unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) };
+        if ret == 0 {
+            Ok(Some(Self { _file: file }))
+        } else {
+            Ok(None)
+        }
+    }
+}
+
+/// Spawn the per-app thermal watcher if it is not already running and at least
+/// one app mapping exists.
+pub fn ensure_thermal_watch_running() -> Result<()> {
+    if parse_app_thermals(&load_config()).is_empty() {
+        return Ok(());
+    }
+
+    if crate::utils::create_daemon(true)? {
+        let mut command = Command::new("/proc/self/exe");
+        command
+            .args(["tuning", "watch"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .current_dir("/");
+
+        let err = command.exec();
+        warn!("failed to exec thermal watcher: {err}");
+        unsafe {
+            libc::_exit(1);
+        }
+    }
+    Ok(())
+}
+
+/// Keep the thermal profile in sync with the foreground app. This runs as a
+/// detached daemon so switching still works when the manager is not open.
+pub fn run_thermal_watch() -> Result<()> {
+    let Some(_lock) = ThermalWatchLock::acquire()? else {
+        info!("per-app thermal watcher already running");
+        return Ok(());
+    };
+
+    info!("per-app thermal watcher started");
+    // Only restore the global profile when we previously applied an override.
+    // Otherwise the vendor thermal HAL keeps control of the node.
+    let mut applied_override: Option<i32> = None;
+
+    loop {
+        let config = load_config();
+        let mappings = parse_app_thermals(&config);
+
+        if mappings.is_empty() {
+            // Fall back to the global profile before leaving.
+            if applied_override.is_some()
+                && let Some(global) = config
+                    .get("thermal_profile")
+                    .and_then(|value| value.parse::<i32>().ok())
+                    .filter(|value| *value >= 0)
+                && let Some(node) = thermal_node(&config)
+                && let Err(err) = write_node(&node, &global.to_string(), true)
+            {
+                warn!("failed to restore global thermal profile: {err:#}");
+            }
+            info!("per-app thermal watcher exiting (no mappings)");
+            return Ok(());
+        }
+
+        let target = foreground_uids()
+            .into_iter()
+            .find_map(|uid| mappings.get(&uid).copied());
+
+        match target {
+            Some(index) if applied_override != Some(index) => {
+                if let Some(node) = thermal_node(&config) {
+                    match write_node(&node, &index.to_string(), true) {
+                        Ok(()) => {
+                            applied_override = Some(index);
+                            info!("per-app thermal profile {index} applied");
+                        }
+                        Err(err) => warn!("failed to apply per-app thermal profile: {err:#}"),
+                    }
+                }
+            }
+            None if applied_override.is_some() => {
+                if let Some(global) = config
+                    .get("thermal_profile")
+                    .and_then(|value| value.parse::<i32>().ok())
+                    .filter(|value| *value >= 0)
+                    && let Some(node) = thermal_node(&config)
+                    && let Err(err) = write_node(&node, &global.to_string(), true)
+                {
+                    warn!("failed to restore global thermal profile: {err:#}");
+                }
+                applied_override = None;
+            }
+            _ => {}
+        }
+
+        thread::sleep(THERMAL_WATCH_INTERVAL);
+    }
 }
 
 pub fn set_charge_current(value_ua: u64) -> Result<()> {
