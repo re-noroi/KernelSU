@@ -160,7 +160,7 @@ enum Commands {
         command: Initrc,
     },
 
-    /// Manage thermal profile and bypass charging
+    /// Manage thermal profile, charge limit and bypass charging
     Tuning {
         #[command(subcommand)]
         command: TuningCmd,
@@ -553,9 +553,15 @@ enum TuningCmd {
     /// Per-app thermal: list mappings as uid=index
     AppThermalList,
 
-    /// Run the per-app thermal watcher (internal daemon)
+    /// Run the thermal / charge-limit watcher (internal daemon)
     #[command(hide = true)]
     Watch,
+
+    /// Charging: set the battery percentage at which charging stops (70-100)
+    ChargeLimit { percent: i32 },
+
+    /// Charging: enable (1) or disable (0) the percentage-based charge limit
+    ChargeLimitToggle { value: u8 },
 
     /// Charging: toggle sysfs writable mode (1=0644, 0=0444)
     ChargeWritable { value: u8 },
@@ -977,7 +983,11 @@ pub fn run() -> Result<()> {
                 crate::tuning::print_app_thermals();
                 Ok(())
             }
-            TuningCmd::Watch => crate::tuning::run_thermal_watch(),
+            TuningCmd::Watch => crate::tuning::run_tuning_watch(),
+            TuningCmd::ChargeLimit { percent } => crate::tuning::set_charge_limit(percent),
+            TuningCmd::ChargeLimitToggle { value } => {
+                crate::tuning::set_charge_limit_enabled(value != 0)
+            }
             TuningCmd::ChargeWritable { value } => {
                 crate::tuning::set_charge_writable(value != 0)
             }

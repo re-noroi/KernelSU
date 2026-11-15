@@ -57,6 +57,45 @@ const BYPASS_NODES: &[&str] = &[
     "/sys/class/power_supply/bms/input_suspend",
 ];
 
+// Percentage-based charge limit. There is no portable "stop charging at N%"
+// sysfs knob, so the watcher daemon reads the fuel gauge and toggles the
+// charger gate once the configured capacity is reached. Each gate lists
+// (node, stop value, resume value, is_input_suspend).
+const BATTERY_CAPACITY: &str = "/sys/class/power_supply/battery/capacity";
+const CHARGE_LIMIT_ENABLED_KEY: &str = "charge_limit_enabled";
+const CHARGE_LIMIT_PERCENT_KEY: &str = "charge_limit_percent";
+const CHARGE_LIMIT_MIN_PERCENT: i32 = 70;
+const CHARGE_LIMIT_MAX_PERCENT: i32 = 100;
+const CHARGE_LIMIT_DEFAULT_PERCENT: i32 = 80;
+const CHARGE_LIMIT_RESUME_GAP: i32 = 3;
+const CHARGE_LIMIT_CHECK_TICKS: u32 = 8;
+const CHARGE_GATES: &[(&str, &str, &str, bool)] = &[
+    (
+        "/sys/class/power_supply/battery/charging_enabled",
+        "0",
+        "1",
+        false,
+    ),
+    (
+        "/sys/class/power_supply/battery/battery_charging_enabled",
+        "0",
+        "1",
+        false,
+    ),
+    (
+        "/sys/class/power_supply/battery/battery_input_suspend",
+        "1",
+        "0",
+        true,
+    ),
+    (
+        "/sys/class/power_supply/battery/input_suspend",
+        "1",
+        "0",
+        true,
+    ),
+];
+
 // Scheduler sysfs nodes (FakeDreamers)
 const SCHED_SKIP_HEADROOM: &str = "/proc/sys/kernel/sched_skip_headroom";
 const SCHED_PELT_MULTIPLIER: &str = "/proc/sys/kernel/sched_pelt_multiplier";
@@ -294,6 +333,49 @@ fn bypass_node(config: &HashMap<String, String>) -> Option<PathBuf> {
     find_node(BYPASS_NODES, config.get("bypass_node").map(String::as_str))
 }
 
+struct ChargeGate {
+    node: PathBuf,
+    stop: &'static str,
+    resume: &'static str,
+    input_suspend: bool,
+}
+
+fn find_charge_gate() -> Option<ChargeGate> {
+    CHARGE_GATES
+        .iter()
+        .find_map(|&(path, stop, resume, input_suspend)| {
+            let node = PathBuf::from(path);
+            node.exists().then_some(ChargeGate {
+                node,
+                stop,
+                resume,
+                input_suspend,
+            })
+        })
+}
+
+fn charge_limit_enabled(config: &HashMap<String, String>) -> bool {
+    config
+        .get(CHARGE_LIMIT_ENABLED_KEY)
+        .is_some_and(|value| value != "0")
+}
+
+fn charge_limit_percent(config: &HashMap<String, String>) -> i32 {
+    config
+        .get(CHARGE_LIMIT_PERCENT_KEY)
+        .and_then(|value| value.parse::<i32>().ok())
+        .unwrap_or(CHARGE_LIMIT_DEFAULT_PERCENT)
+        .clamp(CHARGE_LIMIT_MIN_PERCENT, CHARGE_LIMIT_MAX_PERCENT)
+}
+
+/// True when bypass charging currently keeps the charger suspended by itself.
+fn bypass_active(config: &HashMap<String, String>) -> bool {
+    bypass_node(config)
+        .as_deref()
+        .and_then(read_i32)
+        .is_some_and(|value| value != 0)
+}
+
 fn wait_for_node(
     candidates: &[&str],
     override_path: Option<&str>,
@@ -360,6 +442,24 @@ pub fn print_status() {
     );
     println!("bypass_current={}", i32::from(bypass_current));
     println!("bypass_saved={bypass_saved}");
+
+    // --- Charge limit ---
+    let gate = find_charge_gate();
+    println!("charge_limit_supported={}", i32::from(gate.is_some()));
+    println!(
+        "charge_limit_node={}",
+        gate.as_ref()
+            .map_or("", |gate| gate.node.to_str().unwrap_or_default())
+    );
+    println!(
+        "charge_limit_enabled={}",
+        i32::from(charge_limit_enabled(&config))
+    );
+    println!("charge_limit_percent={}", charge_limit_percent(&config));
+    println!(
+        "battery_capacity={}",
+        read_i32_str(BATTERY_CAPACITY).unwrap_or(-1)
+    );
 
     // --- Scheduler ---
     let skip = read_i32_str(SCHED_SKIP_HEADROOM);
@@ -501,7 +601,7 @@ pub fn set_app_thermal(uid: u32, index: i32) -> Result<()> {
     mappings.insert(uid, index);
     update_config(THERMAL_APPS_KEY, &app_thermals_value(&mappings))?;
     info!("app uid {uid} mapped to thermal profile {name} ({index})");
-    ensure_thermal_watch_running()?;
+    ensure_tuning_watch_running()?;
     println!("ok");
     Ok(())
 }
@@ -534,13 +634,13 @@ pub fn print_app_thermals() {
     }
 }
 
-struct ThermalWatchLock {
+struct TuningWatchLock {
     _file: fs::File,
 }
 
-impl ThermalWatchLock {
+impl TuningWatchLock {
     fn acquire() -> Result<Option<Self>> {
-        let path = Path::new(defs::THERMAL_WATCH_LOCK_PATH);
+        let path = Path::new(defs::TUNING_WATCH_LOCK_PATH);
         let file = fs::OpenOptions::new()
             .read(true)
             .write(true)
@@ -558,10 +658,82 @@ impl ThermalWatchLock {
     }
 }
 
-/// Spawn the per-app thermal watcher if it is not already running and at least
-/// one app mapping exists.
-pub fn ensure_thermal_watch_running() -> Result<()> {
-    if parse_app_thermals(&load_config()).is_empty() {
+fn write_gate(gate: &ChargeGate, stop: bool) -> Result<()> {
+    let value = if stop { gate.stop } else { gate.resume };
+    write_node(&gate.node, value, false)
+}
+
+/// Drive the gate to `stop` only when it is not already there.
+fn set_charging_gate(gate: &ChargeGate, stop: bool) {
+    let target = if stop { gate.stop } else { gate.resume };
+    if read_node(&gate.node).as_deref() == Some(target) {
+        return;
+    }
+
+    match write_gate(gate, stop) {
+        Ok(()) => info!(
+            "charge limit: charging {} via {}",
+            if stop { "stopped" } else { "resumed" },
+            gate.node.display()
+        ),
+        Err(err) => warn!(
+            "charge limit: failed to write {}: {err:#}",
+            gate.node.display()
+        ),
+    }
+}
+
+fn apply_charge_limit(config: &HashMap<String, String>, gate: &ChargeGate) {
+    // Never fight bypass charging: it already suspends the input path, and we
+    // must not resume it when the charge limit is turned off.
+    if gate.input_suspend && bypass_active(config) {
+        return;
+    }
+
+    if !charge_limit_enabled(config) {
+        set_charging_gate(gate, false);
+        return;
+    }
+
+    let Some(capacity) = read_i32_str(BATTERY_CAPACITY) else {
+        return;
+    };
+    let limit = charge_limit_percent(config);
+    let resume_at = (limit - CHARGE_LIMIT_RESUME_GAP).max(0);
+
+    if capacity >= limit {
+        set_charging_gate(gate, true);
+    } else if capacity <= resume_at {
+        set_charging_gate(gate, false);
+    }
+}
+
+fn restore_global_thermal(config: &HashMap<String, String>) {
+    if let Some(global) = config
+        .get("thermal_profile")
+        .and_then(|value| value.parse::<i32>().ok())
+        .filter(|value| *value >= 0)
+        && let Some(node) = thermal_node(config)
+        && let Err(err) = write_node(&node, &global.to_string(), true)
+    {
+        warn!("failed to restore global thermal profile: {err:#}");
+    }
+}
+
+/// Whether the charge limit needs the watcher to stay alive.
+fn charge_limit_running(config: &HashMap<String, String>) -> bool {
+    charge_limit_enabled(config) && find_charge_gate().is_some()
+}
+
+/// Whether the shared tuning daemon has anything to do.
+fn tuning_watch_needed(config: &HashMap<String, String>) -> bool {
+    !parse_app_thermals(config).is_empty() || charge_limit_running(config)
+}
+
+/// Spawn the thermal / charge-limit watcher if it is not running and either a
+/// per-app thermal mapping exists or the charge limit is enabled.
+pub fn ensure_tuning_watch_running() -> Result<()> {
+    if !tuning_watch_needed(&load_config()) {
         return Ok(());
     }
 
@@ -575,7 +747,7 @@ pub fn ensure_thermal_watch_running() -> Result<()> {
             .current_dir("/");
 
         let err = command.exec();
-        warn!("failed to exec thermal watcher: {err}");
+        warn!("failed to exec tuning watcher: {err}");
         unsafe {
             libc::_exit(1);
         }
@@ -583,72 +755,125 @@ pub fn ensure_thermal_watch_running() -> Result<()> {
     Ok(())
 }
 
-/// Keep the thermal profile in sync with the foreground app. This runs as a
-/// detached daemon so switching still works when the manager is not open.
-pub fn run_thermal_watch() -> Result<()> {
-    let Some(_lock) = ThermalWatchLock::acquire()? else {
-        info!("per-app thermal watcher already running");
+/// Keep the per-app thermal profile and the charge limit in sync. This runs as
+/// a detached daemon so both keep working while the manager is closed.
+pub fn run_tuning_watch() -> Result<()> {
+    let Some(_lock) = TuningWatchLock::acquire()? else {
+        info!("tuning watcher already running");
         return Ok(());
     };
 
-    info!("per-app thermal watcher started");
+    info!("tuning watcher started");
     // Only restore the global profile when we previously applied an override.
     // Otherwise the vendor thermal HAL keeps control of the node.
     let mut applied_override: Option<i32> = None;
+    let mut tick: u32 = 0;
 
     loop {
         let config = load_config();
         let mappings = parse_app_thermals(&config);
 
-        if mappings.is_empty() {
-            // Fall back to the global profile before leaving.
-            if applied_override.is_some()
-                && let Some(global) = config
-                    .get("thermal_profile")
-                    .and_then(|value| value.parse::<i32>().ok())
-                    .filter(|value| *value >= 0)
-                && let Some(node) = thermal_node(&config)
-                && let Err(err) = write_node(&node, &global.to_string(), true)
-            {
-                warn!("failed to restore global thermal profile: {err:#}");
+        if mappings.is_empty() && !charge_limit_running(&config) {
+            // Fall back to a clean state before leaving.
+            if applied_override.is_some() {
+                restore_global_thermal(&config);
             }
-            info!("per-app thermal watcher exiting (no mappings)");
+            if let Some(gate) = find_charge_gate()
+                && !(gate.input_suspend && bypass_active(&config))
+            {
+                set_charging_gate(&gate, false);
+            }
+            info!("tuning watcher exiting (idle)");
             return Ok(());
         }
 
-        let target = foreground_uids()
-            .into_iter()
-            .find_map(|uid| mappings.get(&uid).copied());
-
-        match target {
-            Some(index) if applied_override != Some(index) => {
-                if let Some(node) = thermal_node(&config) {
-                    match write_node(&node, &index.to_string(), true) {
-                        Ok(()) => {
-                            applied_override = Some(index);
-                            info!("per-app thermal profile {index} applied");
-                        }
-                        Err(err) => warn!("failed to apply per-app thermal profile: {err:#}"),
-                    }
-                }
-            }
-            None if applied_override.is_some() => {
-                if let Some(global) = config
-                    .get("thermal_profile")
-                    .and_then(|value| value.parse::<i32>().ok())
-                    .filter(|value| *value >= 0)
-                    && let Some(node) = thermal_node(&config)
-                    && let Err(err) = write_node(&node, &global.to_string(), true)
-                {
-                    warn!("failed to restore global thermal profile: {err:#}");
-                }
+        if mappings.is_empty() {
+            if applied_override.is_some() {
+                restore_global_thermal(&config);
                 applied_override = None;
             }
-            _ => {}
+        } else {
+            let target = foreground_uids()
+                .into_iter()
+                .find_map(|uid| mappings.get(&uid).copied());
+
+            match target {
+                Some(index) if applied_override != Some(index) => {
+                    if let Some(node) = thermal_node(&config) {
+                        match write_node(&node, &index.to_string(), true) {
+                            Ok(()) => {
+                                applied_override = Some(index);
+                                info!("per-app thermal profile {index} applied");
+                            }
+                            Err(err) => warn!("failed to apply per-app thermal profile: {err:#}"),
+                        }
+                    }
+                }
+                None if applied_override.is_some() => {
+                    restore_global_thermal(&config);
+                    applied_override = None;
+                }
+                _ => {}
+            }
         }
 
+        if tick % CHARGE_LIMIT_CHECK_TICKS == 0
+            && let Some(gate) = find_charge_gate()
+        {
+            apply_charge_limit(&config, &gate);
+        }
+
+        tick = tick.wrapping_add(1);
         thread::sleep(THERMAL_WATCH_INTERVAL);
     }
+}
+
+/// Set the battery percentage at which charging should stop.
+pub fn set_charge_limit(percent: i32) -> Result<()> {
+    let clamped = percent.clamp(CHARGE_LIMIT_MIN_PERCENT, CHARGE_LIMIT_MAX_PERCENT);
+    let Some(gate) = find_charge_gate() else {
+        bail!("no charger gate node found (charging_enabled / input_suspend)");
+    };
+
+    update_config(CHARGE_LIMIT_PERCENT_KEY, &clamped.to_string())?;
+    let config = load_config();
+    if charge_limit_enabled(&config) {
+        apply_charge_limit(&config, &gate);
+        ensure_tuning_watch_running()?;
+    }
+    info!("charge limit set to {clamped}%");
+    println!("ok");
+    Ok(())
+}
+
+/// Enable or disable the percentage-based charge limit.
+pub fn set_charge_limit_enabled(enabled: bool) -> Result<()> {
+    let gate = find_charge_gate();
+    if enabled && gate.is_none() {
+        bail!("no charger gate node found (charging_enabled / input_suspend)");
+    }
+
+    update_config(CHARGE_LIMIT_ENABLED_KEY, if enabled { "1" } else { "0" })?;
+    let config = load_config();
+
+    if enabled {
+        if let Some(gate) = gate.as_ref() {
+            apply_charge_limit(&config, gate);
+        }
+        ensure_tuning_watch_running()?;
+    } else if let Some(gate) = gate.as_ref()
+        && !(gate.input_suspend && bypass_active(&config))
+    {
+        // Make sure the device is not left with charging suspended.
+        set_charging_gate(gate, false);
+    }
+
+    info!(
+        "charge limit {}",
+        if enabled { "enabled" } else { "disabled" }
+    );
+    println!("ok");
+    Ok(())
 }
 
 pub fn set_charge_current(value_ua: u64) -> Result<()> {
