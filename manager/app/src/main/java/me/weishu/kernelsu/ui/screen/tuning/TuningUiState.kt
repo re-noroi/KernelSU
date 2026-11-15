@@ -84,6 +84,8 @@ data class TuningActions(
     val onSelectThermal: (Int) -> Unit,
     val onSetChargeWritable: (Boolean) -> Unit,
     val onSetChargeCurrent: (Long) -> Unit,
+    val onSetChargeLimitEnabled: (Boolean) -> Unit,
+    val onSetChargeLimitPercent: (Int) -> Unit,
     val onSetBypass: (Boolean) -> Unit,
     // Persistence
     val onSetPersist: (Boolean) -> Unit,
