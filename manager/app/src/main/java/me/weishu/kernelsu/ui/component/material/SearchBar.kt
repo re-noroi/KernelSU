@@ -59,6 +59,7 @@ import top.yukonga.miuix.kmp.nav.gesture.WindowNavigationEventBridge
 import androidx.compose.ui.graphics.Color
 import me.weishu.kernelsu.ui.LocalUiMode
 import me.weishu.kernelsu.ui.UiMode
+import me.weishu.kernelsu.ui.theme.minimalWallpaperBackground
 
 @Composable
 fun SearchAppBar(
@@ -231,6 +232,7 @@ fun SearchAppBar(
     ExpandedFullScreenContainedSearchBar(
         state = searchBarState,
         inputField = inputField,
+        modifier = if (isMinimal) minimalWallpaperBackground() else Modifier,
         colors = expandedSearchBarColors,
         windowInsets = { SearchBarDefaults.fullScreenWindowInsets.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal) },
         content = {

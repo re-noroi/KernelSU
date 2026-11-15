@@ -23,6 +23,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.draw.paint
+import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
@@ -223,6 +225,23 @@ fun MinimalTabBackground(content: @Composable () -> Unit) {
             Box(modifier = Modifier.fillMaxSize().background(Color.Black))
         }
         content()
+    }
+}
+
+/**
+ * Wallpaper background for Minimal surfaces hosted in their own window, such as
+ * the expanded search bar. Those windows sit above the app content, so without
+ * this the screen underneath would show through instead of the wallpaper.
+ */
+@Composable
+fun minimalWallpaperBackground(): Modifier {
+    val bitmap = LocalMinimalWallpaperBitmap.current
+    return if (bitmap != null) {
+        Modifier
+            .paint(BitmapPainter(bitmap), contentScale = ContentScale.Crop)
+            .background(Color.Black.copy(alpha = MINIMAL_PAGE_WALLPAPER_DIM))
+    } else {
+        Modifier.background(Color.Black)
     }
 }
 
