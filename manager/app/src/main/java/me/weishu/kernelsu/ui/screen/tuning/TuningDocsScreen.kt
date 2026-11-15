@@ -116,6 +116,12 @@ private val tuningSections = listOf(
                 values = "1.0 A to 10.0 A in 0.5 A steps.",
                 recommended = "Leave it at the default. Lower it to about 2.0-3.0 A for cooler overnight charging. Higher is not always faster.",
             ),
+            DocItem(
+                name = "Charge limit",
+                what = "Stops charging once the battery reaches the chosen percentage, and lets it charge again after it drops a few points. A small background helper watches the battery level for this.",
+                values = "Off, or 70% to 100% in 5% steps.",
+                recommended = "Off if you need a full battery. Around 80% is a good balance for battery longevity.",
+            ),
         ),
     ),
     DocSection(

@@ -144,10 +144,10 @@ suspend fun execKsudCommand(
     val command = "${getKsuDaemonPath()} $args"
     val result = if (newShell) {
         withNewRootShell(globalMnt) {
-            newJob().add(command).exec()
+            newJob().add(command).to(ArrayList<String>(), ArrayList<String>()).exec()
         }
     } else {
-        getRootShell(globalMnt).newJob().add(command).exec()
+        getRootShell(globalMnt).newJob().add(command).to(ArrayList<String>(), ArrayList<String>()).exec()
     }
     KsuCliResult(
         code = result.code,

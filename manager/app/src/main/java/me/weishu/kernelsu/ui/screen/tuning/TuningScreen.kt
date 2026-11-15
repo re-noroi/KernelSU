@@ -46,6 +46,8 @@ fun TuningScreen(
         onSelectThermal = viewModel::selectThermal,
         onSetChargeWritable = viewModel::setChargeWritable,
         onSetChargeCurrent = viewModel::setChargeCurrent,
+        onSetChargeLimitEnabled = viewModel::setChargeLimitEnabled,
+        onSetChargeLimitPercent = viewModel::setChargeLimitPercent,
         onSetBypass = viewModel::setBypass,
         // Persistence
         onSetPersist = viewModel::setPersist,

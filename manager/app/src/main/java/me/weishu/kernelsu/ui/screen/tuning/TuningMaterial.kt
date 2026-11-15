@@ -24,6 +24,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.BatteryFull
 import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Save
@@ -245,6 +246,43 @@ fun TuningScreenMaterial(
                                     onValueChange = { v ->
                                         actions.onSetChargeCurrent(v * 100_000L)
                                     },
+                                )
+                            }
+                        }
+                    }
+                    if (state.chargeLimitSupported) {
+                        item {
+                            val summary = when {
+                                !state.chargeLimitEnabled ->
+                                    stringResource(R.string.tuning_charge_limit_off_summary)
+                                state.batteryCapacity >= 0 -> stringResource(
+                                    R.string.tuning_charge_limit_summary_now,
+                                    state.chargeLimitPercent,
+                                    state.batteryCapacity,
+                                )
+                                else -> stringResource(
+                                    R.string.tuning_charge_limit_summary,
+                                    state.chargeLimitPercent,
+                                )
+                            }
+                            SegmentedSwitchItem(
+                                icon = Icons.Filled.BatteryFull,
+                                title = stringResource(R.string.tuning_charge_limit),
+                                summary = summary,
+                                checked = state.chargeLimitEnabled,
+                                enabled = true,
+                                onCheckedChange = actions.onSetChargeLimitEnabled,
+                            )
+                        }
+                        if (state.chargeLimitEnabled) {
+                            item {
+                                IntSliderItem(
+                                    title = stringResource(R.string.tuning_charge_limit_slider),
+                                    value = state.chargeLimitPercent,
+                                    range = 70..100,
+                                    step = 5,
+                                    formatter = { v -> "$v%" },
+                                    onValueChange = actions.onSetChargeLimitPercent,
                                 )
                             }
                         }
