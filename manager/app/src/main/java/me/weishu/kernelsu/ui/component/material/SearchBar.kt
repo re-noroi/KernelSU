@@ -59,6 +59,7 @@ import top.yukonga.miuix.kmp.nav.gesture.WindowNavigationEventBridge
 import androidx.compose.ui.graphics.Color
 import me.weishu.kernelsu.ui.LocalUiMode
 import me.weishu.kernelsu.ui.UiMode
+import me.weishu.kernelsu.ui.theme.minimalWallpaperBackground
 
 @Composable
 fun SearchAppBar(
@@ -146,15 +147,28 @@ fun SearchAppBar(
         }
     }
 
+    // Minimal has no surface color, so let the wallpaper show through the search
+    // surfaces instead of painting an opaque container over it.
+    val inputFieldColors = if (isMinimal) {
+        SearchBarDefaults.inputFieldColors(
+            focusedContainerColor = Color.Transparent,
+            unfocusedContainerColor = Color.Transparent,
+        )
+    } else {
+        SearchBarDefaults.inputFieldColors()
+    }
+    val expandedSearchBarColors = if (isMinimal) {
+        SearchBarDefaults.colors(containerColor = Color.Transparent)
+    } else {
+        SearchBarDefaults.colors()
+    }
+
     val inputField: @Composable () -> Unit = {
         CompositionLocalProvider(LocalDensity provides scaledDensity) {
             SearchBarDefaults.InputField(
                 textFieldState = textFieldState,
                 searchBarState = searchBarState,
-                colors = SearchBarDefaults.inputFieldColors(
-                    focusedContainerColor = if (isSearchExpanded) Color.Black else Color.Transparent,
-                    unfocusedContainerColor = if (isSearchExpanded) Color.Black else Color.Transparent,
-                ),
+                colors = inputFieldColors,
                 onSearch = {
                     focusManager.clearFocus()
                     keyboardController?.hide()
@@ -218,9 +232,8 @@ fun SearchAppBar(
     ExpandedFullScreenContainedSearchBar(
         state = searchBarState,
         inputField = inputField,
-        colors = SearchBarDefaults.colors(
-            containerColor = Color.Black
-        ),
+        modifier = if (isMinimal) minimalWallpaperBackground() else Modifier,
+        colors = expandedSearchBarColors,
         windowInsets = { SearchBarDefaults.fullScreenWindowInsets.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal) },
         content = {
             WindowNavigationEventBridge()
