@@ -58,6 +58,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
@@ -237,16 +238,19 @@ fun TuningScreenMaterial(
                                 val currentTenths = (state.chargeCurrent / 100_000L).toInt()
                                     .coerceIn(minTenths, maxTenths)
 
-                                IntSliderItem(
-                                    title = "Max Charging Current",
-                                    value = currentTenths,
-                                    range = minTenths..maxTenths,
-                                    step = 5,
-                                    formatter = { v -> "${v / 10}.${v % 10} A" },
-                                    onValueChange = { v ->
-                                        actions.onSetChargeCurrent(v * 100_000L)
-                                    },
-                                )
+                                SegmentedItemContainer {
+                                    IntSliderItem(
+                                        icon = Icons.Filled.Bolt,
+                                        title = "Max Charging Current",
+                                        value = currentTenths,
+                                        range = minTenths..maxTenths,
+                                        step = 5,
+                                        formatter = { v -> "${v / 10}.${v % 10} A" },
+                                        onValueChange = { v ->
+                                            actions.onSetChargeCurrent(v * 100_000L)
+                                        },
+                                    )
+                                }
                             }
                         }
                     }
@@ -276,14 +280,17 @@ fun TuningScreenMaterial(
                         }
                         if (state.chargeLimitEnabled) {
                             item {
-                                IntSliderItem(
-                                    title = stringResource(R.string.tuning_charge_limit_slider),
-                                    value = state.chargeLimitPercent,
-                                    range = 70..100,
-                                    step = 5,
-                                    formatter = { v -> "$v%" },
-                                    onValueChange = actions.onSetChargeLimitPercent,
-                                )
+                                SegmentedItemContainer {
+                                    IntSliderItem(
+                                        icon = Icons.Filled.BatteryFull,
+                                        title = stringResource(R.string.tuning_charge_limit_slider),
+                                        value = state.chargeLimitPercent,
+                                        range = 70..100,
+                                        step = 5,
+                                        formatter = { v -> "$v%" },
+                                        onValueChange = actions.onSetChargeLimitPercent,
+                                    )
+                                }
                             }
                         }
                     }
@@ -319,66 +326,75 @@ fun TuningScreenMaterial(
             if (state.memory.supported) {
                 item { SectionHeader("Memory Management") }
                 item {
-                    TonalCard(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
-                        shape = RoundedCornerShape(16.dp),
+                    SegmentedColumn(
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
                     ) {
-                        Column {
-                            // Swappiness — always exists, just might be RO
-                            IntInputItem(
-                                title = "Swappiness",
-                                value = state.memory.swappiness,
-                                range = 0..100,
-                                enabled = !state.memory.swappinessRo,
-                                onValueChange = actions.onSetSwappiness,
-                            )
-                            if (state.memory.swappinessRo) {
-                                Text(
-                                    "Read-only in this kernel.",
-                                    color = MaterialTheme.colorScheme.error,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                                )
-                            }
-
-                            // VFS Cache Pressure
-                            if (state.memory.vfsSupported) {
+                        // Swappiness — always exists, just might be RO
+                        item {
+                            SegmentedItemContainer {
                                 IntInputItem(
-                                    title = "VFS Cache Pressure",
-                                    value = state.memory.vfsCache,
-                                    range = 0..1000,
-                                    onValueChange = actions.onSetVfsCache,
-                                )
-                            } else {
-                                Text(
-                                    "VFS Cache Pressure is not supported in this kernel.",
-                                    color = MaterialTheme.colorScheme.error,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                    title = "Swappiness",
+                                    value = state.memory.swappiness,
+                                    range = 0..100,
+                                    enabled = !state.memory.swappinessRo,
+                                    icon = Icons.Filled.Memory,
+                                    onValueChange = actions.onSetSwappiness,
                                 )
                             }
-
-                            // kcompressd
-                            if (state.memory.kcompressdSupported) {
-                                IntInputItem(
-                                    title = "kcompressd",
-                                    value = state.memory.kcompressd,
-                                    range = 0..256,
-                                    onValueChange = actions.onSetKcompressd,
-                                )
-                            } else {
-                                Text(
-                                    "kcompressd is not supported in this kernel.",
-                                    color = MaterialTheme.colorScheme.error,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                                )
+                        }
+                        if (state.memory.swappinessRo) {
+                            item {
+                                SegmentedItemContainer {
+                                    TuningNotice("Read-only in this kernel.")
+                                }
                             }
+                        }
 
-                            // MGLRU
-                            if (state.memory.mglruSupported) {
+                        // VFS Cache Pressure
+                        if (state.memory.vfsSupported) {
+                            item {
+                                SegmentedItemContainer {
+                                    IntInputItem(
+                                        title = "VFS Cache Pressure",
+                                        value = state.memory.vfsCache,
+                                        range = 0..1000,
+                                        icon = Icons.Filled.Storage,
+                                        onValueChange = actions.onSetVfsCache,
+                                    )
+                                }
+                            }
+                        } else {
+                            item {
+                                SegmentedItemContainer {
+                                    TuningNotice("VFS Cache Pressure is not supported in this kernel.")
+                                }
+                            }
+                        }
+
+                        // kcompressd
+                        if (state.memory.kcompressdSupported) {
+                            item {
+                                SegmentedItemContainer {
+                                    IntInputItem(
+                                        title = "kcompressd",
+                                        value = state.memory.kcompressd,
+                                        range = 0..256,
+                                        icon = Icons.Filled.Compress,
+                                        onValueChange = actions.onSetKcompressd,
+                                    )
+                                }
+                            }
+                        } else {
+                            item {
+                                SegmentedItemContainer {
+                                    TuningNotice("kcompressd is not supported in this kernel.")
+                                }
+                            }
+                        }
+
+                        // MGLRU
+                        if (state.memory.mglruSupported) {
+                            item {
                                 SegmentedSwitchItem(
                                     icon = Icons.Filled.Memory,
                                     title = "MGLRU",
@@ -386,24 +402,32 @@ fun TuningScreenMaterial(
                                     checked = state.memory.mglruEnabled,
                                     onCheckedChange = actions.onSetMglru,
                                 )
-                                if (state.memory.mglruEnabled) {
-                                    IntInputItem(
-                                        title = "MGLRU min_ttl_ms",
-                                        value = state.memory.mglruTtl,
-                                        range = 0..10000,
-                                        onValueChange = actions.onSetMglruTtl,
-                                    )
-                                }
-                            } else {
-                                Text(
-                                    "MGLRU is not supported in this kernel.",
-                                    color = MaterialTheme.colorScheme.error,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                                )
                             }
+                            if (state.memory.mglruEnabled) {
+                                item {
+                                    SegmentedItemContainer {
+                                        IntInputItem(
+                                            title = "MGLRU min_ttl_ms",
+                                            value = state.memory.mglruTtl,
+                                            range = 0..10000,
+                                            icon = Icons.Filled.Memory,
+                                            onValueChange = actions.onSetMglruTtl,
+                                        )
+                                    }
+                                }
+                            }
+                        } else {
+                            item {
+                                SegmentedItemContainer {
+                                    TuningNotice("MGLRU is not supported in this kernel.")
+                                }
+                            }
+                        }
 
-                            MemoryMonitorEntry(onClick = actions.onOpenMemoryMonitor)
+                        item {
+                            SegmentedItemContainer {
+                                MemoryMonitorEntry(onClick = actions.onOpenMemoryMonitor)
+                            }
                         }
                     }
                 }
@@ -413,28 +437,24 @@ fun TuningScreenMaterial(
             if (state.zram.supported) {
                 item { SectionHeader("zRAM") }
                 item {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text("State", style = MaterialTheme.typography.bodyMedium)
-                        Text(
-                            if (state.zram.swapActive) "Active" else "Inactive",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = if (state.zram.swapActive)
-                                MaterialTheme.colorScheme.primary
-                            else
-                                MaterialTheme.colorScheme.error,
-                        )
-                    }
-                }
-                
-                item {
                     SegmentedColumn(
                         modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
                     ) {
+                        // Swap state
+                        item {
+                            SegmentedItemContainer {
+                                TuningValueRow(
+                                    icon = Icons.Filled.Storage,
+                                    title = "State",
+                                    value = if (state.zram.swapActive) "Active" else "Inactive",
+                                    valueColor = if (state.zram.swapActive)
+                                        MaterialTheme.colorScheme.primary
+                                    else
+                                        MaterialTheme.colorScheme.error,
+                                )
+                            }
+                        }
+
                         // Size dropdown
                         item {
                             val currentGb = (state.zram.disksize / (1024L * 1024L * 1024L)).coerceAtLeast(0L)
@@ -530,32 +550,41 @@ fun TuningScreenMaterial(
                                     if (state.scheduler.hrScaling != 0) {
                                         if (state.scheduler.boostHrLpSupported) {
                                             item {
-                                                IntSliderItem(
-                                                    title = stringResource(R.string.tuning_sched_boost_lp),
-                                                    value = state.scheduler.boostHrLp,
-                                                    range = -50..100,
-                                                    onValueChange = actions.onSetBoostHrLp,
-                                                )
+                                                SegmentedItemContainer {
+                                                    IntSliderItem(
+                                                        icon = Icons.Filled.TrendingUp,
+                                                        title = stringResource(R.string.tuning_sched_boost_lp),
+                                                        value = state.scheduler.boostHrLp,
+                                                        range = -50..100,
+                                                        onValueChange = actions.onSetBoostHrLp,
+                                                    )
+                                                }
                                             }
                                         }
                                         if (state.scheduler.boostHrBigSupported) {
                                             item {
-                                                IntSliderItem(
-                                                    title = stringResource(R.string.tuning_sched_boost_big),
-                                                    value = state.scheduler.boostHrBig,
-                                                    range = -50..100,
-                                                    onValueChange = actions.onSetBoostHrBig,
-                                                )
+                                                SegmentedItemContainer {
+                                                    IntSliderItem(
+                                                        icon = Icons.Filled.TrendingUp,
+                                                        title = stringResource(R.string.tuning_sched_boost_big),
+                                                        value = state.scheduler.boostHrBig,
+                                                        range = -50..100,
+                                                        onValueChange = actions.onSetBoostHrBig,
+                                                    )
+                                                }
                                             }
                                         }
                                         if (state.scheduler.boostHrPrimeSupported) {
                                             item {
-                                                IntSliderItem(
-                                                    title = stringResource(R.string.tuning_sched_boost_prime),
-                                                    value = state.scheduler.boostHrPrime,
-                                                    range = -50..30,
-                                                    onValueChange = actions.onSetBoostHrPrime,
-                                                )
+                                                SegmentedItemContainer {
+                                                    IntSliderItem(
+                                                        icon = Icons.Filled.TrendingUp,
+                                                        title = stringResource(R.string.tuning_sched_boost_prime),
+                                                        value = state.scheduler.boostHrPrime,
+                                                        range = -50..30,
+                                                        onValueChange = actions.onSetBoostHrPrime,
+                                                    )
+                                                }
                                             }
                                         }
                                     }
@@ -597,12 +626,14 @@ fun TuningScreenMaterial(
                                         title = stringResource(R.string.tuning_sched_uclamp_min),
                                         value = cg.uclampMin,
                                         range = 0..100,
+                                        icon = Icons.Filled.Speed,
                                         onValueChange = { actions.onSetCgroupUclampMin(cg.name, it) },
                                     )
                                     IntInputItem(
                                         title = stringResource(R.string.tuning_sched_uclamp_max),
                                         value = cg.uclampMax,
                                         range = 0..100,
+                                        icon = Icons.Filled.Speed,
                                         onValueChange = { actions.onSetCgroupUclampMax(cg.name, it) },
                                     )
                                 } else {
@@ -621,6 +652,7 @@ fun TuningScreenMaterial(
                                         value = (cg.shares * 100 / 20480).coerceIn(5, 100),
                                         range = 5..100,
                                         step = 5,
+                                        icon = Icons.Filled.Speed,
                                         onValueChange = { pct -> actions.onSetCgroupShares(cg.name, pct * 20480 / 100) },
                                     )
                                 } else {
@@ -689,46 +721,50 @@ fun TuningScreenMaterial(
                 }
             }
             item {
-                TonalCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
-                    shape = RoundedCornerShape(16.dp),
+                SegmentedColumn(
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
                 ) {
-                    Column {
-                        IntInputItem(
-                            title = stringResource(R.string.tuning_pixel_density),
-                            value = state.densityOverride ?: state.physicalDensity,
-                            range = 240..1200,
-                            enabled = state.physicalDensity > 0,
-                            onValueChange = actions.onSetDensity,
-                        )
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = state.densityOverride?.let { override ->
-                                    stringResource(
-                                        R.string.tuning_pixel_density_override,
-                                        override,
-                                        state.physicalDensity,
-                                    )
-                                } ?: stringResource(
-                                    R.string.tuning_pixel_density_physical,
-                                    state.physicalDensity,
-                                ),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    item {
+                        SegmentedItemContainer {
+                            IntInputItem(
+                                title = stringResource(R.string.tuning_pixel_density),
+                                value = state.densityOverride ?: state.physicalDensity,
+                                range = 240..1200,
+                                enabled = state.physicalDensity > 0,
+                                icon = Icons.Filled.Palette,
+                                onValueChange = actions.onSetDensity,
                             )
-                            TextButton(
-                                onClick = actions.onResetDensity,
-                                enabled = state.densityOverride != null,
+                        }
+                    }
+                    item {
+                        SegmentedItemContainer {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Text(stringResource(R.string.tuning_reset))
+                                Text(
+                                    text = state.densityOverride?.let { override ->
+                                        stringResource(
+                                            R.string.tuning_pixel_density_override,
+                                            override,
+                                            state.physicalDensity,
+                                        )
+                                    } ?: stringResource(
+                                        R.string.tuning_pixel_density_physical,
+                                        state.physicalDensity,
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                TextButton(
+                                    onClick = actions.onResetDensity,
+                                    enabled = state.densityOverride != null,
+                                ) {
+                                    Text(stringResource(R.string.tuning_reset))
+                                }
                             }
                         }
                     }
@@ -796,6 +832,53 @@ private fun PeltMultiplierSwitch(
 }
 
 /**
+ * Read-only row that mirrors the icon + label layout of the switch and entry
+ * rows, so the label lines up with the rest of the section.
+ */
+@Composable
+private fun TuningValueRow(
+    icon: ImageVector,
+    title: String,
+    value: String,
+    valueColor: Color = MaterialTheme.colorScheme.onSurface,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(Modifier.width(16.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            color = valueColor,
+        )
+    }
+}
+
+@Composable
+private fun TuningNotice(text: String) {
+    Text(
+        text = text,
+        color = MaterialTheme.colorScheme.error,
+        style = MaterialTheme.typography.bodySmall,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+    )
+}
+
+/**
  * Slider that tracks the finger in local state and commits a single write
  * when the user releases. The previous version wrote on every frame, which
  * spawned ~60 `su` processes per gesture and made the thumb stutter.
@@ -807,18 +890,36 @@ private fun IntSliderItem(
     range: IntRange,
     step: Int = 1,
     enabled: Boolean = true,
+    icon: ImageVector? = null,
     formatter: (Int) -> String = { it.toString() },
     onValueChange: (Int) -> Unit,
 ) {
     var dragValue by remember(value) { mutableFloatStateOf(value.toFloat()) }
-    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(title, style = MaterialTheme.typography.bodyMedium)
-            Text(formatter(dragValue.roundToInt()), style = MaterialTheme.typography.bodyMedium)
+            if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Spacer(Modifier.width(16.dp))
+            }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = formatter(dragValue.roundToInt()),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+            )
         }
+        Spacer(Modifier.height(4.dp))
         Slider(
             value = dragValue,
             onValueChange = { dragValue = it },
@@ -836,6 +937,7 @@ private fun IntInputItem(
     value: Int,
     range: IntRange,
     enabled: Boolean = true,
+    icon: ImageVector? = null,
     onValueChange: (Int) -> Unit,
 ) {
     var text by remember(value) { mutableStateOf(value.toString()) }
@@ -852,13 +954,20 @@ private fun IntInputItem(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        if (icon != null) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+            )
+            Spacer(Modifier.width(16.dp))
+        }
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                title, 
-                style = MaterialTheme.typography.bodyMedium,
+                title,
+                style = MaterialTheme.typography.bodyLarge,
                 color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
             )
             Text(
@@ -867,7 +976,8 @@ private fun IntInputItem(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        
+        Spacer(Modifier.width(8.dp))
+
         BasicTextField(
             value = text,
             onValueChange = { new ->
@@ -883,7 +993,7 @@ private fun IntInputItem(
             keyboardActions = KeyboardActions(onDone = { commit() }),
             modifier = Modifier
                 .width(64.dp)
-                .height(40.dp)
+                .height(36.dp)
                 .border(
                     width = 1.dp,
                     color = if (enabled) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
@@ -899,15 +1009,17 @@ private fun IntInputItem(
             }
         )
         
+        Spacer(Modifier.width(8.dp))
+
         Button(
             onClick = { commit() },
             enabled = enabled,
             modifier = Modifier
-                .width(56.dp)
-                .height(40.dp),
+                .width(48.dp)
+                .height(36.dp),
             contentPadding = PaddingValues(0.dp)
-        ) { 
-            Text("Set") 
+        ) {
+            Text("Set", style = MaterialTheme.typography.labelMedium)
         }
     }
 }
