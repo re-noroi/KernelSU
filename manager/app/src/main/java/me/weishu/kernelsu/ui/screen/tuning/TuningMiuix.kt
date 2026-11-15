@@ -27,6 +27,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.rounded.BatteryFull
 import androidx.compose.material.icons.rounded.BatteryChargingFull
 import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.Thermostat
@@ -261,6 +262,46 @@ fun TuningScreenMiuix(
                                     onValueChange = { v ->
                                         actions.onSetChargeCurrent(v * 100_000L)
                                     },
+                                )
+                            }
+                        }
+                        if (state.chargeLimitSupported) {
+                            val chargeLimitSummary = when {
+                                !state.chargeLimitEnabled ->
+                                    stringResource(R.string.tuning_charge_limit_off_summary)
+                                state.batteryCapacity >= 0 -> stringResource(
+                                    R.string.tuning_charge_limit_summary_now,
+                                    state.chargeLimitPercent,
+                                    state.batteryCapacity,
+                                )
+                                else -> stringResource(
+                                    R.string.tuning_charge_limit_summary,
+                                    state.chargeLimitPercent,
+                                )
+                            }
+                            SwitchPreference(
+                                title = stringResource(R.string.tuning_charge_limit),
+                                summary = chargeLimitSummary,
+                                startAction = {
+                                    Icon(
+                                        Icons.Rounded.BatteryFull,
+                                        modifier = Modifier.padding(end = 6.dp),
+                                        contentDescription = stringResource(R.string.tuning_charge_limit),
+                                        tint = colorScheme.onBackground,
+                                    )
+                                },
+                                enabled = true,
+                                checked = state.chargeLimitEnabled,
+                                onCheckedChange = actions.onSetChargeLimitEnabled,
+                            )
+                            if (state.chargeLimitEnabled) {
+                                IntSliderMiuix(
+                                    title = stringResource(R.string.tuning_charge_limit_slider),
+                                    value = state.chargeLimitPercent,
+                                    range = 70..100,
+                                    step = 5,
+                                    formatter = { v -> "$v%" },
+                                    onValueChange = actions.onSetChargeLimitPercent,
                                 )
                             }
                         }

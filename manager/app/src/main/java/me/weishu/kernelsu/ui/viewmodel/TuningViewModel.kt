@@ -33,6 +33,10 @@ data class TuningUiState(
     val chargeCurrentSupported: Boolean = false,
     val chargeWritable: Boolean = false,
     val chargeCurrent: Long = 0L,     // µA — current programmed value
+    val chargeLimitSupported: Boolean = false,
+    val chargeLimitEnabled: Boolean = false,
+    val chargeLimitPercent: Int = 80,
+    val batteryCapacity: Int = -1,
     val bypassSupported: Boolean = false,
     val bypassCurrent: Boolean = false,
     val bypassEnabled: Boolean = false,
@@ -107,11 +111,27 @@ class TuningViewModel : ViewModel() {
         }
     }
 
+    private fun parseStatus(output: String): Map<String, String> =
+        output.lineSequence()
+            .mapNotNull { line ->
+                val index = line.indexOf('=')
+                if (index <= 0) null
+                else line.substring(0, index) to line.substring(index + 1)
+            }
+            .toMap()
+
     fun refresh() {
         viewModelScope.launch(Dispatchers.IO) { refreshInternal() }
     }
 
-    private fun refreshInternal() {
+    private suspend fun refreshInternal() {
+        val status = runCatching { execKsudCommand("tuning status") }.getOrNull()
+        val statusMap = parseStatus(status?.out.orEmpty())
+        val chargeLimitSupported = statusMap["charge_limit_supported"] == "1"
+        val chargeLimitEnabled = statusMap["charge_limit_enabled"] == "1"
+        val chargeLimitPercent = statusMap["charge_limit_percent"]?.toIntOrNull() ?: 80
+        val batteryCapacity = statusMap["battery_capacity"]?.toIntOrNull() ?: -1
+
         val thermalOut = execRootCommand("cat $thermalNode")
         val thermalSupported = thermalOut.isNotEmpty()
         val thermalCurrent = thermalOut.toIntOrNull() ?: -1
@@ -261,6 +281,10 @@ class TuningViewModel : ViewModel() {
                 chargeWritable = chargeWritable,
                 chargeCurrentSupported = chargeCurrentSupported,
                 chargeCurrent = chargeCurrent,
+                chargeLimitSupported = chargeLimitSupported,
+                chargeLimitEnabled = chargeLimitEnabled,
+                chargeLimitPercent = chargeLimitPercent,
+                batteryCapacity = batteryCapacity,
                 bypassSupported = bypassSupported,
                 bypassCurrent = bypassCurrent,
                 bypassEnabled = bypassCurrent,
@@ -333,6 +357,17 @@ class TuningViewModel : ViewModel() {
     fun setChargeCurrent(valueUa: Long) {
         _uiState.update { it.copy(chargeCurrent = valueUa) }
         apply("charge_current", valueUa.toString())
+    }
+
+    fun setChargeLimitEnabled(enabled: Boolean) {
+        _uiState.update { it.copy(chargeLimitEnabled = enabled) }
+        apply("charge_limit_toggle", if (enabled) "1" else "0")
+    }
+
+    fun setChargeLimitPercent(value: Int) {
+        val v = value.coerceIn(70, 100)
+        _uiState.update { it.copy(chargeLimitPercent = v) }
+        apply("charge_limit_percent", v.toString())
     }
 
     fun setBypass(enabled: Boolean) {
@@ -467,6 +502,8 @@ class TuningViewModel : ViewModel() {
                 type == "thermal" -> "tuning thermal $value"
                 type == "charge_writable" -> "tuning charge-writable $value"
                 type == "charge_current" -> "tuning charge-current $value"
+                type == "charge_limit_toggle" -> "tuning charge-limit-toggle $value"
+                type == "charge_limit_percent" -> "tuning charge-limit $value"
                 type == "bypass" -> "tuning bypass $value"
                 type == "persist" -> "tuning persist $value"
                 type == "sched_skip_headroom" -> "tuning sched-skip-headroom $value"

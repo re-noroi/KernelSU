@@ -336,6 +336,11 @@
     <string name="tuning_bypass_charging">Bypass charging</string>
     <string name="tuning_bypass_on">Bypass charging is enabled</string>
     <string name="tuning_bypass_off">Bypass charging is disabled</string>
+    <string name="tuning_charge_limit">Charge limit</string>
+    <string name="tuning_charge_limit_slider">Limit charging at</string>
+    <string name="tuning_charge_limit_off_summary">Charges to 100%</string>
+    <string name="tuning_charge_limit_summary">Stops at %1$d%%</string>
+    <string name="tuning_charge_limit_summary_now">Stops at %1$d%% · battery %2$d%%</string>
     <string name="tuning_unsupported">Not supported by this kernel</string>
     <string name="tuning_profiles_unavailable">Thermal profiles unavailable</string>
     <string name="tuning_thermal_current">Current: %1$s</string>
