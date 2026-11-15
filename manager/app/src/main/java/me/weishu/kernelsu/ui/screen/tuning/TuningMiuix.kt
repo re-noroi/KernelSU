@@ -709,46 +709,55 @@ fun TuningScreenMiuix(
                     }
                 }
                 item {
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        IntInputMiuix(
-                            title = stringResource(R.string.tuning_pixel_density),
-                            value = state.densityOverride ?: state.physicalDensity,
-                            range = 240..1200,
-                            enabled = state.physicalDensity > 0,
-                            icon = Icons.Rounded.Palette,
-                            onValueChange = actions.onSetDensity,
-                        )
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = state.densityOverride?.let { override ->
-                                    stringResource(
-                                        R.string.tuning_pixel_density_override,
-                                        override,
-                                        state.physicalDensity,
-                                    )
-                                } ?: stringResource(
-                                    R.string.tuning_pixel_density_physical,
-                                    state.physicalDensity,
-                                ),
-                                fontSize = 12.sp,
-                                color = colorScheme.onSurfaceVariantSummary,
+                    Card(
+                        modifier = Modifier
+                            .padding(top = 12.dp)
+                            .fillMaxWidth()
+                    ) {
+                        Column {
+                            IntInputMiuix(
+                                title = stringResource(R.string.tuning_pixel_density),
+                                value = state.densityOverride ?: state.physicalDensity,
+                                range = 240..1200,
+                                enabled = state.physicalDensity > 0,
+                                icon = Icons.Rounded.Palette,
+                                onValueChange = actions.onSetDensity,
                             )
-                            Button(
-                                onClick = actions.onResetDensity,
-                                enabled = state.densityOverride != null,
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = colorScheme.primary,
-                                    contentColor = colorScheme.onPrimary,
-                                ),
-                                contentPadding = PaddingValues(horizontal = 12.dp),
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Text(stringResource(R.string.tuning_reset))
+                                Text(
+                                    text = state.densityOverride?.let { override ->
+                                        stringResource(
+                                            R.string.tuning_pixel_density_override,
+                                            override,
+                                            state.physicalDensity,
+                                        )
+                                    } ?: stringResource(
+                                        R.string.tuning_pixel_density_physical,
+                                        state.physicalDensity,
+                                    ),
+                                    fontSize = 12.sp,
+                                    color = colorScheme.onSurfaceVariantSummary,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Button(
+                                    onClick = actions.onResetDensity,
+                                    enabled = state.densityOverride != null,
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = colorScheme.primary,
+                                        contentColor = colorScheme.onPrimary,
+                                    ),
+                                    modifier = Modifier.height(36.dp),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                                ) {
+                                    Text(stringResource(R.string.tuning_reset), fontSize = 13.sp)
+                                }
                             }
                         }
                     }
