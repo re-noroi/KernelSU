@@ -35,6 +35,8 @@ import androidx.compose.material.icons.rounded.NetworkCheck
 import androidx.compose.material.icons.rounded.Router
 import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material.icons.rounded.Compress
+import androidx.compose.material.icons.rounded.Storage
+import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.MenuBook
 import androidx.compose.material3.Button
@@ -50,6 +52,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
@@ -342,6 +345,7 @@ fun TuningScreenMiuix(
                                     value = state.memory.swappiness,
                                     range = 0..100,
                                     enabled = !state.memory.swappinessRo,
+                                    icon = Icons.Rounded.Memory,
                                     onValueChange = actions.onSetSwappiness,
                                 )
                                 if (state.memory.swappinessRo) {
@@ -359,6 +363,7 @@ fun TuningScreenMiuix(
                                         title = "VFS Cache Pressure",
                                         value = state.memory.vfsCache,
                                         range = 0..1000,
+                                        icon = Icons.Rounded.Storage,
                                         onValueChange = actions.onSetVfsCache,
                                     )
                                 } else {
@@ -376,6 +381,7 @@ fun TuningScreenMiuix(
                                         title = "kcompressd",
                                         value = state.memory.kcompressd,
                                         range = 0..256,
+                                        icon = Icons.Rounded.Compress,
                                         onValueChange = actions.onSetKcompressd,
                                     )
                                 } else {
@@ -400,6 +406,7 @@ fun TuningScreenMiuix(
                                             title = "MGLRU min_ttl_ms",
                                             value = state.memory.mglruTtl,
                                             range = 0..10000,
+                                            icon = Icons.Rounded.Memory,
                                             onValueChange = actions.onSetMglruTtl,
                                         )
                                     }
@@ -428,9 +435,19 @@ fun TuningScreenMiuix(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp, vertical = 12.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Text("State", fontSize = 16.sp)
+                                Icon(
+                                    Icons.Rounded.Storage,
+                                    modifier = Modifier.padding(end = 6.dp),
+                                    contentDescription = "zRAM state",
+                                    tint = colorScheme.onBackground,
+                                )
+                                Text(
+                                    "State",
+                                    fontSize = 16.sp,
+                                    modifier = Modifier.weight(1f),
+                                )
                                 Text(
                                     if (state.zram.swapActive) "Active" else "Inactive",
                                     fontSize = 16.sp,
@@ -594,12 +611,14 @@ fun TuningScreenMiuix(
                                             title = stringResource(R.string.tuning_sched_uclamp_min),
                                             value = cg.uclampMin,
                                             range = 0..100,
+                                            icon = Icons.Rounded.Speed,
                                             onValueChange = { actions.onSetCgroupUclampMin(cg.name, it) },
                                         )
                                         IntInputMiuix(
                                             title = stringResource(R.string.tuning_sched_uclamp_max),
                                             value = cg.uclampMax,
                                             range = 0..100,
+                                            icon = Icons.Rounded.Speed,
                                             onValueChange = { actions.onSetCgroupUclampMax(cg.name, it) },
                                         )
                                     } else {
@@ -618,6 +637,7 @@ fun TuningScreenMiuix(
                                             value = (cg.shares * 100 / 20480).coerceIn(5, 100),
                                             range = 5..100,
                                             step = 5,
+                                            icon = Icons.Rounded.Speed,
                                             onValueChange = { pct -> actions.onSetCgroupShares(cg.name, pct * 20480 / 100) },
                                         )
                                     } else {
@@ -695,6 +715,7 @@ fun TuningScreenMiuix(
                             value = state.densityOverride ?: state.physicalDensity,
                             range = 240..1200,
                             enabled = state.physicalDensity > 0,
+                            icon = Icons.Rounded.Palette,
                             onValueChange = actions.onSetDensity,
                         )
                         Row(
@@ -800,18 +821,28 @@ private fun IntSliderMiuix(
     range: IntRange,
     step: Int = 1,
     enabled: Boolean = true,
+    icon: ImageVector? = null,
     formatter: (Int) -> String = { it.toString() },
     onValueChange: (Int) -> Unit,
 ) {
     var dragValue by remember(value) { mutableFloatStateOf(value.toFloat()) }
-    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(title, fontSize = 15.sp)
-            Text(formatter(dragValue.roundToInt()), fontSize = 15.sp)
+            if (icon != null) {
+                Icon(
+                    icon,
+                    modifier = Modifier.padding(end = 6.dp),
+                    contentDescription = null,
+                    tint = colorScheme.onBackground,
+                )
+            }
+            Text(title, fontSize = 16.sp, modifier = Modifier.weight(1f))
+            Text(formatter(dragValue.roundToInt()), fontSize = 16.sp, color = colorScheme.onSurfaceVariantSummary)
         }
+        Spacer(Modifier.height(4.dp))
         Slider(
             value = dragValue,
             onValueChange = { dragValue = it },
@@ -836,6 +867,7 @@ private fun IntInputMiuix(
     value: Int,
     range: IntRange,
     enabled: Boolean = true,
+    icon: ImageVector? = null,
     onValueChange: (Int) -> Unit,
 ) {
     var text by remember(value) { mutableStateOf(value.toString()) }
@@ -852,13 +884,20 @@ private fun IntInputMiuix(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        if (icon != null) {
+            Icon(
+                icon,
+                modifier = Modifier.padding(end = 6.dp),
+                contentDescription = null,
+                tint = colorScheme.onBackground,
+            )
+        }
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                title, 
-                fontSize = 15.sp,
+                title,
+                fontSize = 16.sp,
                 color = if (enabled) colorScheme.onBackground else colorScheme.onBackground.copy(alpha = 0.5f)
             )
             Text(
@@ -867,7 +906,8 @@ private fun IntInputMiuix(
                 color = colorScheme.onSurfaceVariantSummary,
             )
         }
-        
+        Spacer(Modifier.width(8.dp))
+
         BasicTextField(
             value = text,
             onValueChange = { new ->
@@ -884,7 +924,7 @@ private fun IntInputMiuix(
             keyboardActions = KeyboardActions(onDone = { commit() }),
             modifier = Modifier
                 .width(64.dp)
-                .height(40.dp)
+                .height(36.dp)
                 .border(
                     width = 1.dp,
                     color = if (enabled) colorScheme.primary else colorScheme.primary.copy(alpha = 0.3f),
@@ -900,6 +940,8 @@ private fun IntInputMiuix(
             }
         )
         
+        Spacer(Modifier.width(8.dp))
+
         Button(
             onClick = { commit() },
             enabled = enabled,
@@ -908,11 +950,11 @@ private fun IntInputMiuix(
                 contentColor = colorScheme.onPrimary
             ),
             modifier = Modifier
-                .width(56.dp)
-                .height(40.dp),
+                .width(48.dp)
+                .height(36.dp),
             contentPadding = PaddingValues(0.dp)
-        ) { 
-            Text("Set") 
+        ) {
+            Text("Set", fontSize = 13.sp)
         }
     }
 }
