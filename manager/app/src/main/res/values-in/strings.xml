@@ -801,4 +801,20 @@ Apakah Anda ingin memulihkan profil ini?</string>
     <string name="color_calibration_contrast">Kontras</string>
     <string name="color_calibration_hue">Hue</string>
     <string name="color_calibration_reset">Atur ulang ke bawaan</string>
+
+    <!-- Battery monitor notification -->
+    <string name="battery_monitor_title">Pemantau baterai</string>
+    <string name="battery_monitor_summary">Notifikasi tetap berisi level, suhu, arus, dan laju pengurasan</string>
+    <string name="battery_monitor_channel_name">Pemantau baterai</string>
+    <string name="battery_monitor_charging">Mengisi</string>
+    <string name="battery_monitor_discharging">Menguras</string>
+    <string name="battery_monitor_full">Penuh</string>
+    <string name="battery_monitor_not_charging">Tidak mengisi</string>
+    <string name="battery_monitor_state_current">%1$s %2$d mA</string>
+    <string name="battery_monitor_drain">Pengurasan aktif: %1$s/jam · idle: %2$s/jam</string>
+    <string name="battery_monitor_screen_on">Layar menyala: %1$s (%2$s%%)</string>
+    <string name="battery_monitor_screen_off">Layar mati: %1$s (%2$s%%)</string>
+    <string name="battery_monitor_deep_sleep">Tidur dalam: %1$s (%2$s%%)</string>
+    <string name="battery_monitor_awake">Terjaga: %1$s (%2$s%%)</string>
+    <string name="battery_monitor_reset_stats">Reset statistik baterai</string>
 </resources>

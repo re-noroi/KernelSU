@@ -44,6 +44,8 @@ interface SettingsRepository {
     var useSoftReboot: Boolean
     var modulePreflashInspection: Boolean
     var moduleAutoHotInstall: Boolean
+    /** Keep the ongoing battery telemetry notification running. */
+    var batteryMonitorEnabled: Boolean
     var bottomBarKernelTool: String
     var bottomBarToolTipsShown: Boolean
     val intentToken: String
