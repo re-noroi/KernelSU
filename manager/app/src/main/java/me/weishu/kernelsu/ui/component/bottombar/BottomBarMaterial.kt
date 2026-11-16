@@ -2,10 +2,10 @@ package me.weishu.kernelsu.ui.component.bottombar
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
@@ -35,11 +35,9 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -79,8 +77,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -88,7 +89,6 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.res.stringResource
@@ -98,10 +98,11 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.lerp
+import kotlin.math.ceil
+import kotlin.math.floor
 import kotlin.math.roundToInt
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import me.weishu.kernelsu.Natives
 import me.weishu.kernelsu.R
@@ -260,7 +261,6 @@ private fun FloatingBottomBarMaterial(
     // commit the page change once the finger is released (same feel as the Miuix dock).
     val dragToSwitch = LocalUiMode.current == UiMode.Minimal
     val animatePill = dragToSwitch
-    val density = LocalDensity.current
     val barOriginX = remember { mutableFloatStateOf(0f) }
     val itemBounds = remember { mutableStateMapOf<Int, Rect>() }
     var containerOrigin by remember { mutableStateOf(Offset.Zero) }
@@ -270,44 +270,57 @@ private fun FloatingBottomBarMaterial(
     val latestOnSelectPage by rememberUpdatedState(onSelectPage)
     val activeIndex = if (isDragging) dragPreviewIndex else selectedPage
 
-    // One shared pill that glides between icons instead of each item fading its own background.
-    val pillLeft = remember { Animatable(0f) }
-    val pillWidth = remember { Animatable(0f) }
-    var pillInitialized by remember { mutableStateOf(false) }
-    val pillSpring = remember { spring<Float>(dampingRatio = 0.8f, stiffness = 500f) }
-    val activeBounds = if (animatePill) itemBounds[activeIndex] else null
-    val pillTop = activeBounds?.let { it.top - containerOrigin.y }
-    val pillHeight = activeBounds?.height
-
-    LaunchedEffect(activeBounds, containerOrigin) {
-        val bounds = activeBounds ?: return@LaunchedEffect
-        val targetLeft = bounds.left - containerOrigin.x
-        if (!pillInitialized) {
-            pillLeft.snapTo(targetLeft)
-            pillWidth.snapTo(bounds.width)
-            pillInitialized = true
-        } else {
-            launch { pillLeft.animateTo(targetLeft, pillSpring) }
-            launch { pillWidth.animateTo(bounds.width, pillSpring) }
-        }
+    // One shared pill that glides between icons instead of each item fading its own
+    // background.
+    //
+    // The pill is drawn in the draw phase from the exact same measured item rects that lay
+    // out the icons, and its position is a single "progress" value in fractional tab
+    // indices. Two consequences matter here:
+    //  * size and position come from live measurement, so the pill can never be a different
+    //    width than the item it covers - that mismatch was what looked like two overlapping
+    //    boxes while a label expanded;
+    //  * the pill lives entirely in the draw pass, so it repaints on the very next frame
+    //    instead of waiting for a separate animation node to start - that was the "delayed
+    //    shadow" feeling on tap.
+    // The drag handler writes this value directly, so the pill is glued to the finger with no
+    // easing at all; taps animate it with a short ease.
+    var pillProgress by remember { mutableFloatStateOf(selectedPage.toFloat()) }
+    LaunchedEffect(activeIndex, isDragging) {
+        // While dragging, the pointer handler writes pillProgress directly; animating here
+        // would fight it and reintroduce the lag that made the pill trail the finger.
+        if (isDragging) return@LaunchedEffect
+        animate(
+            initialValue = pillProgress,
+            targetValue = activeIndex.toFloat(),
+            animationSpec = tween(durationMillis = 200, easing = LinearOutSlowInEasing),
+        ) { value, _ -> pillProgress = value }
     }
+    val pillColor = MaterialTheme.colorScheme.primaryContainer
 
-    fun indexAt(windowX: Float, bounds: Map<Int, Rect>): Int {
-        if (bounds.isEmpty()) return latestSelectedPage
-        var closest = latestSelectedPage
-        var closestDistance = Float.MAX_VALUE
-        bounds.forEach { (index, rect) ->
-            val distance = when {
-                windowX < rect.left -> rect.left - windowX
-                windowX > rect.right -> windowX - rect.right
-                else -> 0f
+    /**
+     * Fractional index under [windowX], interpolated between neighbouring item centres so the
+     * pill can slide continuously with the finger instead of snapping icon to icon.
+     */
+    fun progressAt(windowX: Float, bounds: Map<Int, Rect>): Float {
+        val centres = bounds.entries
+            .sortedBy { it.key }
+            .mapNotNull { entry ->
+                val rect = entry.value
+                if (rect.width > 0f) entry.key to rect.center.x else null
             }
-            if (distance < closestDistance) {
-                closestDistance = distance
-                closest = index
+        if (centres.isEmpty()) return latestSelectedPage.toFloat()
+        if (windowX <= centres.first().second) return centres.first().first.toFloat()
+        if (windowX >= centres.last().second) return centres.last().first.toFloat()
+        for (i in 0 until centres.lastIndex) {
+            val (indexA, centerA) = centres[i]
+            val (indexB, centerB) = centres[i + 1]
+            if (windowX in centerA..centerB) {
+                val span = centerB - centerA
+                val fraction = if (span <= 0f) 0f else (windowX - centerA) / span
+                return indexA + (indexB - indexA) * fraction
             }
         }
-        return closest
+        return latestSelectedPage.toFloat()
     }
 
     Box(
@@ -330,32 +343,39 @@ private fun FloatingBottomBarMaterial(
                 }
         ) {
             Box(
-                modifier = Modifier.onGloballyPositioned { coords ->
-                    val origin = coords.positionInWindow()
-                    if (containerOrigin != origin) containerOrigin = origin
-                }
-            ) {
-                if (animatePill && pillInitialized) {
-                    val top = pillTop
-                    val height = pillHeight
-                    if (top != null && height != null) {
-                        Box(
-                            modifier = Modifier
-                                .offset {
-                                    IntOffset(
-                                        pillLeft.value.roundToInt(),
-                                        top.roundToInt(),
-                                    )
-                                }
-                                .size(
-                                    width = with(density) { pillWidth.value.toDp() },
-                                    height = with(density) { height.toDp() },
-                                )
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primaryContainer)
+                modifier = Modifier
+                    .onGloballyPositioned { coords ->
+                        val origin = coords.positionInWindow()
+                        if (containerOrigin != origin) containerOrigin = origin
+                    }
+                    .drawBehind {
+                        if (!animatePill) return@drawBehind
+                        val lastIndex = items.lastIndex
+                        // While dragging the pointer handler owns pillProgress, so read it the
+                        // same way either way - there is a single source of truth.
+                        val progress = pillProgress.coerceIn(0f, lastIndex.toFloat())
+                        val lower = floor(progress).toInt().coerceIn(0, lastIndex)
+                        val upper = ceil(progress).toInt().coerceIn(0, lastIndex)
+                        val fraction = (progress - lower).coerceIn(0f, 1f)
+                        val from = itemBounds[lower]?.translate(-containerOrigin.x, -containerOrigin.y)
+                        val to = itemBounds[upper]?.translate(-containerOrigin.x, -containerOrigin.y)
+                        val rect = when {
+                            from != null && to != null -> Rect(
+                                left = lerp(from.left, to.left, fraction),
+                                top = lerp(from.top, to.top, fraction),
+                                right = lerp(from.right, to.right, fraction),
+                                bottom = lerp(from.bottom, to.bottom, fraction),
+                            )
+                            else -> from ?: to
+                        } ?: return@drawBehind
+                        drawRoundRect(
+                            color = pillColor,
+                            topLeft = Offset(rect.left, rect.top),
+                            size = Size(rect.width, rect.height),
+                            cornerRadius = CornerRadius(rect.height / 2f),
                         )
                     }
-                }
+            ) {
                 Row(
                     modifier = Modifier
                         .height(64.dp)
@@ -371,28 +391,36 @@ private fun FloatingBottomBarMaterial(
                                     detectHorizontalDragGestures(
                                         onDragStart = { offset ->
                                             frozenBounds = itemBounds.toMap()
-                                            isDragging = true
-                                            dragPreviewIndex = indexAt(
+                                            val progress = progressAt(
                                                 barOriginX.floatValue + offset.x,
                                                 frozenBounds,
                                             )
+                                            pillProgress = progress
+                                            isDragging = true
+                                            dragPreviewIndex = progress.roundToInt()
                                         },
                                         onHorizontalDrag = { change, _ ->
-                                            val index = indexAt(
+                                            val progress = progressAt(
                                                 barOriginX.floatValue + change.position.x,
                                                 frozenBounds,
                                             )
+                                            pillProgress = progress
+                                            val index = progress.roundToInt()
                                             if (index != dragPreviewIndex) {
                                                 dragPreviewIndex = index
                                             }
                                             change.consume()
                                         },
                                         onDragEnd = {
+                                            // Commit the page change before clearing the drag
+                                            // flag: animateToPage updates selectedPage
+                                            // synchronously, so the pill's next target is already
+                                            // the new tab and it never snaps back.
                                             val target = dragPreviewIndex
-                                            isDragging = false
                                             if (target != latestSelectedPage) {
                                                 latestOnSelectPage(target)
                                             }
+                                            isDragging = false
                                         },
                                         onDragCancel = {
                                             isDragging = false
@@ -526,8 +554,8 @@ private fun FloatingBottomBarMaterial(
                             }
                         }
                     }
+                    }
                 }
-            }
             }
         }
     }

@@ -26,18 +26,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.FixedScale
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.FixedScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import me.weishu.kernelsu.R
+import me.weishu.kernelsu.ui.LocalUiMode
+import me.weishu.kernelsu.ui.UiMode
 import me.weishu.kernelsu.ui.component.material.ExpressiveScaffold
 import me.weishu.kernelsu.ui.component.material.SegmentedColumn
 import me.weishu.kernelsu.ui.component.material.SegmentedListItem
 import me.weishu.kernelsu.ui.component.material.TopBarBackButton
 import me.weishu.kernelsu.ui.component.material.expressiveTopAppBarColors
+import me.weishu.kernelsu.ui.theme.isInDarkTheme
 
 @Composable
 fun AboutScreenMaterial(
@@ -79,11 +83,19 @@ fun AboutScreenMaterial(
                             .clip(RoundedCornerShape(16.dp))
                             .background(MaterialTheme.colorScheme.surfaceContainerLowest)
                     ) {
+                        // The bundled logo artwork is pure black, so it would vanish on the
+                        // dark/AMOLED Minimal ground. Re-tint it to the theme's foreground there.
+                        val invertLogo = LocalUiMode.current == UiMode.Minimal && isInDarkTheme()
                         Image(
                             painter = painterResource(id = state.appIconRes),
                             contentDescription = null,
                             modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Fit
+                            contentScale = ContentScale.Fit,
+                            colorFilter = if (invertLogo) {
+                                ColorFilter.tint(MaterialTheme.colorScheme.onSurface)
+                            } else {
+                                null
+                            },
                         )
                     }
                     Text(
