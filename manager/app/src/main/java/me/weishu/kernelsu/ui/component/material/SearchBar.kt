@@ -237,7 +237,17 @@ fun SearchAppBar(
 
                 state = searchBarState,
                 inputField = inputField,
-                colors = SearchBarDefaults.colors(containerColor = if (isMinimal) MaterialTheme.colorScheme.surfaceContainer else MaterialTheme.colorScheme.surfaceContainerHighest),
+                // Minimal: the input field above already paints the card, so the bar
+                // container must stay transparent. Painting both double-composites the
+                // alpha, which is why the collapsed pill ignored the transparency slider
+                // while the expanded one obeyed it.
+                colors = if (isMinimal) {
+                    SearchBarDefaults.colors(containerColor = Color.Transparent)
+                } else {
+                    SearchBarDefaults.colors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    )
+                },
             )
         }
     }

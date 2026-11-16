@@ -686,13 +686,16 @@ private fun MinimalFooterLink(
             Text(
                 text = text,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                // Match the rest of the dashboard: full-opacity ink for the label and the
+                // same variant colour the other blocks use for their supporting line. The
+                // previous 0.75f alpha made these two rows read as faded/see-through.
+                color = MaterialTheme.colorScheme.onSurface,
             )
             if (supportingText != null) {
                 Text(
                     text = supportingText,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
