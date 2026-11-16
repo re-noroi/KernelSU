@@ -3,9 +3,11 @@ package me.weishu.kernelsu.ui.theme
 import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialExpressiveTheme
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.Shapes
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -51,6 +53,7 @@ fun MaterialKernelSUTheme(
             dark = darkTheme,
             amoled = amoledMode,
             monet = monet,
+            cardAlpha = appSettings.minimalCardAlpha,
         )
     } else {
         animatedColorScheme

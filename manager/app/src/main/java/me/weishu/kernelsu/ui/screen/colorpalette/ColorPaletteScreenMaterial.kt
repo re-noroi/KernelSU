@@ -189,6 +189,7 @@ fun ColorPaletteScreenMaterial(
                     enableFloatingBottomBar = uiState.enableFloatingBottomBar,
                     modernBento = uiState.modernBento,
                     monet = if (isMinimal) uiState.minimalMonet else currentColorMode.isMonet,
+                    cardAlpha = uiState.minimalCardOpacity,
                 )
             }
 
@@ -682,6 +683,59 @@ fun ColorPaletteScreenMaterial(
                         }
                     }
                 }
+
+                item {
+                    TonalCard(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        val sliderState = rememberSliderState(
+                            value = uiState.minimalCardOpacity,
+                            trackRange = 0.2f..1f
+                        )
+
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Rounded.Dashboard,
+                                    contentDescription = stringResource(id = R.string.settings_minimal_card_opacity),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.settings_minimal_card_opacity),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.settings_minimal_card_opacity_summary),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Text(
+                                    text = "${(sliderState.value * 100).roundToInt()}%",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+
+                            Slider(
+                                state = sliderState,
+                                onValueChangeFinished = {
+                                    actions.onSetMinimalCardOpacity(sliderState.value)
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+                }
             }
 
             item {
@@ -703,6 +757,7 @@ private fun ThemePreviewCard(
     enableFloatingBottomBar: Boolean = false,
     modernBento: Boolean = true,
     monet: Boolean = true,
+    cardAlpha: Float = 1f,
 ) {
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.toFloat()
@@ -723,6 +778,7 @@ private fun ThemePreviewCard(
         dark = isDark,
         amoled = isAmoled,
         monet = monet,
+        cardAlpha = cardAlpha,
     )
 
     Box(

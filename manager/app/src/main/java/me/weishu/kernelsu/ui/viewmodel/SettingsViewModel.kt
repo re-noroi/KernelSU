@@ -41,6 +41,7 @@ class SettingsViewModel(
             val miuixMonet = repo.miuixMonet
             val minimalMonet = repo.minimalMonet
             val minimalWallpaper = repo.minimalWallpaper
+            val minimalCardOpacity = repo.minimalCardOpacity
             val keyColor = repo.keyColor
             val enablePredictiveBack = repo.enablePredictiveBack
             val enableSwipeDismiss = repo.enableSwipeDismiss
@@ -123,6 +124,7 @@ class SettingsViewModel(
                     miuixMonet = miuixMonet,
                     minimalMonet = minimalMonet,
                     minimalWallpaper = minimalWallpaper,
+                    minimalCardOpacity = minimalCardOpacity,
                     showGpuVersion = repo.showGpuVersion,
                     keyColor = keyColor,
                     appIconMode = appIconMode,
@@ -266,6 +268,12 @@ class SettingsViewModel(
     fun setMinimalWallpaper(uri: String) {
         repo.minimalWallpaper = uri
         _uiState.update { it.copy(minimalWallpaper = uri) }
+    }
+
+    fun setMinimalCardOpacity(opacity: Float) {
+        val clamped = opacity.coerceIn(0.2f, 1f)
+        repo.minimalCardOpacity = clamped
+        _uiState.update { it.copy(minimalCardOpacity = clamped) }
     }
 
     fun setShowGpuVersion(enabled: Boolean) {

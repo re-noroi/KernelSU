@@ -100,6 +100,7 @@ data class AppSettings(
     val scrollAnimation: Boolean,
     val modernBento: Boolean = false,
     val minimalMonet: Boolean = true,
+    val minimalCardAlpha: Float = 1f,
     val showGpuVersion: Boolean = true,
 )
 
@@ -158,9 +159,10 @@ object ThemeController {
         val showSwitchIcon = repo.showSwitchIcon
         val scrollAnimation = repo.scrollAnimation
         val minimalMonet = repo.minimalMonet
+        val minimalCardAlpha = repo.minimalCardOpacity
         val showGpuVersion = repo.showGpuVersion
 
-        return AppSettings(colorMode, keyColor, paletteStyle, colorSpec, appIconMode, classicUi, showSwitchIcon, scrollAnimation, modernBento, minimalMonet, showGpuVersion)
+        return AppSettings(colorMode, keyColor, paletteStyle, colorSpec, appIconMode, classicUi, showSwitchIcon, scrollAnimation, modernBento, minimalMonet, minimalCardAlpha, showGpuVersion)
     }
 }
 

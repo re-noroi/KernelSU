@@ -67,18 +67,22 @@ fun rememberKernelSUColorScheme(
 /**
  * Turns a generated Material scheme into the flat Minimal design.
  *
- * The Minimal UI is flat: solid grounds and fully opaque cards with a single
- * small radius family. Nothing is translucent glass any more, so the result
- * reads the same over a wallpaper, over pure black, and in light mode.
+ * The Minimal UI is flat: solid grounds and a single radius family. Nothing is
+ * translucent glass, so the result reads the same over a wallpaper, over pure
+ * black, and in light mode.
  *
  * @param monet when false the accent falls back to plain ink for the current
  *   brightness instead of the wallpaper-derived palette.
+ * @param cardAlpha opacity of the box containers. 1f keeps them solid; lower
+ *   values let the wallpaper show through every box so the user can dial how
+ *   much of the backdrop is visible. The ground and the outlines stay opaque.
  */
 fun flatMinimalScheme(
     scheme: ColorScheme,
     dark: Boolean,
     amoled: Boolean,
     monet: Boolean,
+    cardAlpha: Float = 1f,
 ): ColorScheme {
     val ground: Color = when {
         amoled -> Color.Black
@@ -163,6 +167,33 @@ fun flatMinimalScheme(
 
     return accented.copy(
         onBackground = accented.onSurface,
+    ).withCardAlpha(cardAlpha)
+}
+
+/**
+ * Applies the user's box transparency to the container ladder.
+ *
+ * Every box the Minimal UI paints comes from this ladder (cards, segmented
+ * settings rows, the home dashboard blocks, the search field, the dock pill,
+ * dialogs and sheets), so fading the ladder moves all boxes together, which is
+ * what the Theme screen slider promises.
+ *
+ * The colours stay internally consistent: each component reads the same
+ * translucent value from the scheme and passes it straight back to
+ * `contentColorFor()`, so content colours keep resolving to `onSurface`/the
+ * matching `on*` role. Only the ground (`surface`, `background`) and
+ * `surfaceContainerLowest` stay opaque, so a transparent box never reveals the
+ * window behind the app.
+ */
+private fun ColorScheme.withCardAlpha(alpha: Float): ColorScheme {
+    if (alpha >= 0.999f) return this
+    val a = alpha.coerceIn(0.2f, 1f)
+    return copy(
+        surfaceContainerLow = surfaceContainerLow.copy(alpha = a),
+        surfaceContainer = surfaceContainer.copy(alpha = a),
+        surfaceContainerHigh = surfaceContainerHigh.copy(alpha = a),
+        surfaceContainerHighest = surfaceContainerHighest.copy(alpha = a),
+        surfaceBright = surfaceBright.copy(alpha = a),
     )
 }
 

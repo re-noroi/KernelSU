@@ -17,6 +17,7 @@ data class SettingsUiState(
     val miuixMonet: Boolean = false,
     val minimalMonet: Boolean = true,
     val minimalWallpaper: String = "",
+    val minimalCardOpacity: Float = 1f,
     val showGpuVersion: Boolean = true,
     val keyColor: Int = 0,
     val colorStyle: String = PaletteStyle.TonalSpot.name,

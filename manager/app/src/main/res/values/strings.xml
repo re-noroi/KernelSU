@@ -443,8 +443,11 @@
     <string name="settings_minimal_monet">Monet colors</string>
     <string name="settings_minimal_monet_summary">Derive the accent palette from the system wallpaper</string>
     <string name="settings_minimal_wallpaper">Wallpaper</string>
+
     <string name="settings_minimal_wallpaper_summary">Pick an image from your gallery to use as the home background</string>
     <string name="settings_minimal_wallpaper_clear">Remove wallpaper</string>
+    <string name="settings_minimal_card_opacity">Box transparency</string>
+    <string name="settings_minimal_card_opacity_summary">How much of the wallpaper shows through every card. 100% keeps them fully solid.</string>
     <string name="settings_theme_summary">Choose the app theme mode.</string>
     <string name="settings_theme_mode_system">Follow system</string>
     <string name="settings_theme_mode_light">Light</string>

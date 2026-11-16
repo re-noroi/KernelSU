@@ -56,6 +56,8 @@ fun MiniGamesScreen() {
 
     Scaffold(
         containerColor = if (isMinimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
+        // Transparent resolves to no content colour; keep the theme ink explicit.
+        contentColor = if (isMinimal) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurface,
         topBar = {
             TopAppBar(
                 title = {

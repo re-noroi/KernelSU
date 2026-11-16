@@ -182,8 +182,8 @@ fun SettingPagerMaterial(
                             icon = Icons.Filled.DisplaySettings,
                             title = stringResource(id = R.string.settings_ui_mode),
                             summary = stringResource(id = R.string.settings_ui_mode_summary),
-                            items = UiMode.entries.map { it.name },
-                            selectedIndex = UiMode.indexOfValue(uiState.uiMode),
+                            items = UiMode.selectable.map { it.name },
+                            selectedIndex = UiMode.indexOfSelectable(uiState.uiMode),
                             onItemSelected = actions.onSetUiModeIndex
                         )
                     }

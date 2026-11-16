@@ -48,6 +48,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -157,7 +158,9 @@ fun SearchAppBar(
         SearchBarDefaults.inputFieldColors()
     }
     val expandedSearchBarColors = if (isMinimal) {
-        SearchBarDefaults.colors(containerColor = MaterialTheme.colorScheme.background)
+        // The wallpaper + scrim is painted behind the expanded window, so the
+        // search surface itself must stay transparent or it would cover it.
+        SearchBarDefaults.colors(containerColor = Color.Transparent)
     } else {
         SearchBarDefaults.colors()
     }
@@ -201,7 +204,18 @@ fun SearchAppBar(
         }
     }
 
-    Surface(color = if (isMinimal) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.surfaceContainer) {
+    // Minimal must not paint a container here: the top app bar sits directly on
+    // the wallpaper backdrop, so the bar stays transparent like the rest of the
+    // page. Only the search field itself is a card. The content colour has to be
+    // given explicitly because contentColorFor() cannot resolve Color.Transparent.
+    Surface(
+        color = if (isMinimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
+        contentColor = if (isMinimal) {
+            MaterialTheme.colorScheme.onBackground
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        },
+    ) {
         Column(
             modifier = Modifier.fillMaxWidth()
         ) {

@@ -109,6 +109,10 @@ fun HomePagerMinimal(
 
     Scaffold(
         containerColor = Color.Transparent,
+        // The Minimal home ground is the wallpaper backdrop painted by the theme, so
+        // the Scaffold itself is transparent. A transparent container resolves to no
+        // content colour, so name the theme ink explicitly.
+        contentColor = MaterialTheme.colorScheme.onBackground,
         topBar = {
             MinimalTopBar(
                 appName = state.appName,
@@ -238,7 +242,7 @@ private fun MinimalTopBar(
     )
 }
 
-/** Opaque flat card used for every block on the dashboard. */
+/** Flat card used for every block on the dashboard. Its opacity follows the Theme slider. */
 @Composable
 private fun MinimalCard(
     modifier: Modifier = Modifier,

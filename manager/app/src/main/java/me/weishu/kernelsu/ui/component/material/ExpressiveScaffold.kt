@@ -31,7 +31,14 @@ fun ExpressiveScaffold(
     } else {
         MaterialTheme.colorScheme.surfaceContainer
     },
-    contentColor: Color = contentColorFor(containerColor),
+    contentColor: Color = if (containerColor == Color.Transparent) {
+        // contentColorFor() returns Color.Unspecified for a transparent container, and
+        // Scaffold forwards that to LocalContentColor, leaving Text and Icon without an
+        // explicit colour unpainted. Name the theme ink instead.
+        MaterialTheme.colorScheme.onBackground
+    } else {
+        contentColorFor(containerColor)
+    },
     contentWindowInsets: WindowInsets = ScaffoldDefaults.contentWindowInsets,
     content: @Composable (PaddingValues) -> Unit,
 ) {

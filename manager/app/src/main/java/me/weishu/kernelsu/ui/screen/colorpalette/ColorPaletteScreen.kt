@@ -45,6 +45,7 @@ fun ColorPaletteScreen() {
         onSetMiuixMonet = viewModel::setMiuixMonet,
         onSetMinimalMonet = viewModel::setMinimalMonet,
         onSetMinimalWallpaper = viewModel::setMinimalWallpaper,
+        onSetMinimalCardOpacity = viewModel::setMinimalCardOpacity,
         onSetShowGpuVersion = viewModel::setShowGpuVersion,
         onSetKeyColor = viewModel::setKeyColor,
         onSetColorMode = viewModel::setColorMode,
