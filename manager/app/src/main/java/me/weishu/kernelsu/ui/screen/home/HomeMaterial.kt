@@ -293,7 +293,8 @@ private fun BentoSmartPill(
     val hasDriverUpdate = state.checkUpdateEnabled && state.ksuVersion != null && state.latestKsuDriverInfo.driverVersion > state.ksuVersion
 
     val visible = hasCrash || hasRootWarn || hasAppUpdate || hasDriverUpdate
-    val updateDialog = rememberConfirmDialog(onConfirm = { actions.onOpenUrl(state.latestVersionInfo.downloadUrl) })
+    val startUpdate = rememberManagerUpdateDownloader()
+    val updateDialog = rememberConfirmDialog(onConfirm = { startUpdate(state.latestVersionInfo) })
     val changelogTitle = stringResource(id = R.string.module_changelog)
     val updateText = stringResource(id = R.string.module_update)
 
@@ -325,7 +326,7 @@ private fun BentoSmartPill(
                 contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                 onClick = {
                     if (state.latestVersionInfo.changelog.isEmpty()) {
-                        actions.onOpenUrl(state.latestVersionInfo.downloadUrl)
+                        startUpdate(state.latestVersionInfo)
                     } else {
                         updateDialog.showConfirm(
                             title = changelogTitle,
@@ -1402,13 +1403,14 @@ private fun UpdateCard(
         enter = fadeIn() + expandVertically(),
         exit = shrinkVertically() + fadeOut()
     ) {
-        val updateDialog = rememberConfirmDialog(onConfirm = { actions.onOpenUrl(newVersion.downloadUrl) })
+        val startUpdate = rememberManagerUpdateDownloader()
+        val updateDialog = rememberConfirmDialog(onConfirm = { startUpdate(newVersion) })
         WarningCard(
             message = stringResource(id = R.string.new_version_available, state.latestVersionLabel),
             color = MaterialTheme.colorScheme.outlineVariant
         ) {
             if (newVersion.changelog.isEmpty()) {
-                actions.onOpenUrl(newVersion.downloadUrl)
+                startUpdate(newVersion)
             } else {
                 updateDialog.showConfirm(
                     title = title,
