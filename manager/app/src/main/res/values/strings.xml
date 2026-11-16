@@ -804,4 +804,20 @@
     <string name="color_calibration_contrast">Contrast</string>
     <string name="color_calibration_hue">Hue</string>
     <string name="color_calibration_reset">Reset to defaults</string>
+
+    <!-- Battery monitor notification -->
+    <string name="battery_monitor_title">Battery monitor</string>
+    <string name="battery_monitor_summary">Ongoing notification with level, temperature, current and drain rates</string>
+    <string name="battery_monitor_channel_name">Battery monitor</string>
+    <string name="battery_monitor_charging">Charging</string>
+    <string name="battery_monitor_discharging">Discharging</string>
+    <string name="battery_monitor_full">Full</string>
+    <string name="battery_monitor_not_charging">Not charging</string>
+    <string name="battery_monitor_state_current">%1$s %2$d mA</string>
+    <string name="battery_monitor_drain">Active drain: %1$s/hr · idle drain: %2$s/hr</string>
+    <string name="battery_monitor_screen_on">Screen on: %1$s (%2$s%%)</string>
+    <string name="battery_monitor_screen_off">Screen off: %1$s (%2$s%%)</string>
+    <string name="battery_monitor_deep_sleep">Deep sleep: %1$s (%2$s%%)</string>
+    <string name="battery_monitor_awake">Awake: %1$s (%2$s%%)</string>
+    <string name="battery_monitor_reset_stats">Reset battery stats</string>
 </resources>
