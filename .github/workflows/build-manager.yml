@@ -308,9 +308,9 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v8
 
-      - name: Collect release files
+      - name: Collect manager APK
         run: |
-          mkdir -p manager lkm ksud ksuinit
+          mkdir -p manager
 
           # Only the repacked APK is publishable. manager-gradle-no-ksud also contains
           # an APK, but it has no libksud.so and cannot run ksud.
@@ -326,31 +326,7 @@ jobs:
             esac
           done
 
-          for dir in ./*-android*-lkm; do
-            if [ -d "$dir" ]; then
-                lkm_platform_name=$(basename "$dir")
-                lkm_platform_name="lkm-${lkm_platform_name%-lkm}_kernelsu.ko"
-                KO="$(ls "$dir"/*_kernelsu.ko)"
-                mv "$KO" "lkm/$lkm_platform_name"
-            fi
-          done
-
-          for dir in ./ksud-*; do
-            if [ -d "$dir" ]; then
-                name=$(basename "$dir")
-                [ -f "$dir/ksud" ] && mv "$dir/ksud" "ksud/$name"
-                [ -f "$dir/ksud.exe" ] && mv "$dir/ksud.exe" "ksud/$name.exe"
-            fi
-          done
-
-          for dir in ./ksuinit-*; do
-            if [ -d "$dir" ]; then
-                name=$(basename "$dir")
-                [ -f "$dir/ksuinit" ] && mv "$dir/ksuinit" "ksuinit/$name"
-            fi
-          done
-
-          ls -l manager lkm ksud ksuinit
+          ls -l manager
 
       - name: Publish release
         uses: softprops/action-gh-release@v3
@@ -359,12 +335,10 @@ jobs:
           name: noroiSU ${{ needs.generate-key.outputs.build_ver }}
           generate_release_notes: true
           prerelease: false
-          # Fail loudly instead of silently publishing a release with missing assets.
+          # Fail loudly instead of silently publishing a release with no APK.
           fail_on_unmatched_files: true
-          files: |
-            manager/*.apk
-            lkm/lkm-*_kernelsu.ko
-            ksud/ksud-*
-            ksuinit/*
+          # Release ships the manager APK only; LKM/ksud/ksuinit stay as build
+          # artifacts. ksud is already injected into the APK by repack-manager.
+          files: manager/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
