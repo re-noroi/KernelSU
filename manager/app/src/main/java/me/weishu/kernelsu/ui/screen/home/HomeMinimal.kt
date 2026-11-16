@@ -216,7 +216,7 @@ private fun MinimalTopBar(
                         when (appIconMode) {
                             1 -> R.drawable.ic_launcher_kowsu
                             2 -> R.drawable.ic_launcher_monochrome
-                            else -> R.drawable.ic_launcher_midorisu
+                            else -> R.drawable.ic_launcher_noroi
                         }
                     ),
                     contentDescription = null,

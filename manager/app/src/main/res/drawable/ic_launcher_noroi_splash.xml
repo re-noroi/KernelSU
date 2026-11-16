@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_noroi_splash_vector">
+    <target
+        android:name="bg_group"
+        android:animation="@animator/anim_noroi_bg" />
+    <target
+        android:name="ring_group"
+        android:animation="@animator/anim_noroi_ring" />
+    <target
+        android:name="ring_main"
+        android:animation="@animator/anim_noroi_ring_draw" />
+    <target
+        android:name="ring_streak_outer_1"
+        android:animation="@animator/anim_noroi_streaks" />
+    <target
+        android:name="ring_streak_outer_2"
+        android:animation="@animator/anim_noroi_streaks" />
+    <target
+        android:name="ring_streak_outer_3"
+        android:animation="@animator/anim_noroi_streaks" />
+    <target
+        android:name="ring_streak_inner_1"
+        android:animation="@animator/anim_noroi_streaks" />
+    <target
+        android:name="ring_streak_inner_2"
+        android:animation="@animator/anim_noroi_streaks" />
+    <target
+        android:name="glyph_group"
+        android:animation="@animator/anim_noroi_glyph" />
+</animated-vector>

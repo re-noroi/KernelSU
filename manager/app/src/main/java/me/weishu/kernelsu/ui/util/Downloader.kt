@@ -56,7 +56,7 @@ internal suspend fun isDownloadAvailable(uri: Uri): Boolean = withContext(Dispat
 
 fun checkNewVersion(): LatestVersionInfo {
     if (!isNetworkAvailable(ksuApp)) return LatestVersionInfo()
-    val url = "https://api.github.com/repos/midori01/KernelSU/releases/latest"
+    val url = "https://api.github.com/repos/re-noroi/KernelSU/releases/latest"
     // default null value if failed
     val defaultValue = LatestVersionInfo()
     runCatching {

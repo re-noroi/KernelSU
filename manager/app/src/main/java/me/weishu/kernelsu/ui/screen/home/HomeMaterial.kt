@@ -1183,7 +1183,7 @@ private fun BentoDeviceSpecsCard(
                                 when (appIconMode) {
                                     1 -> R.drawable.ic_launcher_kowsu
                                     2 -> R.drawable.ic_launcher_foreground
-                                    else -> R.drawable.ic_launcher_midorisu
+                                    else -> R.drawable.ic_launcher_noroi
                                 }
                             ),
                             contentDescription = null,
@@ -1464,7 +1464,7 @@ private fun TopBar(
                         when (appIconMode) {
                             1 -> R.drawable.ic_launcher_kowsu
                             2 -> R.drawable.ic_launcher_monochrome
-                            else -> R.drawable.ic_launcher_midorisu
+                            else -> R.drawable.ic_launcher_noroi
                         }
                     ),
                     contentDescription = null,
@@ -1976,7 +1976,7 @@ private fun InfoCard(
                                 when (appIconMode) {
                                     1 -> R.drawable.ic_launcher_kowsu
                                     2 -> R.drawable.ic_launcher_foreground
-                                    else -> R.drawable.ic_launcher_midorisu
+                                    else -> R.drawable.ic_launcher_noroi
                                 }
                             ),
                             contentDescription = null,
@@ -2258,7 +2258,7 @@ private fun previewHomeScreenState(
     moduleCount: Int = 0,
     selinuxStatus: String = "Enforcing",
     isGki2: Boolean = true,
-    localVersion: String = "-midori",
+    localVersion: String = "-noroi",
 ) = HomeUiState(
     appName = "noroiSU",
     kernelVersion = KernelVersion(6, 1, 0),

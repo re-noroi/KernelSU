@@ -323,7 +323,7 @@ class HomeViewModel(
         val appName = when (appIconMode) {
             1 -> ksuApp.getString(R.string.app_name_kowsu)
             2 -> ksuApp.getString(R.string.app_name_official)
-            else -> ksuApp.getString(R.string.app_name_midorisu)
+            else -> ksuApp.getString(R.string.app_name_noroi)
         }
         val kernelVersion = getKernelVersion()
         val (isGki2, localVersion) = getKernelInfo()
