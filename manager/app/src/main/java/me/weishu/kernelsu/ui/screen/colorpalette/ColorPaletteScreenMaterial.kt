@@ -241,7 +241,7 @@ fun ColorPaletteScreenMaterial(
                         color = MaterialTheme.colorScheme.primary,
                     )
                     val options = listOf(
-                        ColorMode.SYSTEM to stringResource(R.string.settings_theme_mode_auto),
+                        ColorMode.SYSTEM to stringResource(R.string.settings_theme_mode_system),
                         ColorMode.LIGHT to stringResource(R.string.settings_theme_mode_light),
                         ColorMode.DARK to stringResource(R.string.settings_theme_mode_dark),
                         ColorMode.DARK_AMOLED to stringResource(R.string.settings_theme_mode_black),

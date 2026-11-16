@@ -190,7 +190,7 @@ fun SettingPagerMaterial(
                     add {
                         val mode = ColorMode.fromValue(uiState.themeMode)
                         val modeLabel = when (mode.toBaseMode()) {
-                            ColorMode.SYSTEM -> stringResource(R.string.settings_theme_mode_auto)
+                            ColorMode.SYSTEM -> stringResource(R.string.settings_theme_mode_system)
                             ColorMode.LIGHT -> stringResource(R.string.settings_theme_mode_light)
                             ColorMode.DARK -> stringResource(R.string.settings_theme_mode_dark)
                             else -> stringResource(R.string.settings_theme_mode_black)
