@@ -165,7 +165,7 @@ open class MainActivity : ComponentActivity() {
         val startingTheme = when (appIconMode) {
             1 -> R.style.Theme_KernelSU_Starting_Kowsu
             2 -> R.style.Theme_KernelSU_Starting
-            else -> R.style.Theme_KernelSU_Starting_Midorisu
+            else -> R.style.Theme_KernelSU_Starting_Noroi
         }
         setTheme(startingTheme)
         val splashScreen = installSplashScreen()

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name_official" translatable="false">KernelSU</string>
-    <string name="app_name_midorisu" translatable="false">noroiSU</string>
+    <string name="app_name_noroi" translatable="false">noroiSU</string>
     <string name="app_name_kowsu" translatable="false">KowSU</string>
     <string name="settings_app_icon">App icon</string>
     <string name="home">Home</string>
