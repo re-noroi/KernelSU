@@ -305,6 +305,55 @@ jobs:
     permissions:
       contents: write
     steps:
+      # The changelog is built from local git history, so the job needs the full log
+      # plus tags to work out what to compare against.
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog
+        run: |
+          set -euo pipefail
+          TAG="${{ needs.generate-key.outputs.release_tag }}"
+          REPO="${{ github.repository }}"
+
+          # Nearest release tag reachable from HEAD; the tag for this release does not
+          # exist yet, so this is always the previous one. --match keeps non-release
+          # tags (e.g. staging markers) out of the comparison.
+          PREV=$(git describe --tags --abbrev=0 --match '20*' 2>/dev/null || true)
+          if [ -z "$PREV" ]; then
+            # No release tag is an ancestor (shallow tags, or a fresh branch). Fall back
+            # to the newest release tag by date so we still produce a short list instead
+            # of dumping the entire history into the manager's changelog dialog.
+            PREV=$(git for-each-ref --sort=-creatordate --count=1 \
+              --format='%(refname:short)' 'refs/tags/20*' 2>/dev/null || true)
+          fi
+
+          if [ -n "$PREV" ]; then
+            RANGE="$PREV..HEAD"
+            HEADER="## Changes since \`$PREV\`"
+            COMPARE="**Full Changelog**: https://github.com/$REPO/compare/${PREV}...${TAG}"
+          else
+            RANGE="HEAD"
+            HEADER="## Changes"
+            COMPARE="**Full Changelog**: https://github.com/$REPO/commits/${TAG}"
+          fi
+
+          {
+            echo "$HEADER"
+            echo
+            # Cap the list so the manager's changelog dialog stays readable. Use -n
+            # rather than piping into head, which would SIGPIPE git under pipefail.
+            git log -n 100 --no-merges --pretty=format:'- %s (`%h`)' "$RANGE"
+            echo
+            echo
+            echo "$COMPARE"
+          } > changelog.md
+
+          echo "----- changelog.md -----"
+          cat changelog.md
+
       - name: Download artifacts
         uses: actions/download-artifact@v8
 
@@ -333,7 +382,10 @@ jobs:
         with:
           tag_name: ${{ needs.generate-key.outputs.release_tag }}
           name: noroiSU ${{ needs.generate-key.outputs.build_ver }}
-          generate_release_notes: true
+          # Ship our own body: the commit list plus a compare link. Auto-generated notes
+          # only list merged PRs, so on a branch built from direct commits they collapse
+          # to a bare compare link, which is what the manager then shows as its changelog.
+          body_path: changelog.md
           prerelease: false
           # Fail loudly instead of silently publishing a release with no APK.
           fail_on_unmatched_files: true
