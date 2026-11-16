@@ -2,7 +2,32 @@ name: Build noroiSU Manager
 
 on:
   workflow_call:
+    inputs:
+      release:
+        description: 'Publish a GitHub release for this build'
+        required: false
+        type: boolean
+        default: false
+    outputs:
+      release_tag:
+        description: 'Tag for this build, e.g. 2026.11.16-173513'
+        value: ${{ jobs.generate-key.outputs.release_tag }}
+      build_ver:
+        description: 'Manager version name, e.g. 2026.11.16'
+        value: ${{ jobs.generate-key.outputs.build_ver }}
+      build_code:
+        description: 'Manager version code'
+        value: ${{ jobs.generate-key.outputs.build_code }}
+      apk_name:
+        description: 'File name of the repacked release APK'
+        value: ${{ jobs.repack-manager.outputs.apk_name }}
   workflow_dispatch:
+    inputs:
+      release:
+        description: 'Publish a GitHub release for this build (leave off to only build artifacts)'
+        required: false
+        type: boolean
+        default: false
   push:
 
 jobs:
@@ -182,8 +207,8 @@ jobs:
     needs: [build-manager, build-ksud, generate-key]
     if: always() && needs.build-manager.result == 'success' && needs.build-ksud.result == 'success' && needs.generate-key.result == 'success'
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    outputs:
+      apk_name: ${{ steps.publish.outputs.apk_name }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -238,20 +263,82 @@ jobs:
             -S "$SIGN_KEY_PASSWORD" \
             --strip
 
-      - name: Upload manager artifact
+      - name: Resolve APK name
+        id: publish
+        run: |
+          shopt -s nullglob
+          APKS=(dist/*.apk)
+          if [ ${#APKS[@]} -eq 0 ]; then
+            echo "::error::No APK produced by repack"
+            exit 1
+          fi
+          if [ ${#APKS[@]} -gt 1 ]; then
+            echo "::error::Expected exactly one APK in dist/, found ${#APKS[@]}: ${APKS[*]}"
+            exit 1
+          fi
+          echo "apk_name=$(basename "${APKS[0]}")" >> $GITHUB_OUTPUT
+
+      # GitHub always wraps artifacts in a storage .zip, so downloading this from the
+      # Actions UI still yields a zip — but it now holds nothing except the final
+      # ksud-injected, zipaligned, signed APK, so extracting gives you the installable
+      # file directly.
+      - name: Upload manager APK artifact
         uses: actions/upload-artifact@v7
         with:
-          name: manager
+          name: noroiSU-manager-${{ needs.generate-key.outputs.build_ver }}
           path: dist/*.apk
+          if-no-files-found: error
+          retention-days: 30
 
-      - name: Upload to GitHub Release
-        if: github.event_name != 'pull_request'
+  # Publishing is opt-in. Every push and every workflow_dispatch run builds artifacts
+  # only; set the `release` input to true (Actions -> Run workflow) to publish.
+  release:
+    needs: [generate-key, repack-manager, build-ksud, build-ksuinit]
+    if: >-
+      always() &&
+      inputs.release == true &&
+      needs.generate-key.result == 'success' &&
+      needs.repack-manager.result == 'success' &&
+      needs.build-ksud.result == 'success' &&
+      needs.build-ksuinit.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v8
+
+      - name: Collect manager APK
+        run: |
+          mkdir -p manager
+
+          # Only the repacked APK is publishable. manager-gradle-no-ksud also contains
+          # an APK, but it has no libksud.so and cannot run ksud.
+          APKS=$(find . -maxdepth 2 -type f -name "*.apk" -not -path "./manager-gradle-no-ksud/*")
+          if [ -z "$APKS" ]; then
+            echo "::error::No repacked manager APK found in downloaded artifacts"
+            exit 1
+          fi
+          for apk in $APKS; do
+            case "$apk" in
+              *noroiSU*|*repack*) mv "$apk" manager/ ;;
+              *) echo "::error::Refusing to publish unexpected APK: $apk"; exit 1 ;;
+            esac
+          done
+
+          ls -l manager
+
+      - name: Publish release
         uses: softprops/action-gh-release@v3
         with:
-          files: dist/*.apk
           tag_name: ${{ needs.generate-key.outputs.release_tag }}
-          name: Release ${{ needs.generate-key.outputs.release_tag }}
+          name: noroiSU ${{ needs.generate-key.outputs.build_ver }}
           generate_release_notes: true
           prerelease: false
+          # Fail loudly instead of silently publishing a release with no APK.
+          fail_on_unmatched_files: true
+          # Release ships the manager APK only; LKM/ksud/ksuinit stay as build
+          # artifacts. ksud is already injected into the APK by repack-manager.
+          files: manager/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
