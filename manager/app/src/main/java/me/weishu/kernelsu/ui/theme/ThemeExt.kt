@@ -10,11 +10,18 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.expressiveLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
 import com.materialkolor.PaletteStyle
 import com.materialkolor.dynamiccolor.ColorSpec
 import com.materialkolor.rememberDynamicColorScheme
 
+/**
+ * Pitch-black flattening for the AMOLED mode.
+ *
+ * Every container collapses to pure black. Kept for the Material and Miuix
+ * skins, which have no flat surface ladder of their own.
+ */
 fun ColorScheme.amoledBackground(amoled: Boolean): ColorScheme =
     if (!amoled) this
     else copy(
@@ -55,6 +62,108 @@ fun rememberKernelSUColorScheme(
         style = paletteStyle,
         specVersion = colorSpec.effectiveFor(paletteStyle),
     ).amoledBackground(isAmoled)
+}
+
+/**
+ * Turns a generated Material scheme into the flat Minimal design.
+ *
+ * The Minimal UI is flat: solid grounds and fully opaque cards with a single
+ * small radius family. Nothing is translucent glass any more, so the result
+ * reads the same over a wallpaper, over pure black, and in light mode.
+ *
+ * @param monet when false the accent falls back to plain ink for the current
+ *   brightness instead of the wallpaper-derived palette.
+ */
+fun flatMinimalScheme(
+    scheme: ColorScheme,
+    dark: Boolean,
+    amoled: Boolean,
+    monet: Boolean,
+): ColorScheme {
+    val ground: Color = when {
+        amoled -> Color.Black
+        dark -> scheme.background
+        // Light mode: sit the cards on a softly tinted ground, never on a
+        // near-white one, otherwise white cards would have no edge at all.
+        else -> lerp(scheme.background, Color.Black, 0.04f)
+    }
+
+    // A fixed ladder of surface steps keeps one flat system in every mode:
+    // light cards are white on a tinted ground, dark cards step up from the
+    // ground, and pitch black keeps a barely-there step so cards still read.
+    val surfaces: ColorScheme = when {
+        amoled -> scheme.copy(
+            background = Color.Black,
+            surface = Color.Black,
+            surfaceDim = Color.Black,
+            surfaceContainerLowest = Color(0xFF000000),
+            surfaceContainerLow = Color(0xFF08080A),
+            surfaceContainer = Color(0xFF0D0D10),
+            surfaceContainerHigh = Color(0xFF141418),
+            surfaceContainerHighest = Color(0xFF1B1B20),
+            surfaceBright = Color(0xFF1F1F24),
+            onSurface = Color(0xFFEDEDF0),
+            onSurfaceVariant = Color(0xFFA8A8B0),
+            onBackground = Color(0xFFEDEDF0),
+            outline = Color(0xFF3A3A42),
+            outlineVariant = Color(0xFF24242A),
+        )
+
+        dark -> scheme.copy(
+            background = ground,
+            surface = ground,
+            surfaceContainerLowest = ground,
+            surfaceContainerLow = lerp(ground, Color.White, 0.04f),
+            surfaceContainer = lerp(ground, Color.White, 0.06f),
+            surfaceContainerHigh = lerp(ground, Color.White, 0.09f),
+            surfaceContainerHighest = lerp(ground, Color.White, 0.12f),
+            surfaceBright = lerp(ground, Color.White, 0.10f),
+            surfaceDim = ground,
+            outline = lerp(ground, Color.White, 0.28f),
+            outlineVariant = lerp(ground, Color.White, 0.14f),
+        )
+
+        else -> scheme.copy(
+            background = ground,
+            surface = ground,
+            surfaceContainerLowest = Color.White,
+            surfaceContainerLow = Color.White,
+            surfaceContainer = Color.White,
+            surfaceContainerHigh = lerp(Color.White, ground, 0.45f),
+            surfaceContainerHighest = lerp(Color.White, ground, 0.75f),
+            surfaceBright = Color.White,
+            surfaceDim = lerp(ground, Color.Black, 0.04f),
+            outline = lerp(ground, Color.Black, 0.22f),
+            outlineVariant = lerp(ground, Color.Black, 0.10f),
+        )
+    }
+
+    // With Monet off the accent becomes plain ink, not white: a white accent
+    // is invisible in light mode, which is what the old glass theme got away
+    // with only because every surface was black.
+    val accented: ColorScheme = if (monet) {
+        surfaces
+    } else if (dark || amoled) {
+        surfaces.copy(
+            primary = Color(0xFFE8E8EA),
+            onPrimary = Color(0xFF141416),
+            primaryContainer = if (amoled) Color(0xFF232326) else Color(0xFF2C2C30),
+            onPrimaryContainer = Color(0xFFF5F5F7),
+            inversePrimary = Color(0xFF2C2C30),
+        )
+    } else {
+        surfaces.copy(
+            primary = Color(0xFF1C1C1E),
+            onPrimary = Color(0xFFFFFFFF),
+            primaryContainer = Color(0xFFE4E4E8),
+            onPrimaryContainer = Color(0xFF141416),
+            inversePrimary = Color(0xFFE4E4E8),
+        )
+    }
+
+    return accented.copy(
+        onBackground = accented.onSurface,
+    )
 }
 
 @Composable

@@ -449,6 +449,17 @@
     <string name="settings_theme_mode_system">Follow system</string>
     <string name="settings_theme_mode_light">Light</string>
     <string name="settings_theme_mode_dark">Dark</string>
+    <string name="settings_theme_mode_black">Black</string>
+    <string name="settings_section_brightness">Brightness</string>
+    <string name="settings_section_brightness_summary">Auto follows the system light and dark setting. Black is true pitch black for OLED panels.</string>
+    <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_section_updates">Updates</string>
+    <string name="settings_section_general">General</string>
+    <string name="settings_section_advanced">Advanced</string>
+    <string name="settings_section_features">Features</string>
+    <string name="settings_section_about">About</string>
+    <string name="settings_show_gpu_version">Show GPU version</string>
+    <string name="settings_show_gpu_version_summary">Display the GPU model in device specs</string>
     <string name="settings_monet">Enable Monet</string>
     <string name="settings_key_color">Key color</string>
     <string name="settings_key_color_default">Default</string>

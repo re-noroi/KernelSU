@@ -62,7 +62,7 @@ fun MiniGamesScreen() {
                     Text(
                         text = stringResource(R.string.mini_games_title),
                         fontWeight = FontWeight.SemiBold,
-                        color = if (isMinimal) Color.White else MaterialTheme.colorScheme.onSurface,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                 },
                 navigationIcon = {
@@ -70,7 +70,7 @@ fun MiniGamesScreen() {
                         Icon(
                             imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                             contentDescription = null,
-                            tint = if (isMinimal) Color.White else MaterialTheme.colorScheme.onSurface,
+                            tint = MaterialTheme.colorScheme.onSurface,
                         )
                     }
                 },

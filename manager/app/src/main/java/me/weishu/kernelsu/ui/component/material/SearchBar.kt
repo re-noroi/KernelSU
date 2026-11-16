@@ -56,7 +56,6 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.nav.gesture.WindowNavigationEventBridge
-import androidx.compose.ui.graphics.Color
 import me.weishu.kernelsu.ui.LocalUiMode
 import me.weishu.kernelsu.ui.UiMode
 import me.weishu.kernelsu.ui.theme.minimalWallpaperBackground
@@ -147,18 +146,18 @@ fun SearchAppBar(
         }
     }
 
-    // Minimal has no surface color, so let the wallpaper show through the search
-    // surfaces instead of painting an opaque container over it.
+    // Flat Minimal: the search bar is an opaque card like every other surface,
+    // so it reads the same over a wallpaper, in light mode and in pitch black.
     val inputFieldColors = if (isMinimal) {
         SearchBarDefaults.inputFieldColors(
-            focusedContainerColor = Color.Transparent,
-            unfocusedContainerColor = Color.Transparent,
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
         )
     } else {
         SearchBarDefaults.inputFieldColors()
     }
     val expandedSearchBarColors = if (isMinimal) {
-        SearchBarDefaults.colors(containerColor = Color.Transparent)
+        SearchBarDefaults.colors(containerColor = MaterialTheme.colorScheme.background)
     } else {
         SearchBarDefaults.colors()
     }
@@ -202,7 +201,7 @@ fun SearchAppBar(
         }
     }
 
-    Surface(color = if (isMinimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer) {
+    Surface(color = if (isMinimal) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.surfaceContainer) {
         Column(
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -224,7 +223,7 @@ fun SearchAppBar(
 
                 state = searchBarState,
                 inputField = inputField,
-                colors = SearchBarDefaults.colors(containerColor = if (isMinimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerHighest),
+                colors = SearchBarDefaults.colors(containerColor = if (isMinimal) MaterialTheme.colorScheme.surfaceContainer else MaterialTheme.colorScheme.surfaceContainerHighest),
             )
         }
     }
