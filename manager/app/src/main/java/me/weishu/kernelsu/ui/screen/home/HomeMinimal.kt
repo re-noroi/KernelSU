@@ -80,6 +80,7 @@ import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.LocalKernelTool
 import me.weishu.kernelsu.ui.component.bottombar.RegisterTabReselect
 import me.weishu.kernelsu.ui.component.dialog.rememberConfirmDialog
+import me.weishu.kernelsu.ui.component.rebootlistpopup.RebootListPopup
 import me.weishu.kernelsu.ui.navigation3.Navigator
 import me.weishu.kernelsu.ui.navigation3.Route
 import me.weishu.kernelsu.ui.theme.LocalAppIconMode
@@ -235,6 +236,9 @@ private fun MinimalTopBar(
                         },
                 )
             }
+        },
+        actions = {
+            RebootListPopup()
         },
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = Color.Transparent,
