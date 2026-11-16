@@ -30,7 +30,7 @@ import me.weishu.kernelsu.ui.component.pressBounce
 @Composable
 fun TonalCard(
     modifier: Modifier = Modifier,
-    containerColor: Color = MaterialTheme.colorScheme.surfaceBright,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
     contentColor: Color = contentColorFor(containerColor),
     shape: Shape = MaterialTheme.shapes.large,
     enabled: Boolean = true,

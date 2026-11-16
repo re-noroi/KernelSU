@@ -48,6 +48,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -56,7 +57,6 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.nav.gesture.WindowNavigationEventBridge
-import androidx.compose.ui.graphics.Color
 import me.weishu.kernelsu.ui.LocalUiMode
 import me.weishu.kernelsu.ui.UiMode
 import me.weishu.kernelsu.ui.theme.minimalWallpaperBackground
@@ -147,17 +147,19 @@ fun SearchAppBar(
         }
     }
 
-    // Minimal has no surface color, so let the wallpaper show through the search
-    // surfaces instead of painting an opaque container over it.
+    // Flat Minimal: the search bar is an opaque card like every other surface,
+    // so it reads the same over a wallpaper, in light mode and in pitch black.
     val inputFieldColors = if (isMinimal) {
         SearchBarDefaults.inputFieldColors(
-            focusedContainerColor = Color.Transparent,
-            unfocusedContainerColor = Color.Transparent,
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
         )
     } else {
         SearchBarDefaults.inputFieldColors()
     }
     val expandedSearchBarColors = if (isMinimal) {
+        // The wallpaper + scrim is painted behind the expanded window, so the
+        // search surface itself must stay transparent or it would cover it.
         SearchBarDefaults.colors(containerColor = Color.Transparent)
     } else {
         SearchBarDefaults.colors()
@@ -202,7 +204,18 @@ fun SearchAppBar(
         }
     }
 
-    Surface(color = if (isMinimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer) {
+    // Minimal must not paint a container here: the top app bar sits directly on
+    // the wallpaper backdrop, so the bar stays transparent like the rest of the
+    // page. Only the search field itself is a card. The content colour has to be
+    // given explicitly because contentColorFor() cannot resolve Color.Transparent.
+    Surface(
+        color = if (isMinimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
+        contentColor = if (isMinimal) {
+            MaterialTheme.colorScheme.onBackground
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        },
+    ) {
         Column(
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -224,7 +237,17 @@ fun SearchAppBar(
 
                 state = searchBarState,
                 inputField = inputField,
-                colors = SearchBarDefaults.colors(containerColor = if (isMinimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerHighest),
+                // Minimal: the input field above already paints the card, so the bar
+                // container must stay transparent. Painting both double-composites the
+                // alpha, which is why the collapsed pill ignored the transparency slider
+                // while the expanded one obeyed it.
+                colors = if (isMinimal) {
+                    SearchBarDefaults.colors(containerColor = Color.Transparent)
+                } else {
+                    SearchBarDefaults.colors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    )
+                },
             )
         }
     }

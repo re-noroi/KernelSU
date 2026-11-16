@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
@@ -27,7 +26,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
@@ -71,7 +69,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -86,6 +83,16 @@ import me.weishu.kernelsu.ui.navigation3.Navigator
 import me.weishu.kernelsu.ui.navigation3.Route
 import me.weishu.kernelsu.ui.theme.LocalAppIconMode
 
+/**
+ * Flat Minimal dashboard.
+ *
+ * Layout rules that keep it lined up:
+ *  - every block is a full-width card inside one 16dp gutter,
+ *  - the quick grid is a real 2-column grid with equal cell heights,
+ *  - inside a card, rows share one 16dp leading icon column and one text column,
+ *    so labels, values and chevrons align across the whole screen,
+ *  - card padding is 16dp everywhere and vertical rhythm is 12dp between cards.
+ */
 @Suppress("UNUSED_PARAMETER")
 @Composable
 fun HomePagerMinimal(
@@ -100,9 +107,12 @@ fun HomePagerMinimal(
         scrollState.animateScrollTo(0)
     }
 
-    // Scaffold background is now transparent so the global wallpaper shows through
     Scaffold(
         containerColor = Color.Transparent,
+        // The Minimal home ground is the wallpaper backdrop painted by the theme, so
+        // the Scaffold itself is transparent. A transparent container resolves to no
+        // content colour, so name the theme ink explicitly.
+        contentColor = MaterialTheme.colorScheme.onBackground,
         topBar = {
             MinimalTopBar(
                 appName = state.appName,
@@ -170,8 +180,7 @@ private fun MinimalTopBar(
             Text(
                 text = appName,
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -220,7 +229,6 @@ private fun MinimalTopBar(
                             scaleY = scale.value
                             rotationZ = rotation.value
                         },
-                    tint = Color.White,
                 )
             }
         },
@@ -232,6 +240,24 @@ private fun MinimalTopBar(
             WindowInsetsSides.Top + WindowInsetsSides.Horizontal
         ),
     )
+}
+
+/** Flat card used for every block on the dashboard. Its opacity follows the Theme slider. */
+@Composable
+private fun MinimalCard(
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    content: @Composable () -> Unit,
+) {
+    val shape = MaterialTheme.shapes.large
+    Surface(
+        shape = shape,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        modifier = if (onClick != null) modifier.clickable(onClick = onClick) else modifier,
+    ) {
+        content()
+    }
 }
 
 @Composable
@@ -257,20 +283,18 @@ private fun MinimalStatusCard(
         stringResource(R.string.home_working_version, "KernelSU $it")
     }
 
-    Surface(
-        shape = RoundedCornerShape(28.dp),
-        // Color.Black.copy(alpha = 0.75f) is inherited from the theme, but hardcoded here is fine
-        color = Color.Black.copy(alpha = 0.75f), 
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(enabled = !state.isLateLoadMode) {
+    MinimalCard(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = if (!state.isLateLoadMode) {
+            {
                 haptic.performHapticFeedback(HapticFeedbackType.VirtualKey)
                 actions.onInstallClick()
-            },
+            }
+        } else null,
     ) {
         Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -287,9 +311,10 @@ private fun MinimalStatusCard(
                     text = statusText,
                     style = MaterialTheme.typography.labelLarge,
                     color = statusColor,
-                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
                 )
-                Spacer(Modifier.weight(1f))
                 if (state.hasUpdate && state.checkUpdateEnabled) {
                     Icon(
                         imageVector = Icons.Rounded.SystemUpdate,
@@ -308,22 +333,21 @@ private fun MinimalStatusCard(
                         state.appName
                     },
                     style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
                 if (versionText != null) {
                     Text(
                         text = versionText,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.LightGray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                
-                // ADDED: Manager version is now explicitly shown below the KernelSU version
                 Text(
                     text = stringResource(R.string.home_manager_version) + " " + state.systemInfo.managerVersion,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.LightGray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
@@ -357,8 +381,8 @@ private fun MinimalNoticeRow(
     tint: Color,
 ) {
     Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = tint.copy(alpha = 0.15f),
+        shape = MaterialTheme.shapes.small,
+        color = tint.copy(alpha = 0.12f),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
@@ -376,7 +400,7 @@ private fun MinimalNoticeRow(
                 text = text,
                 style = MaterialTheme.typography.bodyMedium,
                 color = tint,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
         }
@@ -388,7 +412,6 @@ private fun MinimalQuickGrid(
     state: HomeUiState,
     actions: HomeActions,
 ) {
-    val haptic = LocalHapticFeedback.current
     val currentTool = LocalKernelTool.current
     val hasCrash = state.hasCrashLog
 
@@ -403,10 +426,7 @@ private fun MinimalQuickGrid(
                 value = state.superuserCount.toString(),
                 label = stringResource(R.string.superuser),
                 caption = stringResource(R.string.bento_active_superusers),
-                onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.VirtualKey)
-                    actions.onSuperuserClick()
-                },
+                onClick = actions.onSuperuserClick,
             )
             MinimalTile(
                 modifier = Modifier.weight(1f),
@@ -414,10 +434,7 @@ private fun MinimalQuickGrid(
                 value = state.moduleCount.toString(),
                 label = stringResource(R.string.module),
                 caption = stringResource(R.string.bento_active_modules),
-                onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.VirtualKey)
-                    actions.onModuleClick()
-                },
+                onClick = actions.onModuleClick,
             )
         }
         Row(
@@ -430,17 +447,11 @@ private fun MinimalQuickGrid(
                 value = null,
                 label = stringResource(currentTool.label),
                 caption = stringResource(R.string.bento_kernel_tool),
-                onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.VirtualKey)
-                    actions.onKernelToolClick()
-                },
+                onClick = actions.onKernelToolClick,
             )
             MinimalTile(
                 modifier = Modifier.weight(1f),
-                icon = when {
-                    hasCrash -> Icons.Rounded.BugReport
-                    else -> Icons.Rounded.CheckCircle
-                },
+                icon = if (hasCrash) Icons.Rounded.BugReport else Icons.Rounded.CheckCircle,
                 value = null,
                 label = if (hasCrash) {
                     stringResource(R.string.bento_crash_detected)
@@ -453,10 +464,7 @@ private fun MinimalQuickGrid(
                     stringResource(R.string.bento_no_crashes)
                 },
                 accent = hasCrash,
-                onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.VirtualKey)
-                    actions.onCrashLogClick()
-                },
+                onClick = actions.onCrashLogClick,
             )
         }
     }
@@ -472,21 +480,33 @@ private fun MinimalTile(
     accent: Boolean = false,
     onClick: () -> Unit,
 ) {
+    val haptic = LocalHapticFeedback.current
     val container = if (accent) {
-        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.75f)
+        MaterialTheme.colorScheme.errorContainer
     } else {
-        Color.Black.copy(alpha = 0.75f) // 25% transparent
+        MaterialTheme.colorScheme.surfaceContainer
     }
-    val content = if (accent) MaterialTheme.colorScheme.error else Color.White
+    val content = if (accent) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurface
+    val supporting = if (accent) {
+        MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.72f)
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
     val iconTint = if (accent) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
 
     Surface(
-        shape = RoundedCornerShape(22.dp),
+        shape = MaterialTheme.shapes.large,
         color = container,
-        modifier = modifier.clickable(onClick = onClick),
+        contentColor = content,
+        modifier = modifier.clickable {
+            haptic.performHapticFeedback(HapticFeedbackType.VirtualKey)
+            onClick()
+        },
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Row(
@@ -504,16 +524,15 @@ private fun MinimalTile(
                     Text(
                         text = value,
                         style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.SemiBold,
                         color = content,
+                        maxLines = 1,
                     )
                 }
             }
-            Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
                     text = label,
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Medium,
                     color = content,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -521,11 +540,7 @@ private fun MinimalTile(
                 Text(
                     text = caption,
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (accent) {
-                        MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
-                    } else {
-                        Color.LightGray
-                    },
+                    color = supporting,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -558,19 +573,14 @@ private fun MinimalSpecsCard(state: HomeUiState) {
     }
     val patch = if (info.securityPatch.isNotEmpty()) " | SPL ${info.securityPatch}" else ""
 
-    Surface(
-        shape = RoundedCornerShape(24.dp),
-        color = Color.Black.copy(alpha = 0.75f), // 25% transparent
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(modifier = Modifier.padding(18.dp)) {
+    MinimalCard(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = stringResource(R.string.bento_device_specs),
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 4.dp),
             )
-            Spacer(Modifier.height(12.dp))
             MinimalSpecRow(Icons.Rounded.Smartphone, stringResource(R.string.home_device_model), modelText)
             MinimalSpecRow(Icons.Rounded.DeveloperBoard, stringResource(R.string.home_kernel), info.kernelVersion)
             MinimalSpecRow(
@@ -603,6 +613,7 @@ private fun MinimalSpecsCard(state: HomeUiState) {
     }
 }
 
+/** One row on the shared 24dp icon / 12dp gap / text grid. */
 @Composable
 private fun MinimalSpecRow(
     icon: ImageVector,
@@ -612,27 +623,30 @@ private fun MinimalSpecRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = Color.LightGray,
-            modifier = Modifier.size(24.dp), // Slightly larger icon matching Image 2
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp),
         )
-        Spacer(Modifier.width(16.dp))
-        // Using a Column fixes the vertical text bug and matches the Material theme layout
+        Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.LightGray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = value,
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -641,7 +655,7 @@ private fun MinimalSpecRow(
 @Composable
 private fun MinimalFooter(actions: HomeActions) {
     val learnUrl = stringResource(R.string.home_learn_kernelsu_url)
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         MinimalFooterLink(
             text = stringResource(R.string.home_learn_kernelsu),
             onClick = { actions.onOpenUrl(learnUrl) },
@@ -660,39 +674,38 @@ private fun MinimalFooterLink(
     onClick: () -> Unit,
     supportingText: String? = null,
 ) {
-    Surface(
-        shape = RoundedCornerShape(20.dp),
-        color = Color.Transparent,
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .clip(MaterialTheme.shapes.medium)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = text,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.LightGray,
-                )
-                if (supportingText != null) {
-                    Text(
-                        text = supportingText,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.LightGray.copy(alpha = 0.7f),
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-            Icon(
-                imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-                contentDescription = null,
-                tint = Color.LightGray,
-                modifier = Modifier.size(18.dp),
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyMedium,
+                // Match the rest of the dashboard: full-opacity ink for the label and the
+                // same variant colour the other blocks use for their supporting line. The
+                // previous 0.75f alpha made these two rows read as faded/see-through.
+                color = MaterialTheme.colorScheme.onSurface,
             )
+            if (supportingText != null) {
+                Text(
+                    text = supportingText,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
+        Icon(
+            imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(18.dp),
+        )
     }
 }

@@ -1,6 +1,7 @@
 package me.weishu.kernelsu.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.background
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
@@ -16,9 +17,9 @@ import me.weishu.kernelsu.ui.util.LocalShowSwitchIcon
 import android.graphics.ImageDecoder
 import android.net.Uri
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.graphics.ImageBitmap
@@ -32,6 +33,13 @@ import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+/**
+ * Brightness presets.
+ *
+ * The stored int keeps a "monet" bit so older builds keep working, but the
+ * Minimal UI treats brightness and Monet as two independent choices: light,
+ * dark and pitch black are all reachable with Monet on or off.
+ */
 enum class ColorMode(val value: Int) {
     SYSTEM(0),
     LIGHT(1),
@@ -39,21 +47,23 @@ enum class ColorMode(val value: Int) {
     MONET_SYSTEM(3),
     MONET_LIGHT(4),
     MONET_DARK(5),
-    DARK_AMOLED(6);
+    DARK_AMOLED(6),
+    MONET_AMOLED(7);
 
     companion object {
         fun fromValue(value: Int) = entries.find { it.value == value } ?: SYSTEM
     }
 
     val isSystem: Boolean get() = value == 0 || value == 3
-    val isDark: Boolean get() = value == 2 || value == 5 || value == 6
-    val isAmoled: Boolean get() = value == 6
-    val isMonet: Boolean get() = value >= 3
+    val isDark: Boolean get() = value == 2 || value == 5 || value == 6 || value == 7
+    val isAmoled: Boolean get() = value == 6 || value == 7
+    val isMonet: Boolean get() = value == 3 || value == 4 || value == 5 || value == 7
 
     fun toNonMonetMode(): Int = when (this) {
         MONET_SYSTEM -> 0
         MONET_LIGHT -> 1
-        MONET_DARK, DARK_AMOLED -> 2
+        MONET_DARK -> 2
+        MONET_AMOLED -> 6
         else -> value
     }
 
@@ -61,8 +71,22 @@ enum class ColorMode(val value: Int) {
         SYSTEM -> 3
         LIGHT -> 4
         DARK -> 5
+        DARK_AMOLED -> 7
         else -> value
     }
+
+    /**
+     * The brightness preset, with the Monet bit stripped. The Minimal theme
+     * treats brightness and Monet as two independent switches, so the toggle
+     * group compares against this.
+     */
+    fun toBaseMode(): ColorMode = fromValue(toNonMonetMode())
+
+    /** Re-applies this mode's Monet bit onto [template]'s brightness. */
+    fun toModeFor(template: ColorMode): ColorMode =
+        fromValue(
+            if (template.isMonet) toBaseMode().toMonetMode() else toBaseMode().value
+        )
 }
 
 data class AppSettings(
@@ -76,6 +100,7 @@ data class AppSettings(
     val scrollAnimation: Boolean,
     val modernBento: Boolean = false,
     val minimalMonet: Boolean = true,
+    val minimalCardAlpha: Float = 1f,
     val showGpuVersion: Boolean = true,
 )
 
@@ -134,9 +159,10 @@ object ThemeController {
         val showSwitchIcon = repo.showSwitchIcon
         val scrollAnimation = repo.scrollAnimation
         val minimalMonet = repo.minimalMonet
+        val minimalCardAlpha = repo.minimalCardOpacity
         val showGpuVersion = repo.showGpuVersion
 
-        return AppSettings(colorMode, keyColor, paletteStyle, colorSpec, appIconMode, classicUi, showSwitchIcon, scrollAnimation, modernBento, minimalMonet, showGpuVersion)
+        return AppSettings(colorMode, keyColor, paletteStyle, colorSpec, appIconMode, classicUi, showSwitchIcon, scrollAnimation, modernBento, minimalMonet, minimalCardAlpha, showGpuVersion)
     }
 }
 
@@ -170,27 +196,37 @@ fun KernelSUTheme(
                 val bitmap = rememberMinimalWallpaper(wallpaper)
 
                 CompositionLocalProvider(LocalMinimalWallpaperBitmap provides bitmap) {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        if (bitmap != null) {
-                            Image(
-                                bitmap = bitmap,
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize()
-                            )
-                            // Dim the wallpaper so text is readable
+                    MaterialKernelSUTheme(
+                        appSettings = appSettings,
+                        minimal = true,
+                        content = {
+                            // Ground first (theme-aware: light, dark or pure
+                            // black), then the wallpaper as an ambient backdrop
+                            // under a themed scrim. Screens stay transparent so
+                            // everything here shows through, while cards are
+                            // opaque and flat on top of it.
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .background(Color.Black.copy(alpha = MINIMAL_MAIN_WALLPAPER_DIM))
-                            )
+                                    .background(MaterialTheme.colorScheme.background)
+                            ) {
+                                if (bitmap != null) {
+                                    Image(
+                                        bitmap = bitmap,
+                                        contentDescription = null,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .background(minimalScrimColor(stronger = false))
+                                    )
+                                }
+                                content()
+                            }
                         }
-                        MaterialKernelSUTheme(
-                            appSettings = appSettings,
-                            minimal = true,
-                            content = content
-                        )
-                    }
+                    )
                 }
             }
         }
@@ -198,17 +234,17 @@ fun KernelSUTheme(
 }
 
 /**
- * Opaque wallpaper backdrop for pushed pages in the Minimal UI.
+ * Flat ground for a pushed page in the Minimal UI.
  *
- * The home screen lets the shared wallpaper show through at
- * [MINIMAL_MAIN_WALLPAPER_DIM]. A pushed page draws the same wallpaper itself
- * (so the page underneath can never show through while it fades) with an extra
- * ~20% dim, which keeps it slightly darker than the home screen and readable.
+ * When a wallpaper is set the page paints it under the same themed scrim so the
+ * fade transition never reveals the page behind. Without one the page uses the
+ * theme ground, so light, dark and pitch black all stay solid.
  */
 @Composable
 fun MinimalTabBackground(content: @Composable () -> Unit) {
     val bitmap = LocalMinimalWallpaperBitmap.current
-    Box(modifier = Modifier.fillMaxSize()) {
+    val ground = MaterialTheme.colorScheme.background
+    Box(modifier = Modifier.fillMaxSize().background(ground)) {
         if (bitmap != null) {
             Image(
                 bitmap = bitmap,
@@ -219,19 +255,16 @@ fun MinimalTabBackground(content: @Composable () -> Unit) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = MINIMAL_PAGE_WALLPAPER_DIM))
+                    .background(minimalScrimColor(stronger = true))
             )
-        } else {
-            Box(modifier = Modifier.fillMaxSize().background(Color.Black))
         }
         content()
     }
 }
 
 /**
- * Wallpaper background for Minimal surfaces hosted in their own window, such as
- * the expanded search bar. Those windows sit above the app content, so without
- * this the screen underneath would show through instead of the wallpaper.
+ * Wallpaper ground for Minimal surfaces hosted in their own window, such as the
+ * expanded search bar.
  */
 @Composable
 fun minimalWallpaperBackground(): Modifier {
@@ -239,10 +272,29 @@ fun minimalWallpaperBackground(): Modifier {
     return if (bitmap != null) {
         Modifier
             .paint(BitmapPainter(bitmap), contentScale = ContentScale.Crop)
-            .background(Color.Black.copy(alpha = MINIMAL_PAGE_WALLPAPER_DIM))
+            .background(minimalScrimColor(stronger = true))
     } else {
-        Modifier.background(Color.Black)
+        Modifier.background(MaterialTheme.colorScheme.background)
     }
+}
+
+/**
+ * Scrim painted over the wallpaper so content stays legible in every mode.
+ * Light mode needs a light scrim (dark text on a photo), dark modes a dark one,
+ * and pitch black goes heaviest so the wallpaper reads as a faint texture.
+ */
+@Composable
+@ReadOnlyComposable
+fun minimalScrimColor(stronger: Boolean): Color {
+    val dark = isInDarkTheme()
+    val amoled = LocalColorMode.current == ColorMode.DARK_AMOLED.value ||
+            LocalColorMode.current == ColorMode.MONET_AMOLED.value
+    val alpha = when {
+        amoled -> if (stronger) 0.82f else 0.72f
+        dark -> if (stronger) 0.58f else 0.46f
+        else -> if (stronger) 0.72f else 0.60f
+    }
+    return if (dark || amoled) Color.Black.copy(alpha = alpha) else Color.White.copy(alpha = alpha)
 }
 
 @Composable
@@ -250,7 +302,7 @@ fun minimalWallpaperBackground(): Modifier {
 fun isInDarkTheme(): Boolean {
     return when (LocalColorMode.current) {
         1, 4 -> false  // Force light mode
-        2, 5, 6 -> true   // Force dark mode
+        2, 5, 6, 7 -> true   // Force dark / pitch black
         else -> isSystemInDarkTheme()  // Follow system (0 or default)
     }
 }
@@ -265,12 +317,6 @@ val LocalMinimalWallpaper = staticCompositionLocalOf { "" }
 
 /** Wallpaper bitmap shared by the Minimal home screen and every pushed page. */
 val LocalMinimalWallpaperBitmap = staticCompositionLocalOf<ImageBitmap?> { null }
-
-/** Dim applied to the wallpaper behind the Minimal home screen. */
-private const val MINIMAL_MAIN_WALLPAPER_DIM = 0.4f
-
-/** Pushed pages are ~20% dimmer than the home screen so their content stays readable. */
-private const val MINIMAL_PAGE_WALLPAPER_DIM = 1f - (1f - MINIMAL_MAIN_WALLPAPER_DIM) * 0.8f
 
 val LocalClassicUi = staticCompositionLocalOf { false }
 

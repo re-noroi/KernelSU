@@ -61,7 +61,7 @@ fun SettingPager(
         onSetModuleAutoHotInstall = viewModel::setModuleAutoHotInstall,
         onOpenTheme = { navigator.push(Route.ColorPalette) },
         onSetUiModeIndex = { index ->
-            viewModel.setUiMode(UiMode.entries.getOrElse(index) { UiMode.Material }.value)
+            viewModel.setUiMode(UiMode.selectable.getOrElse(index) { UiMode.Minimal }.value)
         },
         onOpenProfileTemplate = { navigator.push(Route.AppProfileTemplate) },
         onSetSuCompatMode = viewModel::setSuCompatMode,

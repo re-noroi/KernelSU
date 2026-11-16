@@ -41,6 +41,7 @@ class SettingsViewModel(
             val miuixMonet = repo.miuixMonet
             val minimalMonet = repo.minimalMonet
             val minimalWallpaper = repo.minimalWallpaper
+            val minimalCardOpacity = repo.minimalCardOpacity
             val keyColor = repo.keyColor
             val enablePredictiveBack = repo.enablePredictiveBack
             val enableSwipeDismiss = repo.enableSwipeDismiss
@@ -123,6 +124,7 @@ class SettingsViewModel(
                     miuixMonet = miuixMonet,
                     minimalMonet = minimalMonet,
                     minimalWallpaper = minimalWallpaper,
+                    minimalCardOpacity = minimalCardOpacity,
                     showGpuVersion = repo.showGpuVersion,
                     keyColor = keyColor,
                     appIconMode = appIconMode,
@@ -178,7 +180,6 @@ class SettingsViewModel(
     fun setUiMode(mode: String) {
         val currentThemeMode = repo.themeMode
         val colorMode = ColorMode.fromValue(currentThemeMode)
-        val baseMode = if (colorMode == ColorMode.DARK_AMOLED) 2 else currentThemeMode
         val targetMonet = when (mode) {
             "miuix" -> repo.miuixMonet
             "minimal" -> repo.minimalMonet
@@ -186,11 +187,9 @@ class SettingsViewModel(
         }
 
         val newThemeMode = when {
-            targetMonet == true && !colorMode.isMonet ->
-                ColorMode.fromValue(baseMode).toMonetMode()
+            targetMonet == true && !colorMode.isMonet -> colorMode.toBaseMode().toMonetMode()
 
-            targetMonet == false && colorMode.isMonet ->
-                ColorMode.fromValue(baseMode).toNonMonetMode()
+            targetMonet == false && colorMode.isMonet -> colorMode.toNonMonetMode()
 
             else -> currentThemeMode
         }
@@ -227,11 +226,10 @@ class SettingsViewModel(
             "minimal" -> _uiState.value.minimalMonet
             else -> false
         }
-        val effectiveMode = if (monetEnabled) {
-            mode + 3
-        } else {
-            mode
-        }
+        // Re-apply the Monet bit instead of blind +3, so pitch black (which has
+        // its own Monet preset) stays valid.
+        val base = ColorMode.fromValue(mode).toBaseMode()
+        val effectiveMode = if (monetEnabled) base.toMonetMode() else base.value
         repo.themeMode = effectiveMode
         _uiState.update { it.copy(themeMode = effectiveMode) }
     }
@@ -270,6 +268,12 @@ class SettingsViewModel(
     fun setMinimalWallpaper(uri: String) {
         repo.minimalWallpaper = uri
         _uiState.update { it.copy(minimalWallpaper = uri) }
+    }
+
+    fun setMinimalCardOpacity(opacity: Float) {
+        val clamped = opacity.coerceIn(0.2f, 1f)
+        repo.minimalCardOpacity = clamped
+        _uiState.update { it.copy(minimalCardOpacity = clamped) }
     }
 
     fun setShowGpuVersion(enabled: Boolean) {

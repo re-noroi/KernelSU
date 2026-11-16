@@ -60,6 +60,7 @@ import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Dashboard
 import androidx.compose.material.icons.rounded.DesignServices
+import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Pin
 import androidx.compose.material.icons.rounded.Style
 import androidx.compose.material.icons.rounded.Swipe
@@ -118,6 +119,7 @@ import me.weishu.kernelsu.ui.component.material.TonalCard
 import me.weishu.kernelsu.ui.component.material.TopBarBackButton
 import me.weishu.kernelsu.ui.component.material.expressiveTopAppBarColors
 import me.weishu.kernelsu.ui.theme.ColorMode
+import me.weishu.kernelsu.ui.theme.flatMinimalScheme
 import me.weishu.kernelsu.ui.theme.keyColorOptions
 import me.weishu.kernelsu.ui.theme.rememberKernelSUColorScheme
 import kotlin.math.roundToInt
@@ -186,6 +188,8 @@ fun ColorPaletteScreenMaterial(
                     appIconMode = uiState.appIconMode,
                     enableFloatingBottomBar = uiState.enableFloatingBottomBar,
                     modernBento = uiState.modernBento,
+                    monet = if (isMinimal) uiState.minimalMonet else currentColorMode.isMonet,
+                    cardAlpha = uiState.minimalCardOpacity,
                 )
             }
 
@@ -226,56 +230,72 @@ fun ColorPaletteScreenMaterial(
             }
 
             item {
-                val options = listOf(
-                    listOf(ColorMode.SYSTEM) to stringResource(R.string.settings_theme_mode_system),
-                    listOf(ColorMode.LIGHT) to stringResource(R.string.settings_theme_mode_light),
-                    listOf(ColorMode.DARK) to stringResource(R.string.settings_theme_mode_dark),
-                    listOf(ColorMode.DARK_AMOLED) to stringResource(R.string.settings_theme_mode_dark)
-                )
-
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    options.chunked(4).forEach { rowOptions ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)
-                        ) {
-                            rowOptions.forEachIndexed { index, (modes, label) ->
-                                ExpressiveToggleButton(
-                                    checked = currentColorMode in modes,
-                                    onCheckedChange = {
-                                        if (it) {
-                                            haptic.performHapticFeedback(HapticFeedbackType.ContextClick)
-                                            actions.onSetColorMode(modes.first())
-                                        }
+                    Text(
+                        text = stringResource(R.string.settings_section_brightness),
+                        style = MaterialTheme.typography.titleSmallEmphasized,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    val options = listOf(
+                        ColorMode.SYSTEM to stringResource(R.string.settings_theme_mode_system),
+                        ColorMode.LIGHT to stringResource(R.string.settings_theme_mode_light),
+                        ColorMode.DARK to stringResource(R.string.settings_theme_mode_dark),
+                        ColorMode.DARK_AMOLED to stringResource(R.string.settings_theme_mode_black),
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)
+                    ) {
+                        options.forEachIndexed { index, (mode, label) ->
+                            val selectedMode = currentColorMode.toBaseMode()
+                            ExpressiveToggleButton(
+                                checked = selectedMode == mode,
+                                onCheckedChange = {
+                                    if (it) {
+                                        haptic.performHapticFeedback(HapticFeedbackType.ContextClick)
+                                        actions.onSetColorMode(mode.toModeFor(currentColorMode))
+                                    }
+                                },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .semantics { role = Role.RadioButton },
+                                shapes = when (index) {
+                                    0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
+                                    options.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
+                                    else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
+                                },
+                            ) {
+                                Icon(
+                                    imageVector = when (mode) {
+                                        ColorMode.SYSTEM -> Icons.Filled.Brightness4
+                                        ColorMode.LIGHT -> Icons.Filled.Brightness7
+                                        ColorMode.DARK -> Icons.Filled.Brightness3
+                                        else -> Icons.Filled.Brightness1
                                     },
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .semantics { role = Role.RadioButton },
-                                    shapes = when (index) {
-                                        0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
-                                        rowOptions.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
-                                        else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
-                                    },
-                                ) {
-                                    Icon(
-                                        imageVector = when (modes.first()) {
-                                            ColorMode.SYSTEM -> Icons.Filled.Brightness4
-                                            ColorMode.LIGHT -> Icons.Filled.Brightness7
-                                            ColorMode.DARK -> Icons.Filled.Brightness3
-                                            ColorMode.DARK_AMOLED -> Icons.Filled.Brightness1
-                                            else -> Icons.Filled.Brightness4
-                                        },
-                                        contentDescription = label
-                                    )
-                                }
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    text = label,
+                                    style = MaterialTheme.typography.labelLarge,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
                             }
                         }
                     }
+                    Text(
+                        text = stringResource(R.string.settings_section_brightness_summary),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
 
@@ -609,12 +629,17 @@ fun ColorPaletteScreenMaterial(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(13.dp)
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
+                        Text(
+                            text = stringResource(R.string.settings_section_appearance),
+                            style = MaterialTheme.typography.titleSmallEmphasized,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
                         SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
                             item {
                                 SegmentedSwitchItem(
-                                    icon = Icons.Rounded.Style,
+                                    icon = Icons.Rounded.Palette,
                                     title = stringResource(R.string.settings_minimal_monet),
                                     summary = stringResource(R.string.settings_minimal_monet_summary),
                                     checked = uiState.minimalMonet,
@@ -649,12 +674,65 @@ fun ColorPaletteScreenMaterial(
                             item {
                                 SegmentedSwitchItem(
                                     icon = Icons.Rounded.DeveloperBoard,
-                                    title = "Show GPU Version",
-                                    summary = "Display GPU model on the dashboard",
+                                    title = stringResource(R.string.settings_show_gpu_version),
+                                    summary = stringResource(R.string.settings_show_gpu_version_summary),
                                     checked = uiState.showGpuVersion,
                                     onCheckedChange = actions.onSetShowGpuVersion,
                                 )
                             }
+                        }
+                    }
+                }
+
+                item {
+                    TonalCard(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        val sliderState = rememberSliderState(
+                            value = uiState.minimalCardOpacity,
+                            trackRange = 0.2f..1f
+                        )
+
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Rounded.Dashboard,
+                                    contentDescription = stringResource(id = R.string.settings_minimal_card_opacity),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.settings_minimal_card_opacity),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.settings_minimal_card_opacity_summary),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Text(
+                                    text = "${(sliderState.value * 100).roundToInt()}%",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+
+                            Slider(
+                                state = sliderState,
+                                onValueChangeFinished = {
+                                    actions.onSetMinimalCardOpacity(sliderState.value)
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            )
                         }
                     }
                 }
@@ -678,6 +756,8 @@ private fun ThemePreviewCard(
     appIconMode: Int = 0,
     enableFloatingBottomBar: Boolean = false,
     modernBento: Boolean = true,
+    monet: Boolean = true,
+    cardAlpha: Float = 1f,
 ) {
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.toFloat()
@@ -685,12 +765,20 @@ private fun ThemePreviewCard(
     val screenRatio = screenWidth / screenHeight
     val useRail = useNavigationRail(enableFloatingBottomBar = enableFloatingBottomBar)
 
-    val colorScheme = rememberKernelSUColorScheme(
-        seedColor = if (keyColor == 0) Color.Unspecified else Color(keyColor),
-        isDark = isDark,
-        isAmoled = isAmoled,
-        paletteStyle = paletteStyle,
-        colorSpec = colorSpec,
+    // Preview the flat Minimal scheme itself, not the raw Material one, so the
+    // mock matches what the app will actually look like in that mode.
+    val colorScheme = flatMinimalScheme(
+        scheme = rememberKernelSUColorScheme(
+            seedColor = if (keyColor == 0) Color.Unspecified else Color(keyColor),
+            isDark = isDark,
+            isAmoled = isAmoled,
+            paletteStyle = paletteStyle,
+            colorSpec = colorSpec,
+        ),
+        dark = isDark,
+        amoled = isAmoled,
+        monet = monet,
+        cardAlpha = cardAlpha,
     )
 
     Box(
@@ -704,7 +792,7 @@ private fun ThemePreviewCard(
                 .fillMaxWidth(0.4f)
                 .aspectRatio(screenRatio)
                 .clip(RoundedCornerShape(20.dp))
-                .background(colorScheme.surface)
+                .background(colorScheme.background)
                 .border(1.dp, colorScheme.outlineVariant, RoundedCornerShape(20.dp))
         ) {
             val content = @Composable {
@@ -782,7 +870,7 @@ private fun ThemePreviewCard(
                                             .weight(1f)
                                             .height(26.dp)
                                             .clip(RoundedCornerShape(6.dp))
-                                            .background(colorScheme.surfaceBright)
+                                            .background(colorScheme.surfaceContainer)
                                             .padding(3.dp)
                                     ) {
                                         Box(
@@ -797,7 +885,7 @@ private fun ThemePreviewCard(
                                             .weight(1f)
                                             .height(26.dp)
                                             .clip(RoundedCornerShape(6.dp))
-                                            .background(colorScheme.surfaceBright)
+                                            .background(colorScheme.surfaceContainer)
                                             .padding(3.dp)
                                     ) {
                                         Box(
@@ -817,7 +905,7 @@ private fun ThemePreviewCard(
                                             .weight(1f)
                                             .height(26.dp)
                                             .clip(RoundedCornerShape(6.dp))
-                                            .background(colorScheme.surfaceBright)
+                                            .background(colorScheme.surfaceContainer)
                                             .padding(3.dp)
                                     ) {
                                         Box(
@@ -832,7 +920,7 @@ private fun ThemePreviewCard(
                                             .weight(1f)
                                             .height(26.dp)
                                             .clip(RoundedCornerShape(6.dp))
-                                            .background(colorScheme.surfaceBright)
+                                            .background(colorScheme.surfaceContainer)
                                             .padding(3.dp)
                                     ) {
                                         Box(
