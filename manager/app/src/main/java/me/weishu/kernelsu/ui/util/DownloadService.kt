@@ -42,7 +42,16 @@ import java.util.concurrent.ConcurrentHashMap
 enum class DownloadCompletionAction {
     INSTALL_MODULE,
     OPEN_FILE,
+
+    /**
+     * A downloaded manager update. The notification offers Install, which hands the APK to
+     * the system package installer instead of letting the user pick an app from a chooser.
+     */
+    INSTALL_APK,
 }
+
+/** MIME type Android maps to the package installer. */
+internal const val APK_MIME_TYPE = "application/vnd.android.package-archive"
 
 internal fun resolveDownloadMimeType(fileName: String, providedMimeType: String?): String =
     providedMimeType?.trim()?.takeIf { it.isNotEmpty() }
@@ -386,6 +395,12 @@ class DownloadService : Service() {
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
                 }, getString(R.string.open)), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             ).also { builder.addAction(android.R.drawable.ic_menu_view, getString(R.string.open), it) }
+            DownloadCompletionAction.INSTALL_APK -> PendingIntent.getActivity(
+                this, id, Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(uri, APK_MIME_TYPE)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+                }, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            ).also { builder.addAction(android.R.drawable.ic_menu_save, getString(R.string.download_install), it) }
         }
         builder.setContentIntent(primaryPendingIntent)
 
@@ -394,7 +409,9 @@ class DownloadService : Service() {
             action = ACTION_DISMISS_DOWNLOAD
             putExtra(EXTRA_DOWNLOAD_ID, id)
             putExtra(EXTRA_MODULE_URI, uri.toString())
-            putExtra(EXTRA_DELETE_FILE_ON_DISMISS, completionAction == DownloadCompletionAction.INSTALL_MODULE)
+            // Keep the file for OPEN_FILE (the user chose where it goes); delete our own
+            // transient downloads when the notification is dismissed.
+            putExtra(EXTRA_DELETE_FILE_ON_DISMISS, completionAction != DownloadCompletionAction.OPEN_FILE)
         }
         val dismissPendingIntent = PendingIntent.getService(
             this,

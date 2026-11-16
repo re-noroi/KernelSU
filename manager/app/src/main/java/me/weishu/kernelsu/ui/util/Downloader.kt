@@ -25,6 +25,8 @@ suspend fun download(
     onProgress: (Int) -> Unit = {},
     expected: ExpectedFile? = null,
     onFailed: (DownloadManager.DownloadState) -> Unit = {},
+    mimeType: String? = null,
+    completionAction: DownloadCompletionAction = DownloadCompletionAction.INSTALL_MODULE,
 ) {
     onDownloading()
 
@@ -32,6 +34,8 @@ suspend fun download(
         context = ksuApp,
         url = url,
         fileName = fileName,
+        mimeType = mimeType,
+        completionAction = completionAction,
         onCompleted = onDownloaded,
         expected = expected,
     )
@@ -46,6 +50,33 @@ suspend fun download(
     if (finalState?.status == DownloadManager.Status.FAILED) {
         withContext(Dispatchers.Main) { onFailed(finalState) }
     }
+}
+
+/**
+ * Downloads a manager update and posts a notification whose Install action hands the APK to
+ * the system package installer, so updating never leaves the app.
+ *
+ * The installer still asks for confirmation: no app can silently replace itself on a
+ * non-rooted device, and the APK must be signed with the same key as the installed build.
+ */
+suspend fun downloadManagerUpdate(
+    info: LatestVersionInfo,
+    onDownloading: () -> Unit = {},
+    onProgress: (Int) -> Unit = {},
+    onFailed: (DownloadManager.DownloadState) -> Unit = {},
+) {
+    val fileName = info.downloadUrl.substringAfterLast('/')
+        .takeIf { it.endsWith(".apk", ignoreCase = true) }
+        ?: "noroiSU_${info.versionCode}.apk"
+    download(
+        url = info.downloadUrl,
+        fileName = fileName,
+        onDownloading = onDownloading,
+        onProgress = onProgress,
+        onFailed = onFailed,
+        mimeType = APK_MIME_TYPE,
+        completionAction = DownloadCompletionAction.INSTALL_APK,
+    )
 }
 
 internal suspend fun isDownloadAvailable(uri: Uri): Boolean = withContext(Dispatchers.IO) {

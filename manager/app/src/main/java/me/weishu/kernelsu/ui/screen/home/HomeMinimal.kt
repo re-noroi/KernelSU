@@ -375,7 +375,7 @@ private fun MinimalStatusCard(
 }
 
 /**
- * App and driver update row. Tapping it opens the changelog and then the download,
+ * App update row. Tapping it opens the changelog and then downloads the APK in-app,
  * mirroring what Material and Miuix do from their smart pill, so the Minimal theme is
  * not limited to a decorative icon.
  */
@@ -385,8 +385,9 @@ private fun MinimalUpdateCard(
     actions: HomeActions,
 ) {
     val haptic = LocalHapticFeedback.current
+    val startUpdate = rememberManagerUpdateDownloader()
     val updateDialog = rememberConfirmDialog(
-        onConfirm = { actions.onOpenUrl(state.latestVersionInfo.downloadUrl) }
+        onConfirm = { startUpdate(state.latestVersionInfo) }
     )
     val changelogTitle = stringResource(R.string.module_changelog)
     val updateText = stringResource(R.string.module_update)
@@ -401,7 +402,7 @@ private fun MinimalUpdateCard(
         onClick = {
             haptic.performHapticFeedback(HapticFeedbackType.VirtualKey)
             if (state.latestVersionInfo.changelog.isEmpty()) {
-                actions.onOpenUrl(state.latestVersionInfo.downloadUrl)
+                startUpdate(state.latestVersionInfo)
             } else {
                 updateDialog.showConfirm(
                     title = changelogTitle,
