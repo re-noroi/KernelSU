@@ -79,6 +79,7 @@ import me.weishu.kernelsu.Natives
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.LocalKernelTool
 import me.weishu.kernelsu.ui.component.bottombar.RegisterTabReselect
+import me.weishu.kernelsu.ui.component.dialog.rememberConfirmDialog
 import me.weishu.kernelsu.ui.navigation3.Navigator
 import me.weishu.kernelsu.ui.navigation3.Route
 import me.weishu.kernelsu.ui.theme.LocalAppIconMode
@@ -132,6 +133,9 @@ fun HomePagerMinimal(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             MinimalStatusCard(state = state, actions = actions)
+            if (state.checkUpdateEnabled && state.hasUpdate) {
+                MinimalUpdateCard(state = state, actions = actions)
+            }
             MinimalQuickGrid(state = state, actions = actions)
             MinimalSpecsCard(state = state)
             MinimalFooter(actions = actions)
@@ -315,14 +319,6 @@ private fun MinimalStatusCard(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
-                if (state.hasUpdate && state.checkUpdateEnabled) {
-                    Icon(
-                        imageVector = Icons.Rounded.SystemUpdate,
-                        contentDescription = null,
-                        tint = accentColor,
-                        modifier = Modifier.size(18.dp),
-                    )
-                }
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -370,6 +366,90 @@ private fun MinimalStatusCard(
                     tint = MaterialTheme.colorScheme.error,
                 )
             }
+        }
+    }
+}
+
+/**
+ * App and driver update row. Tapping it opens the changelog and then the download,
+ * mirroring what Material and Miuix do from their smart pill, so the Minimal theme is
+ * not limited to a decorative icon.
+ */
+@Composable
+private fun MinimalUpdateCard(
+    state: HomeUiState,
+    actions: HomeActions,
+) {
+    val haptic = LocalHapticFeedback.current
+    val updateDialog = rememberConfirmDialog(
+        onConfirm = { actions.onOpenUrl(state.latestVersionInfo.downloadUrl) }
+    )
+    val changelogTitle = stringResource(R.string.module_changelog)
+    val updateText = stringResource(R.string.module_update)
+    val accent = MaterialTheme.colorScheme.primary
+
+    val title = stringResource(R.string.bento_smart_pill_update, state.latestVersionLabel)
+    // Same call to action Material uses in its UpdateCard.
+    val supporting = stringResource(R.string.new_version_available, state.latestVersionLabel)
+
+    MinimalCard(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.VirtualKey)
+            if (state.latestVersionInfo.changelog.isEmpty()) {
+                actions.onOpenUrl(state.latestVersionInfo.downloadUrl)
+            } else {
+                updateDialog.showConfirm(
+                    title = changelogTitle,
+                    content = state.latestVersionInfo.changelog,
+                    markdown = true,
+                    confirm = updateText,
+                )
+            }
+        },
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(accent.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.SystemUpdate,
+                    contentDescription = null,
+                    tint = accent,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = supporting,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Spacer(Modifier.width(8.dp))
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
         }
     }
 }

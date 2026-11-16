@@ -2,6 +2,19 @@ name: Build noroiSU Manager
 
 on:
   workflow_call:
+    outputs:
+      release_tag:
+        description: 'Tag for this build, e.g. 2026.11.16-173513'
+        value: ${{ jobs.generate-key.outputs.release_tag }}
+      build_ver:
+        description: 'Manager version name, e.g. 2026.11.16'
+        value: ${{ jobs.generate-key.outputs.build_ver }}
+      build_code:
+        description: 'Manager version code'
+        value: ${{ jobs.generate-key.outputs.build_code }}
+      apk_name:
+        description: 'File name of the repacked release APK'
+        value: ${{ jobs.repack-manager.outputs.apk_name }}
   workflow_dispatch:
   push:
 
@@ -182,8 +195,8 @@ jobs:
     needs: [build-manager, build-ksud, generate-key]
     if: always() && needs.build-manager.result == 'success' && needs.build-ksud.result == 'success' && needs.generate-key.result == 'success'
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    outputs:
+      apk_name: ${{ steps.publish.outputs.apk_name }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -238,20 +251,29 @@ jobs:
             -S "$SIGN_KEY_PASSWORD" \
             --strip
 
-      - name: Upload manager artifact
+      - name: Resolve APK name
+        id: publish
+        run: |
+          shopt -s nullglob
+          APKS=(dist/*.apk)
+          if [ ${#APKS[@]} -eq 0 ]; then
+            echo "::error::No APK produced by repack"
+            exit 1
+          fi
+          if [ ${#APKS[@]} -gt 1 ]; then
+            echo "::error::Expected exactly one APK in dist/, found ${#APKS[@]}: ${APKS[*]}"
+            exit 1
+          fi
+          echo "apk_name=$(basename "${APKS[0]}")" >> $GITHUB_OUTPUT
+
+      # GitHub always wraps artifacts in a storage .zip, so downloading this from the
+      # Actions UI still yields a zip — but it now holds nothing except the final
+      # ksud-injected, zipaligned, signed APK, so extracting gives you the installable
+      # file directly.
+      - name: Upload manager APK artifact
         uses: actions/upload-artifact@v7
         with:
-          name: manager
+          name: noroiSU-manager-${{ needs.generate-key.outputs.build_ver }}
           path: dist/*.apk
-
-      - name: Upload to GitHub Release
-        if: github.event_name != 'pull_request'
-        uses: softprops/action-gh-release@v3
-        with:
-          files: dist/*.apk
-          tag_name: ${{ needs.generate-key.outputs.release_tag }}
-          name: Release ${{ needs.generate-key.outputs.release_tag }}
-          generate_release_notes: true
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          if-no-files-found: error
+          retention-days: 30
