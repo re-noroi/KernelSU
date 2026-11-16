@@ -82,6 +82,7 @@ class MainActivityViewModel(
             "ui_mode",
             "minimal_monet",
             "minimal_wallpaper",
+            "minimal_card_opacity",
             KernelTool.PREF_KEY,
         )
     }

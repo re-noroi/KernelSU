@@ -443,12 +443,26 @@
     <string name="settings_minimal_monet">Monet colors</string>
     <string name="settings_minimal_monet_summary">Derive the accent palette from the system wallpaper</string>
     <string name="settings_minimal_wallpaper">Wallpaper</string>
+
     <string name="settings_minimal_wallpaper_summary">Pick an image from your gallery to use as the home background</string>
     <string name="settings_minimal_wallpaper_clear">Remove wallpaper</string>
+    <string name="settings_minimal_card_opacity">Box transparency</string>
+    <string name="settings_minimal_card_opacity_summary">How much of the wallpaper shows through every card. 100% keeps them fully solid.</string>
     <string name="settings_theme_summary">Choose the app theme mode.</string>
     <string name="settings_theme_mode_system">Follow system</string>
     <string name="settings_theme_mode_light">Light</string>
     <string name="settings_theme_mode_dark">Dark</string>
+    <string name="settings_theme_mode_black">Black</string>
+    <string name="settings_section_brightness">Brightness</string>
+    <string name="settings_section_brightness_summary">Auto follows the system light and dark setting. Black is true pitch black for OLED panels.</string>
+    <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_section_updates">Updates</string>
+    <string name="settings_section_general">General</string>
+    <string name="settings_section_advanced">Advanced</string>
+    <string name="settings_section_features">Features</string>
+    <string name="settings_section_about">About</string>
+    <string name="settings_show_gpu_version">Show GPU version</string>
+    <string name="settings_show_gpu_version_summary">Display the GPU model in device specs</string>
     <string name="settings_monet">Enable Monet</string>
     <string name="settings_key_color">Key color</string>
     <string name="settings_key_color_default">Default</string>

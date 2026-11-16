@@ -646,7 +646,7 @@ private fun ModuleShortcutSheet(
                     Box(
                         modifier = Modifier
                             .size(100.dp)
-                            .background(Color.White)
+                            .background(MaterialTheme.colorScheme.surfaceContainerLowest)
                     )
                     Image(
                         painter = AppInfo.appIconForeground(),

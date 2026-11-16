@@ -53,7 +53,12 @@ class SettingsRepositoryImpl : SettingsRepository {
     }
 
     override var uiMode: String
-        get() = prefs.getString("ui_mode", UiMode.DEFAULT_VALUE) ?: UiMode.DEFAULT_VALUE
+        get() {
+            val stored = prefs.getString("ui_mode", UiMode.DEFAULT_VALUE) ?: UiMode.DEFAULT_VALUE
+            // Only the skins listed in UiMode.selectable are valid now. Anything
+            // else (including the retired "material" value) falls back to Minimal.
+            return if (stored == UiMode.Miuix.value) UiMode.Miuix.value else UiMode.Minimal.value
+        }
         set(value) = prefs.edit { putString("ui_mode", value) }
 
     override var checkUpdate: Boolean
@@ -83,6 +88,10 @@ class SettingsRepositoryImpl : SettingsRepository {
     override var minimalWallpaper: String
         get() = prefs.getString("minimal_wallpaper", "").orEmpty()
         set(value) = prefs.edit { putString("minimal_wallpaper", value) }
+
+    override var minimalCardOpacity: Float
+        get() = prefs.getFloat("minimal_card_opacity", 1f).coerceIn(0.2f, 1f)
+        set(value) = prefs.edit { putFloat("minimal_card_opacity", value.coerceIn(0.2f, 1f)) }
 
     override var keyColor: Int
         get() = prefs.getInt("key_color", 0)

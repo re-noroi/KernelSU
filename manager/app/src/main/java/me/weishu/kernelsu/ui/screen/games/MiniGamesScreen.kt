@@ -56,13 +56,15 @@ fun MiniGamesScreen() {
 
     Scaffold(
         containerColor = if (isMinimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
+        // Transparent resolves to no content colour; keep the theme ink explicit.
+        contentColor = if (isMinimal) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurface,
         topBar = {
             TopAppBar(
                 title = {
                     Text(
                         text = stringResource(R.string.mini_games_title),
                         fontWeight = FontWeight.SemiBold,
-                        color = if (isMinimal) Color.White else MaterialTheme.colorScheme.onSurface,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                 },
                 navigationIcon = {
@@ -70,7 +72,7 @@ fun MiniGamesScreen() {
                         Icon(
                             imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                             contentDescription = null,
-                            tint = if (isMinimal) Color.White else MaterialTheme.colorScheme.onSurface,
+                            tint = MaterialTheme.colorScheme.onSurface,
                         )
                     }
                 },

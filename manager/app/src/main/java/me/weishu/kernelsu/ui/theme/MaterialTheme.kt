@@ -3,8 +3,11 @@ package me.weishu.kernelsu.ui.theme
 import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialExpressiveTheme
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MotionScheme
+import androidx.compose.material3.Shapes
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -21,6 +24,9 @@ fun MaterialKernelSUTheme(
     val systemDarkTheme = isSystemInDarkTheme()
     val darkTheme = appSettings.colorMode.isDark || (appSettings.colorMode.isSystem && systemDarkTheme)
     val amoledMode = appSettings.colorMode.isAmoled
+    // Monet is its own switch in the Minimal UI, independent of brightness, so a
+    // pitch-black theme can still use a Monet accent and a light theme can opt out.
+    val monet = if (minimal) appSettings.minimalMonet else appSettings.colorMode.isMonet
     val dynamicColor = appSettings.keyColor == 0
 
     val colorScheme = rememberKernelSUColorScheme(
@@ -42,31 +48,13 @@ fun MaterialKernelSUTheme(
     val animatedColorScheme = colorScheme.animateAsState()
 
     val finalColorScheme = if (minimal) {
-        val minimalColorScheme = animatedColorScheme.copy(
-            background = Color.Transparent,
-            surface = Color.Transparent,
-            surfaceContainer = Color.Black.copy(alpha = 0.75f),
-            surfaceContainerLow = Color.Black.copy(alpha = 0.75f),
-            surfaceContainerHigh = Color.Black.copy(alpha = 0.75f),
-            surfaceContainerHighest = Color.Black.copy(alpha = 0.75f),
-            surfaceBright = Color.Black.copy(alpha = 0.75f),
-            surfaceDim = Color.Black.copy(alpha = 0.75f),
-            onSurface = Color.White,
-            onSurfaceVariant = Color.LightGray,
-            onBackground = Color.White,
+        flatMinimalScheme(
+            scheme = animatedColorScheme,
+            dark = darkTheme,
+            amoled = amoledMode,
+            monet = monet,
+            cardAlpha = appSettings.minimalCardAlpha,
         )
-        if (appSettings.minimalMonet) {
-            minimalColorScheme
-        } else {
-            // Monet disabled: use a white accent so icons fall back to plain white.
-            minimalColorScheme.copy(
-                primary = Color.White,
-                onPrimary = Color.Black,
-                primaryContainer = Color.White.copy(alpha = 0.18f),
-                onPrimaryContainer = Color.White,
-                inversePrimary = Color.White,
-            )
-        }
     } else {
         animatedColorScheme
     }
@@ -75,6 +63,7 @@ fun MaterialKernelSUTheme(
         colorScheme = finalColorScheme,
         motionScheme = if (minimal) MotionScheme.standard() else MotionScheme.expressive(),
         typography = Typography,
+        shapes = if (minimal) FlatShapes else Shapes(),
         content = {
             MonetColorsProvider.UpdateCss(finalColorScheme)
             content()

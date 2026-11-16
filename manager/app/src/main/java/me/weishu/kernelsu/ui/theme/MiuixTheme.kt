@@ -58,7 +58,7 @@ fun MiuixKernelSUTheme(
             ColorMode.DARK -> ColorSchemeMode.Dark
             ColorMode.MONET_SYSTEM -> ColorSchemeMode.MonetSystem
             ColorMode.MONET_LIGHT -> ColorSchemeMode.MonetLight
-            ColorMode.MONET_DARK, ColorMode.DARK_AMOLED -> ColorSchemeMode.MonetDark
+            ColorMode.MONET_DARK, ColorMode.DARK_AMOLED, ColorMode.MONET_AMOLED -> ColorSchemeMode.MonetDark
         },
         keyColor = resolvedKeyColor,
         isDark = darkTheme,

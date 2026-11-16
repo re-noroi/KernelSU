@@ -87,8 +87,8 @@ annotation class SegmentedColumnDsl
 
 @Composable
 private fun defaultSegmentedColors(): ListItemColors = ListItemDefaults.segmentedColors(
-    containerColor = colorScheme.surfaceBright,
-    disabledContainerColor = colorScheme.surfaceBright,
+    containerColor = colorScheme.surfaceContainer,
+    disabledContainerColor = colorScheme.surfaceContainer,
     supportingContentColor = colorScheme.onSurfaceVariant
 )
 
@@ -279,7 +279,7 @@ fun SegmentedItemContainer(
     val shapes = LocalListItemShapes.current ?: ListItemDefaults.segmentedShapes(0, 1)
     Surface(
         modifier = modifier.fillMaxWidth(),
-        color = colorScheme.surfaceBright,
+        color = colorScheme.surfaceContainer,
         shape = shapes.shape,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {

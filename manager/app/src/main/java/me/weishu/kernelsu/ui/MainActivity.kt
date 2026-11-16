@@ -360,7 +360,11 @@ open class MainActivity : ComponentActivity() {
                 }
                     when (uiMode) {
                         UiMode.Material, UiMode.Minimal -> androidx.compose.material3.Scaffold(
-                            containerColor = if (uiMode == UiMode.Minimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer
+                            containerColor = if (uiMode == UiMode.Minimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
+                            // A transparent container has no matching content colour, so
+                            // Scaffold would pass Color.Unspecified down to LocalContentColor
+                            // and the pages would lose their ink. Name the theme ink instead.
+                            contentColor = if (uiMode == UiMode.Minimal) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurface,
                         ) { navDisplay() }
 
                         UiMode.Miuix -> Scaffold { navDisplay() }
@@ -587,7 +591,8 @@ fun MainScreen(
 
             when (uiMode) {
                 UiMode.Material, UiMode.Minimal -> androidx.compose.material3.Scaffold(
-                    containerColor = if (uiMode == UiMode.Minimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer
+                    containerColor = if (uiMode == UiMode.Minimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
+                    contentColor = if (uiMode == UiMode.Minimal) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurface,
                 ) {
                     Row {
                         SideRail(navigationBadge)
@@ -631,7 +636,8 @@ fun MainScreen(
             when (uiMode) {
                 UiMode.Material, UiMode.Minimal -> androidx.compose.material3.Scaffold(
                     bottomBar = bottomBar,
-                    containerColor = if (uiMode == UiMode.Minimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer
+                    containerColor = if (uiMode == UiMode.Minimal) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
+                    contentColor = if (uiMode == UiMode.Minimal) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurface,
                 ) { innerPadding ->
                     pagerContent(innerPadding.calculateBottomPadding())
                 }

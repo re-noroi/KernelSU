@@ -73,9 +73,11 @@ import me.weishu.kernelsu.ui.component.material.SegmentedDropdownItem
 import me.weishu.kernelsu.ui.component.material.SegmentedListItem
 import me.weishu.kernelsu.ui.component.material.SegmentedSwitchItem
 import me.weishu.kernelsu.ui.component.material.SendLogBottomSheet
+import me.weishu.kernelsu.ui.component.material.SectionHeader
 import me.weishu.kernelsu.ui.component.material.SnackBarHost
 import me.weishu.kernelsu.ui.component.material.expressiveTopAppBarColors
 import me.weishu.kernelsu.ui.component.uninstalldialog.UninstallDialog
+import me.weishu.kernelsu.ui.theme.ColorMode
 
 /**
  * @author weishu
@@ -118,6 +120,7 @@ fun SettingPagerMaterial(
                 .verticalScroll(scrollState)
         ) {
             KsuIsValid {
+                SectionHeader(stringResource(R.string.settings_section_updates))
                 SegmentedColumn(
                     modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
                     content = listOf(
@@ -170,6 +173,7 @@ fun SettingPagerMaterial(
                 )
             }
 
+            SectionHeader(stringResource(R.string.settings_section_appearance))
             SegmentedColumn(
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
                 content = buildList {
@@ -178,16 +182,28 @@ fun SettingPagerMaterial(
                             icon = Icons.Filled.DisplaySettings,
                             title = stringResource(id = R.string.settings_ui_mode),
                             summary = stringResource(id = R.string.settings_ui_mode_summary),
-                            items = UiMode.entries.map { it.name },
-                            selectedIndex = UiMode.indexOfValue(uiState.uiMode),
+                            items = UiMode.selectable.map { it.name },
+                            selectedIndex = UiMode.indexOfSelectable(uiState.uiMode),
                             onItemSelected = actions.onSetUiModeIndex
                         )
                     }
                     add {
+                        val mode = ColorMode.fromValue(uiState.themeMode)
+                        val modeLabel = when (mode.toBaseMode()) {
+                            ColorMode.SYSTEM -> stringResource(R.string.settings_theme_mode_system)
+                            ColorMode.LIGHT -> stringResource(R.string.settings_theme_mode_light)
+                            ColorMode.DARK -> stringResource(R.string.settings_theme_mode_dark)
+                            else -> stringResource(R.string.settings_theme_mode_black)
+                        }
+                        val monetSuffix = if (mode.isMonet) {
+                            " · " + stringResource(R.string.settings_minimal_monet)
+                        } else {
+                            ""
+                        }
                         SegmentedListItem(
                             onClick = actions.onOpenTheme,
                             headlineContent = { Text(stringResource(id = R.string.settings_theme)) },
-                            supportingContent = { Text(stringResource(id = R.string.settings_theme_summary)) },
+                            supportingContent = { Text(modeLabel + monetSuffix) },
                             leadingContent = { Icon(Icons.Filled.Palette, stringResource(id = R.string.settings_theme)) },
                             trailingContent = {
                                 Icon(
@@ -271,6 +287,7 @@ fun SettingPagerMaterial(
                 )
             }
 
+            SectionHeader(stringResource(R.string.settings_section_features))
             KsuIsValid {
                 val suCompatModeItems = listOf(
                     stringResource(id = R.string.settings_mode_enable_by_default),
@@ -467,6 +484,7 @@ fun SettingPagerMaterial(
                 )
             }
 
+            SectionHeader(stringResource(R.string.settings_section_about))
             SegmentedColumn(
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
                 content = listOf(
