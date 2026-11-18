@@ -22,12 +22,53 @@ data class CpuClusterLive(
     val maxFreqKhz: Long,
 )
 
+/**
+ * One read of the aggregate `cpu` line in `/proc/stat`, in clock ticks.
+ *
+ * The guest counters are deliberately not stored: the kernel already includes
+ * guest time in `user`/`nice`, so adding them again would count it twice.
+ */
+@Immutable
+data class CpuStatTimes(
+    val user: Long,
+    val nice: Long,
+    val system: Long,
+    val idle: Long,
+    val iowait: Long,
+    val irq: Long,
+    val softirq: Long,
+    val steal: Long,
+) {
+    /** Everything except guest time, which is already part of user/nice. */
+    val total: Long
+        get() = user + nice + system + idle + iowait + irq + softirq + steal
+
+    /** `iowait` counts as idle here, following Kernel Adiutor. */
+    val idleTotal: Long
+        get() = idle + iowait
+
+    fun isMonotonicFrom(previous: CpuStatTimes): Boolean =
+        user >= previous.user &&
+            nice >= previous.nice &&
+            system >= previous.system &&
+            idle >= previous.idle &&
+            iowait >= previous.iowait &&
+            irq >= previous.irq &&
+            softirq >= previous.softirq &&
+            steal >= previous.steal
+}
+
 @Immutable
 data class CpuLiveState(
     val cores: List<CpuCoreLive> = emptyList(),
     val clusters: List<CpuClusterLive> = emptyList(),
-    val loadPercent: Int = 0,
+    /** Real utilisation from `/proc/stat`; null until two samples are available. */
+    val loadPercent: Int? = null,
+    /** The normalised 1-minute load average, kept for comparison. */
+    val loadAvgPercent: Int = 0,
     val governor: String = "",
+    /** Raw counters used to derive [loadPercent] on the next refresh. */
+    val statTimes: CpuStatTimes? = null,
 ) {
     val available: Boolean get() = cores.isNotEmpty()
 }
@@ -107,7 +148,8 @@ object CpuMonitor {
             "g=\$(cat \"\$d/cpufreq/scaling_governor\" 2>/dev/null); " +
             "if [ -n \"\$m\" ]; then echo \"C|\${d##*cpu}|\$f|\$m|\$g\"; fi; " +
             "done; " +
-            "echo \"L|\$(cat /proc/loadavg 2>/dev/null)\""
+            "echo \"L|\$(cat /proc/loadavg 2>/dev/null)\"; " +
+            "echo \"S|\$(head -n 1 /proc/stat 2>/dev/null)\""
 
     private const val TIME_IN_STATE_COMMAND =
         "for f in /sys/devices/system/cpu/cpu[0-9]*/cpufreq/stats/time_in_state; do " +
@@ -130,6 +172,7 @@ object CpuMonitor {
 
         val cores = mutableListOf<CpuCoreLive>()
         var loadAverage = 0f
+        var statTimes: CpuStatTimes? = null
 
         raw.lineSequence().map { it.trim() }.filter { it.isNotEmpty() }.forEach { line ->
             when {
@@ -155,6 +198,9 @@ object CpuMonitor {
                         ?.toFloatOrNull() ?: 0f
                     loadAverage = load
                 }
+
+                line.startsWith("S|") ->
+                    statTimes = parseStatTimes(line.removePrefix("S|"))
             }
         }
 
@@ -182,9 +228,53 @@ object CpuMonitor {
         return CpuLiveState(
             cores = cores,
             clusters = clusters,
-            loadPercent = (loadAverage / coreCount * 100f).toInt().coerceAtLeast(0),
+            loadAvgPercent = (loadAverage / coreCount * 100f).toInt().coerceAtLeast(0),
             governor = governor,
+            statTimes = statTimes,
         )
+    }
+
+    /**
+     * Parses the `cpu` summary line of `/proc/stat`:
+     * `cpu user nice system idle iowait irq softirq steal guest guest_nice`.
+     * Missing optional columns (older kernels) default to zero.
+     */
+    fun parseStatTimes(raw: String?): CpuStatTimes? {
+        if (raw.isNullOrBlank()) return null
+        val parts = raw.trim().split(Regex("\\s+"))
+        if (parts.size < 5 || parts[0] != "cpu") return null
+
+        fun at(index: Int): Long = parts.getOrNull(index + 1)?.toLongOrNull() ?: 0L
+
+        return CpuStatTimes(
+            user = at(0),
+            nice = at(1),
+            system = at(2),
+            idle = at(3),
+            iowait = at(4),
+            irq = at(5),
+            softirq = at(6),
+            steal = at(7),
+        )
+    }
+
+    /**
+     * CPU utilisation between two `/proc/stat` reads, in percent.
+     *
+     * `irq`, `softirq` and `steal` count as work; `idle` and `iowait` count as
+     * idle. Kernel Adiutor uses the same split. This is why the result differs
+     * from the 1-minute load average: load average counts tasks waiting for
+     * I/O, while this measures actual CPU time.
+     *
+     * Returns null when the counters did not advance or went backwards.
+     */
+    fun computeLoad(previous: CpuStatTimes, current: CpuStatTimes): Int? {
+        if (!current.isMonotonicFrom(previous)) return null
+        val totalDelta = current.total - previous.total
+        val idleDelta = current.idleTotal - previous.idleTotal
+        if (totalDelta <= 0L || idleDelta < 0L) return null
+        val busyDelta = (totalDelta - idleDelta).coerceIn(0L, totalDelta)
+        return ((busyDelta * 100L + totalDelta / 2L) / totalDelta).toInt().coerceIn(0, 100)
     }
 
     fun parseTimeInState(raw: String?): CpuTimeSnapshot? {

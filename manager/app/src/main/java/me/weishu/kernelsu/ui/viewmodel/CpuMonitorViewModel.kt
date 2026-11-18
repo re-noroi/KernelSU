@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.weishu.kernelsu.data.cpu.CpuLiveState
 import me.weishu.kernelsu.data.cpu.CpuMonitor
+import me.weishu.kernelsu.data.cpu.CpuStatTimes
 import me.weishu.kernelsu.data.cpu.CpuStatsClusterStats
 import me.weishu.kernelsu.data.cpu.CpuStatsStore
 import me.weishu.kernelsu.data.cpu.CpuTimeSnapshot
@@ -51,13 +52,36 @@ class CpuMonitorViewModel : ViewModel() {
     private var liveRunning = false
     private var statsRunning = false
 
+    /** Counter read paired with the previous live refresh, for the load delta. */
+    private var lastStatTimes: CpuStatTimes? = null
+    private var lastStatAtElapsedMs = 0L
+
     fun refreshLive() {
         if (liveRunning) return
         liveRunning = true
         viewModelScope.launch {
             try {
                 val live = withContext(Dispatchers.IO) { CpuMonitor.readLive() }
-                _uiState.update { it.copy(live = live, liveLoaded = true) }
+                val now = SystemClock.elapsedRealtime()
+                val elapsed = now - lastStatAtElapsedMs
+                val statTimes = live.statTimes
+                val previous = lastStatTimes
+                val load = when {
+                    statTimes == null -> null
+                    previous == null || elapsed > MAX_SAMPLE_GAP_MS -> null
+                    else -> CpuMonitor.computeLoad(previous, statTimes)
+                        // A very quick manual refresh may span no tick at all;
+                        // keep the last value instead of flashing "reading".
+                        ?: _uiState.value.live.loadPercent
+                }
+                lastStatTimes = statTimes
+                lastStatAtElapsedMs = now
+                _uiState.update {
+                    it.copy(
+                        live = live.copy(loadPercent = load),
+                        liveLoaded = true,
+                    )
+                }
             } finally {
                 liveRunning = false
             }
@@ -180,5 +204,8 @@ class CpuMonitorViewModel : ViewModel() {
     private companion object {
         /** Avoids drawing a table from a few hundred milliseconds of data. */
         const val MIN_WINDOW_MS = 2_000L
+
+        /** A gap larger than this means the tab was in the background. */
+        const val MAX_SAMPLE_GAP_MS = 5_000L
     }
 }

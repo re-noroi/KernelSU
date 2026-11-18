@@ -892,7 +892,9 @@ Apakah Anda ingin memulihkan profil ini?</string>
     <string name="cpu_monitor_reading">Membaca data CPU…</string>
     <string name="cpu_monitor_unavailable">Perangkat ini tidak menyediakan informasi frekuensi CPU.</string>
     <string name="cpu_monitor_offline">Mati</string>
-    <string name="cpu_monitor_system_load">Beban sistem: %1$d%%</string>
+    <string name="cpu_monitor_load">Beban: %1$d%%</string>
+    <string name="cpu_monitor_load_average">Rata-rata beban: %1$d%%</string>
+    <string name="cpu_monitor_load_reading">Beban: membaca…</string>
     <string name="cpu_monitor_cluster_max_freq">Frekuensi maks kluster %1$s: %2$s</string>
     <string name="cpu_monitor_governor">Governor: %1$s</string>
     <string name="cpu_monitor_cluster_cpu">CPU</string>
