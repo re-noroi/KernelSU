@@ -37,6 +37,7 @@ fun TuningScreen(
     val actions = TuningActions(
         onBack = dropUnlessResumed { navigator.pop() },
         onOpenMemoryMonitor = dropUnlessResumed { navigator.push(Route.MemoryMonitor) },
+        onOpenCpuMonitor = dropUnlessResumed { navigator.push(Route.CpuMonitor) },
         onOpenBattery = dropUnlessResumed { navigator.push(Route.Battery) },
         onOpenThermalMonitor = dropUnlessResumed { navigator.push(Route.ThermalMonitor) },
         onOpenThermalApps = dropUnlessResumed { navigator.push(Route.TuningThermalApps) },

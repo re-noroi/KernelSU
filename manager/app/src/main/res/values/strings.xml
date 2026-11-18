@@ -887,4 +887,34 @@
     <string name="battery_monitor_stats_label_power_radio">Radio</string>
     <string name="battery_monitor_stats_label_power_memory">Memory</string>
     <string name="battery_monitor_stats_label_power_ambient">Ambient display</string>
+
+    <!-- CPU monitor -->
+    <string name="cpu_monitor_title">CPU monitor</string>
+    <string name="cpu_monitor_entry_summary">Live per-core frequencies, load and time-in-state statistics</string>
+    <string name="cpu_monitor_live_title">CPU</string>
+    <string name="cpu_monitor_reading">Reading CPU data…</string>
+    <string name="cpu_monitor_unavailable">This device did not expose CPU frequency information.</string>
+    <string name="cpu_monitor_offline">Offline</string>
+    <string name="cpu_monitor_system_load">System load: %1$d%%</string>
+    <string name="cpu_monitor_cluster_max_freq">%1$s cluster max freq: %2$s</string>
+    <string name="cpu_monitor_governor">Governor: %1$s</string>
+    <string name="cpu_monitor_cluster_cpu">CPU</string>
+    <string name="cpu_monitor_cluster_little">Little</string>
+    <string name="cpu_monitor_cluster_big">Big</string>
+    <string name="cpu_monitor_cluster_prime">Prime</string>
+    <string name="cpu_monitor_cluster_number">Cluster %1$d</string>
+    <string name="cpu_monitor_stats_title">CPU statistics</string>
+    <string name="cpu_monitor_stats_summary">Time spent at each frequency, counted by the kernel since the last reset</string>
+    <string name="cpu_monitor_stats_reset">Reset CPU statistics</string>
+    <string name="cpu_monitor_stats_resetting">Restarting measurement…</string>
+    <string name="cpu_monitor_stats_waiting">Collecting data. Frequencies appear after the first samples.</string>
+    <string name="cpu_monitor_stats_unavailable">This kernel does not expose per-frequency CPU time.</string>
+    <string name="cpu_monitor_stats_window">Window: %1$s</string>
+    <string name="cpu_monitor_stats_since">Since enabled or last reset</string>
+    <string name="cpu_monitor_stats_deep_sleep">Deep sleep</string>
+    <string name="cpu_monitor_unit_days">%1$d d</string>
+    <string name="cpu_monitor_unit_hours">%1$d h</string>
+    <string name="cpu_monitor_unit_minutes">%1$d m</string>
+    <string name="cpu_monitor_unit_seconds">%1$d s</string>
+    <string name="cpu_monitor_refresh">Refresh</string>
 </resources>

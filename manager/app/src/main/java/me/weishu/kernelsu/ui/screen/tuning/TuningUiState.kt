@@ -75,6 +75,7 @@ data class ThermalAppMapping(
 data class TuningActions(
     val onBack: () -> Unit,
     val onOpenMemoryMonitor: () -> Unit,
+    val onOpenCpuMonitor: () -> Unit,
     val onOpenBattery: () -> Unit,
     val onOpenThermalMonitor: () -> Unit,
     val onOpenThermalApps: () -> Unit,
