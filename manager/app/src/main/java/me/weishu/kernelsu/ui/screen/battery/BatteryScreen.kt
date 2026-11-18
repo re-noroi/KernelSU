@@ -6,6 +6,7 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,6 +28,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.Icon
@@ -71,6 +73,7 @@ import me.weishu.kernelsu.ui.component.material.TonalCard
 import me.weishu.kernelsu.ui.component.material.TopBarBackButton
 import me.weishu.kernelsu.ui.component.material.expressiveTopAppBarColors
 import me.weishu.kernelsu.ui.navigation3.LocalNavigator
+import me.weishu.kernelsu.ui.navigation3.Route
 import me.weishu.kernelsu.ui.screen.tuning.BatteryInfoRows
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.util.BlurredBar
@@ -198,6 +201,13 @@ private fun BatteryScreenMaterial(
                     onReset = onResetMonitor,
                 )
             }
+            if (monitorEnabled) {
+                item {
+                    BatteryMonitorStatsCardMaterial(
+                        onClick = { navigator.push(Route.BatteryMonitorStats) },
+                    )
+                }
+            }
             item {
                 TonalCard(
                     modifier = Modifier
@@ -283,6 +293,13 @@ private fun BatteryScreenMiuix(
                         onToggle = onMonitorToggle,
                         onReset = onResetMonitor,
                     )
+                }
+                if (monitorEnabled) {
+                    item {
+                        BatteryMonitorStatsCardMiuix(
+                            onClick = { navigator.push(Route.BatteryMonitorStats) },
+                        )
+                    }
                 }
                 item {
                     Card(modifier = Modifier.fillMaxWidth()) {
@@ -375,6 +392,77 @@ private fun BatteryMonitorCardMiuix(
                 )
             }
             MiuixSwitch(checked = enabled, onCheckedChange = onToggle)
+        }
+    }
+}
+
+@Composable
+private fun BatteryMonitorStatsCardMaterial(
+    onClick: () -> Unit,
+) {
+    TonalCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 4.dp),
+        shape = RoundedCornerShape(16.dp),
+        onClick = onClick,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                Text(
+                    text = stringResource(R.string.battery_monitor_stats_open),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Medium,
+                )
+                Text(
+                    text = stringResource(R.string.battery_monitor_stats_summary),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 13.sp,
+                )
+            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun BatteryMonitorStatsCardMiuix(
+    onClick: () -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 12.dp)
+            .clickable(onClick = onClick),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                Text(
+                    text = stringResource(R.string.battery_monitor_stats_open),
+                    color = colorScheme.onSurface,
+                    fontWeight = FontWeight.Medium,
+                )
+                Text(
+                    text = stringResource(R.string.battery_monitor_stats_summary),
+                    color = colorScheme.onSurfaceVariantSummary,
+                    fontSize = 13.sp,
+                )
+            }
+            MiuixIcon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = colorScheme.onSurfaceVariantSummary,
+            )
         }
     }
 }
