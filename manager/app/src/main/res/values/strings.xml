@@ -950,10 +950,10 @@
     <string name="wakelocks_resetting">Restarting measurement…</string>
     <string name="wakelocks_reading">Reading wake-source data…</string>
     <string name="wakelocks_empty">No wakelock has been held since the last reset.</string>
-    <string name="wakelocks_unavailable">This kernel does not expose wake-source counters.</string>
+    <string name="wakelocks_unavailable">No wake-lock counters are readable on this device.</string>
     <string name="wakelocks_window">Window: %1$s</string>
     <string name="wakelocks_since">Since enabled or last reset</string>
-    <string name="wakelocks_note">Names come from the kernel; app job and sync tags are not included.</string>
+    <string name="wakelocks_note">Kernel wake sources and app job/sync tags, whichever the system exposes.</string>
     <string name="wakelocks_refresh">Refresh</string>
     <string name="wakelocks_unit_days">%1$d d</string>
     <string name="wakelocks_unit_hours">%1$d h</string>

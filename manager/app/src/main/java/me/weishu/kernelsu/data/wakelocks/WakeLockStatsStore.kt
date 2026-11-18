@@ -28,9 +28,9 @@ class WakeLockStatsStore(context: Context) {
 
     fun baseline(): WakeLockBaseline? {
         val raw = prefs.getString(KEY_BASELINE, null) ?: return null
-        // An empty snapshot serialises to an empty string; a missing baseline
-        // is a null preference, which was already handled above.
-        val snapshot = if (raw.isEmpty()) {
+        // An empty snapshot still serialises a `source=` header, so a stored
+        // empty string can only come from the old format.
+        val snapshot = if (raw.isBlank()) {
             WakeLockSnapshot(emptyMap())
         } else {
             WakeLockSnapshot.parse(raw) ?: return null
