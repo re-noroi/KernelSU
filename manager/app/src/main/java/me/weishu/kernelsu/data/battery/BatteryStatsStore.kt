@@ -25,6 +25,7 @@ class BatteryStatsStore(context: Context) {
     private var lastUptime = prefs.getLong(KEY_UPTIME, 0L)
     private var lastLevel = prefs.getInt(KEY_LEVEL, -1)
     private var lastScreenOn = prefs.getBoolean(KEY_LAST_SCREEN_ON, true)
+    private var lastCharging = prefs.getBoolean(KEY_LAST_CHARGING, false)
 
     var screenOnMillis: Long = prefs.getLong(KEY_SCREEN_ON, 0L)
         private set
@@ -66,6 +67,15 @@ class BatteryStatsStore(context: Context) {
             0f
         }
 
+    /**
+     * Rates are only meaningful once a state has been observed long enough for
+     * a single percentage step to stop reading as a wild extrapolation. Callers
+     * show a placeholder while these are false instead of a bogus `0.00`.
+     */
+    val hasActiveRate: Boolean get() = screenOnMillis >= MIN_RATE_WINDOW
+
+    val hasIdleRate: Boolean get() = screenOffMillis >= MIN_RATE_WINDOW
+
     val deepSleepShare: Float
        get() = if (screenOffMillis > 0L) deepSleepMillis.toFloat() / screenOffMillis else 0f
 
@@ -76,6 +86,9 @@ class BatteryStatsStore(context: Context) {
      * Folds the time since the previous settle into the totals, and attributes
      * any percentage drop to the state that was active. Safe to call as often
      * as the caller likes: it only reads clocks and does arithmetic.
+     *
+     * @return true when the device left the charger and every counter was
+     * reset, so callers can persist the zeros immediately.
      */
     fun settle(
         level: Int,
@@ -83,15 +96,37 @@ class BatteryStatsStore(context: Context) {
         charging: Boolean,
         nowElapsed: Long = SystemClock.elapsedRealtime(),
         nowUptime: Long = SystemClock.uptimeMillis(),
-    ) {
+    ): Boolean {
         // First sample, or the device rebooted and both clocks restarted. Keep
         // the cumulative totals but rebase, otherwise the delta would be bogus.
         if (lastElapsed == 0L || nowElapsed < lastElapsed || nowUptime < lastUptime) {
             lastElapsed = nowElapsed
             lastUptime = nowUptime
             lastLevel = level
-            return
+            lastCharging = charging
+            return false
         }
+
+        // Unplugging starts a fresh measurement window: everything collected
+        // so far belongs to the cycle that just ended, and the raw "since last
+        // charge" section below restarts at the same moment. Without this the
+        // drain percentages would accumulate across charges and could read
+        // well over 100%. Durations reset with them so the two always agree.
+        if (!charging && lastCharging) {
+            screenOnMillis = 0L
+            screenOffMillis = 0L
+            deepSleepMillis = 0L
+            awakeMillis = 0L
+            screenOnPercent = 0f
+            screenOffPercent = 0f
+            lastCharging = false
+            lastScreenOn = screenOn
+            lastElapsed = nowElapsed
+            lastUptime = nowUptime
+            lastLevel = level
+            return true
+        }
+        lastCharging = charging
 
         val wall = nowElapsed - lastElapsed
         val awake = (nowUptime - lastUptime).coerceAtMost(wall)
@@ -118,6 +153,7 @@ class BatteryStatsStore(context: Context) {
         lastScreenOn = screenOn
         lastElapsed = nowElapsed
         lastUptime = nowUptime
+        return false
     }
 
     fun persist() {
@@ -126,6 +162,7 @@ class BatteryStatsStore(context: Context) {
             putLong(KEY_UPTIME, lastUptime)
             putInt(KEY_LEVEL, lastLevel)
             putBoolean(KEY_LAST_SCREEN_ON, lastScreenOn)
+            putBoolean(KEY_LAST_CHARGING, lastCharging)
             putLong(KEY_SCREEN_ON, screenOnMillis)
             putLong(KEY_SCREEN_OFF, screenOffMillis)
             putLong(KEY_DEEP_SLEEP, deepSleepMillis)
@@ -140,6 +177,7 @@ class BatteryStatsStore(context: Context) {
         lastUptime = 0L
         lastLevel = -1
         lastScreenOn = true
+        lastCharging = false
         screenOnMillis = 0L
         screenOffMillis = 0L
         deepSleepMillis = 0L
@@ -155,6 +193,7 @@ class BatteryStatsStore(context: Context) {
         const val KEY_UPTIME = "uptime"
         const val KEY_LEVEL = "level"
         const val KEY_LAST_SCREEN_ON = "last_screen_on"
+        const val KEY_LAST_CHARGING = "last_charging"
         const val KEY_SCREEN_ON = "screen_on_ms"
         const val KEY_SCREEN_OFF = "screen_off_ms"
         const val KEY_DEEP_SLEEP = "deep_sleep_ms"

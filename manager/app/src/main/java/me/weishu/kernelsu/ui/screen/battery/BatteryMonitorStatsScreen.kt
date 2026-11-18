@@ -30,6 +30,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeFlexibleTopAppBar
@@ -50,14 +51,19 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.data.battery.BatteryStatsDump
 import me.weishu.kernelsu.data.battery.BatteryStatsDumper
+import me.weishu.kernelsu.data.battery.BatteryStatsFailure
 import me.weishu.kernelsu.data.battery.BatteryStatsStore
 import me.weishu.kernelsu.ui.LocalUiMode
 import me.weishu.kernelsu.ui.UiMode
@@ -85,14 +91,16 @@ import java.util.Locale
  * Detailed battery telemetry, reached from the Battery screen when the
  * persistent monitor is enabled.
  *
- * The monitor's own counters are read from its preferences every two seconds
- * (cheap). `dumpsys batterystats`, which supplies the raw since-charge and
+ * The monitor's own counters are read from its preferences every few seconds
+ * (cheap, and persisted on every screen/power transition by the service).
+ * `dumpsys batterystats`, which supplies the raw since-charge and
  * estimated-power sections, is run only when the screen opens or the user
  * explicitly refreshes — running it on a timer would be the expensive part.
  */
 @Composable
 fun BatteryMonitorStatsScreen() {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     var monitor by remember { mutableStateOf(BatteryStatsStore(context)) }
     var dump by remember { mutableStateOf(BatteryStatsDump()) }
     var loading by remember { mutableStateOf(true) }
@@ -100,16 +108,20 @@ fun BatteryMonitorStatsScreen() {
 
     LaunchedEffect(refreshKey) {
         loading = true
-        dump = BatteryStatsDumper.read()
+        // The first read may reuse a dump cached moments ago; an explicit
+        // refresh always bypasses it.
+        dump = BatteryStatsDumper.read(force = refreshKey > 0)
         loading = false
     }
 
-    // The service persists once a minute; re-reading prefs here is only a few
-    // field reads and keeps the screen live without touching dumpsys.
-    LaunchedEffect(Unit) {
-        while (isActive) {
-            monitor = BatteryStatsStore(context)
-            delay(2_000L)
+    // Only while visible: the service persists on screen and power
+    // transitions, so there is nothing worth waking up for in the background.
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (isActive) {
+                monitor = BatteryStatsStore(context)
+                delay(5_000L)
+            }
         }
     }
 
@@ -290,19 +302,39 @@ private fun StatsContent(
     contentPadding: PaddingValues,
 ) {
     val capacityMah = dump.valueOf("Last learned battery capacity")
+        // Some builds group thousands ("4,000 mAh"); strip the separators
+        // before taking the numeric part.
+        ?.replace(",", "")
         ?.let { Regex("[0-9]+(?:\\.[0-9]+)?").find(it)?.value?.toFloatOrNull() }
 
+    // Labels arrive from `dumpsys` in English; map the known ones and leave
+    // anything newer as the device reported it.
+    val sinceRows = mutableListOf<Pair<String, String>>()
+    dump.sinceCharge.forEach { row ->
+        sinceRows += localizeLabel(row.label) to row.value
+    }
+    val powerRows = mutableListOf<Pair<String, String>>()
+    dump.powerUse.forEach { row ->
+        powerRows += localizeLabel(row.label) to row.value
+    }
+
     LazyColumn(modifier = modifier, contentPadding = contentPadding) {
+        if (loading || !dump.available) {
+            item {
+                StatsStatus(loading = loading, failure = dump.failure, colors = colors)
+            }
+        }
         item {
             StatsSection(
                 title = stringResource(R.string.battery_monitor_stats_screen_on),
+                subtitle = stringResource(R.string.battery_monitor_stats_since_charge),
                 rows = listOf(
                     stringResource(R.string.battery_monitor_stats_duration) to
                         formatSpan(monitor.screenOnMillis),
                     stringResource(R.string.battery_monitor_stats_battery_drained) to
                         formatDrained(monitor.screenOnPercent, capacityMah),
                     stringResource(R.string.battery_monitor_stats_active_drain) to
-                        formatRate(monitor.activeDrainPerHour),
+                        formatRate(monitor.activeDrainPerHour, monitor.hasActiveRate),
                 ),
                 isMiuix = isMiuix,
                 colors = colors,
@@ -311,6 +343,7 @@ private fun StatsContent(
         item {
             StatsSection(
                 title = stringResource(R.string.battery_monitor_stats_screen_off),
+                subtitle = stringResource(R.string.battery_monitor_stats_since_charge),
                 rows = listOf(
                     stringResource(R.string.battery_monitor_stats_duration) to
                         formatSpan(monitor.screenOffMillis),
@@ -321,45 +354,65 @@ private fun StatsContent(
                     stringResource(R.string.battery_monitor_stats_awake) to
                         formatShare(formatSpan(monitor.awakeMillis), monitor.awakeShare),
                     stringResource(R.string.battery_monitor_stats_idle_drain) to
-                        formatRate(monitor.idleDrainPerHour),
+                        formatRate(monitor.idleDrainPerHour, monitor.hasIdleRate),
                 ),
                 isMiuix = isMiuix,
                 colors = colors,
             )
         }
-        if (dump.powerUse.isNotEmpty()) {
+        if (powerRows.isNotEmpty()) {
             item {
                 StatsSection(
                     title = stringResource(R.string.battery_monitor_stats_power_use),
-                    rows = dump.powerUse.map { it.label to it.value },
+                    subtitle = stringResource(R.string.battery_monitor_stats_since_charge),
+                    rows = powerRows,
                     isMiuix = isMiuix,
                     colors = colors,
                 )
             }
         }
-        item {
-            StatsSection(
-                title = stringResource(R.string.battery_monitor_stats_raw),
-                rows = dump.sinceCharge.map { it.label to it.value },
-                isMiuix = isMiuix,
-                colors = colors,
-            )
-        }
-        item {
-            val message = when {
-                loading -> stringResource(R.string.battery_monitor_stats_loading)
-                !dump.available -> stringResource(R.string.battery_monitor_stats_unavailable)
-                else -> null
-            }
-            if (message != null) {
-                Text(
-                    text = message,
-                    color = colors.label,
-                    fontSize = 13.sp,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+        if (sinceRows.isNotEmpty()) {
+            item {
+                StatsSection(
+                    title = stringResource(R.string.battery_monitor_stats_raw),
+                    rows = sinceRows,
+                    isMiuix = isMiuix,
+                    colors = colors,
                 )
             }
         }
+    }
+}
+
+/**
+ * Loading spinner and failure reason, above the sections so it is visible
+ * without scrolling past the whole raw dump.
+ */
+@Composable
+private fun StatsStatus(
+    loading: Boolean,
+    failure: BatteryStatsFailure,
+    colors: StatsColors,
+) {
+    val message = when {
+        loading -> stringResource(R.string.battery_monitor_stats_loading)
+        failure == BatteryStatsFailure.NO_ROOT ->
+            stringResource(R.string.battery_monitor_stats_no_root)
+        else -> stringResource(R.string.battery_monitor_stats_unavailable)
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (loading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(16.dp),
+                color = colors.accent,
+                strokeWidth = 2.dp,
+            )
+        }
+        Text(text = message, color = colors.label, fontSize = 13.sp)
     }
 }
 
@@ -369,6 +422,7 @@ private fun StatsSection(
     rows: List<Pair<String, String>>,
     isMiuix: Boolean,
     colors: StatsColors,
+    subtitle: String? = null,
 ) {
     val content: @Composable () -> Unit = {
         Column {
@@ -389,10 +443,21 @@ private fun StatsSection(
                     fontWeight = FontWeight.SemiBold,
                 )
             }
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    color = colors.label,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(start = 31.dp, end = 16.dp, bottom = 4.dp),
+                )
+            }
             Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
                 rows.forEachIndexed { index, (label, value) ->
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 9.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .semantics(mergeDescendants = true) {}
+                            .padding(vertical = 9.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.Top,
                     ) {
@@ -440,6 +505,56 @@ private fun StatsSection(
     }
 }
 
+/** Known `dumpsys` labels, translated; unknown ones fall back to the raw text. */
+private fun labelRes(label: String): Int? = when (label) {
+    "Last learned battery capacity" -> R.string.battery_monitor_stats_label_capacity
+    "Time on battery" -> R.string.battery_monitor_stats_label_time_on_battery
+    "Time on battery screen off" -> R.string.battery_monitor_stats_label_time_on_battery_off
+    "Time on battery screen doze" -> R.string.battery_monitor_stats_label_time_on_battery_doze
+    "Total run time" -> R.string.battery_monitor_stats_label_total_run_time
+    "Battery time remaining" -> R.string.battery_monitor_stats_label_time_remaining
+    "Discharge" -> R.string.battery_monitor_stats_label_discharge
+    "Screen off discharge" -> R.string.battery_monitor_stats_label_screen_off_discharge
+    "Screen doze discharge" -> R.string.battery_monitor_stats_label_screen_doze_discharge
+    "Screen on discharge" -> R.string.battery_monitor_stats_label_screen_on_discharge
+    "Device light doze discharge" -> R.string.battery_monitor_stats_label_light_doze_discharge
+    "Device deep doze discharge" -> R.string.battery_monitor_stats_label_deep_doze_discharge
+    "Start clock time" -> R.string.battery_monitor_stats_label_start_clock
+    "Screen on" -> R.string.battery_monitor_stats_label_screen_on
+    "Device light idling" -> R.string.battery_monitor_stats_label_device_light_idling
+    "Idle mode light time" -> R.string.battery_monitor_stats_label_idle_light_time
+    "Device full idling" -> R.string.battery_monitor_stats_label_device_full_idling
+    "Idle mode full time" -> R.string.battery_monitor_stats_label_idle_full_time
+    "Connectivity changes" -> R.string.battery_monitor_stats_label_connectivity
+    "Total full wakelock time" -> R.string.battery_monitor_stats_label_full_wakelock
+    "Total partial wakelock time" -> R.string.battery_monitor_stats_label_partial_wakelock
+    "Total WiFi Multicast wakelock Count" -> R.string.battery_monitor_stats_label_wifi_multicast_count
+    "Total WiFi Multicast wakelock time" -> R.string.battery_monitor_stats_label_wifi_multicast_time
+
+    "Screen" -> R.string.battery_monitor_stats_label_power_screen
+    "CPU" -> R.string.battery_monitor_stats_label_power_cpu
+    "Idle" -> R.string.battery_monitor_stats_label_power_idle
+    "Wifi" -> R.string.battery_monitor_stats_label_power_wifi
+    "Mobile network" -> R.string.battery_monitor_stats_label_power_mobile
+    "Phone" -> R.string.battery_monitor_stats_label_power_phone
+    "Bluetooth" -> R.string.battery_monitor_stats_label_power_bluetooth
+    "Sensor" -> R.string.battery_monitor_stats_label_power_sensor
+    "Camera" -> R.string.battery_monitor_stats_label_power_camera
+    "Flashlight" -> R.string.battery_monitor_stats_label_power_flashlight
+    "Audio" -> R.string.battery_monitor_stats_label_power_audio
+    "Video" -> R.string.battery_monitor_stats_label_power_video
+    "Radio" -> R.string.battery_monitor_stats_label_power_radio
+    "Memory" -> R.string.battery_monitor_stats_label_power_memory
+    "Ambient display" -> R.string.battery_monitor_stats_label_power_ambient
+    else -> null
+}
+
+@Composable
+private fun localizeLabel(label: String): String {
+    val res = labelRes(label)
+    return if (res != null) stringResource(res) else label
+}
+
 @Composable
 private fun formatDrained(percent: Float, capacityMah: Float?): String {
     val label = String.format(Locale.US, "%.0f%%", percent)
@@ -452,10 +567,13 @@ private fun formatDrained(percent: Float, capacityMah: Float?): String {
 }
 
 @Composable
-private fun formatRate(value: Float): String = stringResource(
-    R.string.battery_monitor_stats_rate,
-    String.format(Locale.US, "%.2f", value),
-)
+private fun formatRate(value: Float, available: Boolean): String = if (available) {
+    stringResource(R.string.battery_monitor_stats_rate, String.format(Locale.US, "%.2f", value))
+} else {
+    // Rates are extrapolations from a single percentage step; showing 0.00 for
+    // the first minute would look like a perfect idle device.
+    stringResource(R.string.battery_monitor_stats_rate_pending)
+}
 
 @Composable
 private fun formatShare(span: String, share: Float): String = stringResource(
@@ -465,19 +583,25 @@ private fun formatShare(span: String, share: Float): String = stringResource(
 )
 
 /** `3h 13m 37s` for short spans, `14 days 15h 57m 39s` for long ones. */
+@Composable
 private fun formatSpan(millis: Long): String {
     val totalSeconds = millis / 1000
     val days = totalSeconds / 86_400
     val hours = (totalSeconds % 86_400) / 3_600
     val minutes = (totalSeconds % 3_600) / 60
     val seconds = totalSeconds % 60
-    return buildString {
-        when {
-            days > 1 -> append("$days days ")
-            days == 1L -> append("1 day ")
-        }
-        if (days > 0 || hours > 0) append("${hours}h ")
-        if (days > 0 || hours > 0 || minutes > 0) append("${minutes}m ")
-        append("${seconds}s")
+    val builder = StringBuilder()
+    if (days > 1) {
+        builder.append(stringResource(R.string.battery_monitor_stats_span_days, days)).append(' ')
+    } else if (days == 1L) {
+        builder.append(stringResource(R.string.battery_monitor_stats_span_day)).append(' ')
     }
+    if (days > 0 || hours > 0) {
+        builder.append(stringResource(R.string.battery_monitor_stats_span_hours, hours)).append(' ')
+    }
+    if (days > 0 || hours > 0 || minutes > 0) {
+        builder.append(stringResource(R.string.battery_monitor_stats_span_minutes, minutes)).append(' ')
+    }
+    builder.append(stringResource(R.string.battery_monitor_stats_span_seconds, seconds))
+    return builder.toString()
 }

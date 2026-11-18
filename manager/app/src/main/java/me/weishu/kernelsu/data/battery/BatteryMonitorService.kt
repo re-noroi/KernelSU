@@ -84,6 +84,10 @@ class BatteryMonitorService : Service() {
                     // being sampled at the next tick. The user just did
                     // something visible, so repost immediately too.
                     refresh(forceNotify = true)
+                    // Screen and power transitions are rare, and they are
+                    // exactly when the stats screen would otherwise show
+                    // numbers up to a minute old.
+                    persistNow()
                 }
             }
         }
@@ -186,9 +190,12 @@ class BatteryMonitorService : Service() {
             status == BatteryManager.BATTERY_STATUS_FULL ||
             plugged != 0
         val screenOn = powerManager.isInteractive
-        stats.settle(level = level, screenOn = screenOn, charging = charging)
+        val newCycle = stats.settle(level = level, screenOn = screenOn, charging = charging)
 
         val now = SystemClock.elapsedRealtime()
+        // Leaving the charger zeroed every counter; write the zeros out before
+        // the process can die with a stale snapshot in preferences.
+        if (newCycle) persistNow(now)
         if (forceNotify || now - lastNotifyElapsed >= MIN_NOTIFY_INTERVAL) {
             lastNotifyElapsed = now
             notificationManager.notify(NOTIFICATION_ID, buildNotification())
@@ -197,9 +204,13 @@ class BatteryMonitorService : Service() {
         // expensive thing this service does, so persistence is throttled and
         // also happens in onDestroy.
         if (now - lastPersistElapsed >= PERSIST_INTERVAL) {
-            lastPersistElapsed = now
-            stats.persist()
+            persistNow(now)
         }
+    }
+
+    private fun persistNow(now: Long = SystemClock.elapsedRealtime()) {
+        stats.persist()
+        lastPersistElapsed = now
     }
 
     // -----------------------------------------------------------------------
