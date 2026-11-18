@@ -520,5 +520,5 @@ private fun StatusText(text: String, colors: GpuColors) {
 private fun formatFreq(khz: Long): String =
     String.format(Locale.US, "%d MHz", khz / 1000L)
 
-private const val SAMPLE_INTERVAL_MS = 10_000L
+private const val SAMPLE_INTERVAL_MS = 1_000L
 private val GRAPH_HEIGHT = 170.dp

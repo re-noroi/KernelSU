@@ -24,7 +24,7 @@ data class GpuLiveState(
  * Reads GPU telemetry from the two layouts Android devices actually use:
  * Qualcomm's `kgsl-3d0` (with its `devfreq` child) and, as a fallback, any
  * `devfreq` device whose name looks like a GPU. Everything is read in one
- * shell call, so a 10 s live refresh is a handful of tiny sysfs reads.
+ * shell call, so a once-per-second live refresh stays cheap.
  */
 object GpuMonitor {
 

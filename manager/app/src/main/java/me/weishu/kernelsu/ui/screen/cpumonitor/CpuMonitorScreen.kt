@@ -96,7 +96,7 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
  * Live CPU card plus an opt-in residency table.
  *
  * Both halves of the screen poll only while it is resumed: the live card every
- * 10 s, the table every 30 s. The table itself is just a diff of the kernel's
+ * second, the table every 30 s. The table itself is just a diff of the kernel's
  * cumulative `time_in_state` counters, so the values keep advancing while the
  * tab is closed without any background sampler.
  */
@@ -110,7 +110,7 @@ fun CpuMonitorScreen() {
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             while (isActive) {
                 viewModel.refreshLive()
-                delay(10_000L)
+                delay(LIVE_INTERVAL_MS)
             }
         }
     }
@@ -740,3 +740,10 @@ private fun formatDuration(millis: Long): String {
 }
 
 private const val CORES_PER_ROW = 4
+
+/**
+ * One second keeps the per-core frequencies close to live. The reads are a
+ * handful of tiny sysfs files, and the loop only exists while the screen is
+ * resumed, so this does not run in the background.
+ */
+private const val LIVE_INTERVAL_MS = 1_000L
