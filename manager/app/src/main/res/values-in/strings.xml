@@ -914,4 +914,24 @@ Apakah Anda ingin memulihkan profil ini?</string>
     <string name="cpu_monitor_unit_minutes">%1$d mnt</string>
     <string name="cpu_monitor_unit_seconds">%1$d dtk</string>
     <string name="cpu_monitor_refresh">Muat ulang</string>
+
+    <!-- GPU monitor -->
+    <string name="gpu_monitor_title">Monitor GPU</string>
+    <string name="gpu_monitor_entry_summary">Penggunaan GPU langsung, kecepatan clock, dan grafik penggunaan</string>
+    <string name="gpu_monitor_live_title">GPU</string>
+    <string name="gpu_monitor_reading">Membaca data GPU…</string>
+    <string name="gpu_monitor_unavailable">Perangkat ini tidak menyediakan telemetri GPU.</string>
+    <string name="gpu_monitor_usage">Penggunaan: %1$d%%</string>
+    <string name="gpu_monitor_current_freq">Frekuensi saat ini: %1$s</string>
+    <string name="gpu_monitor_max_freq">Frekuensi maks: %1$s</string>
+    <string name="gpu_monitor_min_freq">Frekuensi min: %1$s</string>
+    <string name="gpu_monitor_governor">Governor: %1$s</string>
+    <string name="gpu_monitor_vendor">Vendor: %1$s</string>
+    <string name="gpu_monitor_renderer">Renderer: %1$s</string>
+    <string name="gpu_monitor_history_title">Penggunaan GPU</string>
+    <string name="gpu_monitor_history_summary">Sampel dikumpulkan selama tab ini terbuka</string>
+    <string name="gpu_monitor_history_count">%1$d sampel</string>
+    <string name="gpu_monitor_history_empty">Biarkan tab ini terbuka untuk membentuk grafik penggunaan.</string>
+    <string name="gpu_monitor_history_clear">Hapus grafik</string>
+    <string name="gpu_monitor_refresh">Muat ulang</string>
 </resources>
