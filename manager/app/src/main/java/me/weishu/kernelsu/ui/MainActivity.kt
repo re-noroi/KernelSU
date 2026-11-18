@@ -93,6 +93,7 @@ import me.weishu.kernelsu.ui.screen.install.InstallScreen
 import me.weishu.kernelsu.ui.screen.memorymonitor.MemoryMonitorScreen
 import me.weishu.kernelsu.ui.screen.cpumonitor.CpuMonitorScreen
 import me.weishu.kernelsu.ui.screen.gpumonitor.GpuMonitorScreen
+import me.weishu.kernelsu.ui.screen.wakelockmonitor.WakeLockMonitorScreen
 import me.weishu.kernelsu.ui.screen.battery.BatteryScreen
 import me.weishu.kernelsu.ui.screen.battery.BatteryMonitorStatsScreen
 import me.weishu.kernelsu.ui.screen.display.ColorCalibrationScreen
@@ -306,6 +307,7 @@ open class MainActivity : ComponentActivity() {
                             entry<Route.MemoryMonitor>(swipeDismiss = swipeDismiss) { MinimalPage(isMinimal) { MemoryMonitorScreen() } }
                             entry<Route.CpuMonitor>(swipeDismiss = swipeDismiss) { MinimalPage(isMinimal) { CpuMonitorScreen() } }
                             entry<Route.GpuMonitor>(swipeDismiss = swipeDismiss) { MinimalPage(isMinimal) { GpuMonitorScreen() } }
+                            entry<Route.Wakelocks>(swipeDismiss = swipeDismiss) { MinimalPage(isMinimal) { WakeLockMonitorScreen() } }
                             entry<Route.Battery>(swipeDismiss = swipeDismiss) { MinimalPage(isMinimal) { BatteryScreen() } }
                             entry<Route.BatteryMonitorStats>(swipeDismiss = swipeDismiss) { MinimalPage(isMinimal) { BatteryMonitorStatsScreen() } }
                             entry<Route.ThermalMonitor>(swipeDismiss = swipeDismiss) { MinimalPage(isMinimal) { ThermalMonitorScreen() } }

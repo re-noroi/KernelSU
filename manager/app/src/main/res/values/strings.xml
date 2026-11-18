@@ -939,4 +939,24 @@
     <string name="gpu_monitor_history_empty">Keep this tab open to build a usage graph.</string>
     <string name="gpu_monitor_history_clear">Clear graph</string>
     <string name="gpu_monitor_refresh">Refresh</string>
+
+    <!-- Wakelocks monitor -->
+    <string name="wakelocks_title">Wakelocks</string>
+    <string name="wakelocks_entry_summary">Kernel wake sources that kept the device awake</string>
+    <string name="wakelocks_toggle_title">Wakelock tracking</string>
+    <string name="wakelocks_toggle_summary">Read kernel wake-source counters only while tracking is on</string>
+    <string name="wakelocks_stats_title">All wakelocks</string>
+    <string name="wakelocks_reset">Reset wakelock statistics</string>
+    <string name="wakelocks_resetting">Restarting measurement…</string>
+    <string name="wakelocks_reading">Reading wake-source data…</string>
+    <string name="wakelocks_empty">No wakelock has been held since the last reset.</string>
+    <string name="wakelocks_unavailable">This kernel does not expose wake-source counters.</string>
+    <string name="wakelocks_window">Window: %1$s</string>
+    <string name="wakelocks_since">Since enabled or last reset</string>
+    <string name="wakelocks_note">Names come from the kernel; app job and sync tags are not included.</string>
+    <string name="wakelocks_refresh">Refresh</string>
+    <string name="wakelocks_unit_days">%1$d d</string>
+    <string name="wakelocks_unit_hours">%1$d h</string>
+    <string name="wakelocks_unit_minutes">%1$d m</string>
+    <string name="wakelocks_unit_seconds">%1$d s</string>
 </resources>
