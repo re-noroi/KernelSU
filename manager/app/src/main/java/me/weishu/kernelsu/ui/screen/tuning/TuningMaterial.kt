@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.Router
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Compress
+import androidx.compose.material.icons.filled.DeveloperBoard
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material3.Button
@@ -719,6 +720,11 @@ fun TuningScreenMaterial(
                             ColorCalibrationEntry(onClick = actions.onOpenColorCalibration)
                         }
                     }
+                    item {
+                        SegmentedItemContainer {
+                            CpuMonitorEntry(onClick = actions.onOpenCpuMonitor)
+                        }
+                    }
                 }
             }
             item {
@@ -1038,6 +1044,40 @@ private fun MemoryMonitorEntry(onClick: () -> Unit) {
             )
             Text(
                 text = stringResource(R.string.memory_monitor_entry_summary),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun CpuMonitorEntry(onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Filled.DeveloperBoard,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.cpu_monitor_title),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Text(
+                text = stringResource(R.string.cpu_monitor_entry_summary),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

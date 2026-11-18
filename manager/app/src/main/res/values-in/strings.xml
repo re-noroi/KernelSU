@@ -884,4 +884,34 @@ Apakah Anda ingin memulihkan profil ini?</string>
     <string name="battery_monitor_stats_label_power_radio">Radio</string>
     <string name="battery_monitor_stats_label_power_memory">Memori</string>
     <string name="battery_monitor_stats_label_power_ambient">Layar ambient</string>
+
+    <!-- CPU monitor -->
+    <string name="cpu_monitor_title">Monitor CPU</string>
+    <string name="cpu_monitor_entry_summary">Frekuensi tiap inti secara langsung, beban, dan statistik waktu di tiap frekuensi</string>
+    <string name="cpu_monitor_live_title">CPU</string>
+    <string name="cpu_monitor_reading">Membaca data CPU…</string>
+    <string name="cpu_monitor_unavailable">Perangkat ini tidak menyediakan informasi frekuensi CPU.</string>
+    <string name="cpu_monitor_offline">Mati</string>
+    <string name="cpu_monitor_system_load">Beban sistem: %1$d%%</string>
+    <string name="cpu_monitor_cluster_max_freq">Frekuensi maks kluster %1$s: %2$s</string>
+    <string name="cpu_monitor_governor">Governor: %1$s</string>
+    <string name="cpu_monitor_cluster_cpu">CPU</string>
+    <string name="cpu_monitor_cluster_little">Little</string>
+    <string name="cpu_monitor_cluster_big">Big</string>
+    <string name="cpu_monitor_cluster_prime">Prime</string>
+    <string name="cpu_monitor_cluster_number">Kluster %1$d</string>
+    <string name="cpu_monitor_stats_title">Statistik CPU</string>
+    <string name="cpu_monitor_stats_summary">Waktu di tiap frekuensi, dihitung kernel sejak reset terakhir</string>
+    <string name="cpu_monitor_stats_reset">Reset statistik CPU</string>
+    <string name="cpu_monitor_stats_resetting">Memulai ulang pengukuran…</string>
+    <string name="cpu_monitor_stats_waiting">Mengumpulkan data. Frekuensi muncul setelah sampel pertama.</string>
+    <string name="cpu_monitor_stats_unavailable">Kernel ini tidak menyediakan waktu CPU per frekuensi.</string>
+    <string name="cpu_monitor_stats_window">Rentang: %1$s</string>
+    <string name="cpu_monitor_stats_since">Sejak diaktifkan atau reset terakhir</string>
+    <string name="cpu_monitor_stats_deep_sleep">Tidur dalam</string>
+    <string name="cpu_monitor_unit_days">%1$d hr</string>
+    <string name="cpu_monitor_unit_hours">%1$d j</string>
+    <string name="cpu_monitor_unit_minutes">%1$d mnt</string>
+    <string name="cpu_monitor_unit_seconds">%1$d dtk</string>
+    <string name="cpu_monitor_refresh">Muat ulang</string>
 </resources>
