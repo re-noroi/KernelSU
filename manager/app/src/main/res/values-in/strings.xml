@@ -947,10 +947,10 @@ Apakah Anda ingin memulihkan profil ini?</string>
     <string name="wakelocks_resetting">Memulai ulang pengukuran…</string>
     <string name="wakelocks_reading">Membaca data wake source…</string>
     <string name="wakelocks_empty">Tidak ada wakelock yang ditahan sejak reset terakhir.</string>
-    <string name="wakelocks_unavailable">Kernel ini tidak menyediakan penghitung wake source.</string>
+    <string name="wakelocks_unavailable">Tidak ada penghitung wakelock yang bisa dibaca di perangkat ini.</string>
     <string name="wakelocks_window">Rentang: %1$s</string>
     <string name="wakelocks_since">Sejak diaktifkan atau reset terakhir</string>
-    <string name="wakelocks_note">Nama berasal dari kernel; tag job dan sinkronisasi aplikasi tidak disertakan.</string>
+    <string name="wakelocks_note">Wake source kernel dan tag job/sinkronisasi aplikasi, sesuai yang disediakan sistem.</string>
     <string name="wakelocks_refresh">Muat ulang</string>
     <string name="wakelocks_unit_days">%1$d hr</string>
     <string name="wakelocks_unit_hours">%1$d j</string>

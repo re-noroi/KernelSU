@@ -60,8 +60,16 @@ class WakeLockMonitorViewModel : ViewModel() {
 
                 val now = SystemClock.elapsedRealtime()
                 val baseline = store.baseline()
-                if (baseline == null || now < baseline.savedAtElapsedMs) {
-                    // First read, or the device rebooted: start a new window.
+                // A changed source or a rebooted clock invalidates the baseline;
+                // so does a counter that went backwards, which is what an
+                // unplug does to the batterystats window.
+                if (baseline == null ||
+                    now < baseline.savedAtElapsedMs ||
+                    (baseline.snapshot.source.isNotEmpty() &&
+                        baseline.snapshot.source != current.source) ||
+                    wentBackwards(current, baseline.snapshot)
+                ) {
+                    // First read, or the counters restarted: start a new window.
                     store.saveBaseline(current, now)
                     _uiState.update {
                         it.copy(
@@ -130,6 +138,16 @@ class WakeLockMonitorViewModel : ViewModel() {
             }
         }
     }
+
+    /**
+     * True when a source the baseline knew about now reports less time, which
+     * only happens when the system reset its counters.
+     */
+    private fun wentBackwards(current: WakeLockSnapshot, baseline: WakeLockSnapshot): Boolean =
+        baseline.entries.any { (name, time) ->
+            val now = current.entries[name] ?: return@any false
+            now < time
+        }
 
     private suspend fun captureFreshBaseline() {
         val snapshot: WakeLockSnapshot? = withContext(Dispatchers.IO) { WakeLockMonitor.read() }
