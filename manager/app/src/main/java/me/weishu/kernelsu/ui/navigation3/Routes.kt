@@ -61,6 +61,10 @@ sealed interface Route : NavKey, Parcelable {
 
     @Parcelize
     @Serializable
+    data object PerfTop : Route
+
+    @Parcelize
+    @Serializable
     data object Battery : Route
 
     @Parcelize

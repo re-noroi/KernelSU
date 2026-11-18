@@ -956,4 +956,18 @@ Apakah Anda ingin memulihkan profil ini?</string>
     <string name="wakelocks_unit_hours">%1$d j</string>
     <string name="wakelocks_unit_minutes">%1$d mnt</string>
     <string name="wakelocks_unit_seconds">%1$d dtk</string>
+
+    <!-- PerfTop monitor -->
+    <string name="perftop_title">PerfTop</string>
+    <string name="perftop_entry_summary">Penggunaan CPU dan memori proses secara langsung</string>
+    <string name="perftop_processes_title">Proses</string>
+    <string name="perftop_summary">Disampel dengan top tiap 3 detik selama tab ini terbuka</string>
+    <string name="perftop_reading">Mengambil sampel proses…</string>
+    <string name="perftop_unavailable">Tidak dapat membaca daftar proses di perangkat ini.</string>
+    <string name="perftop_empty">Tidak ada proses yang dikembalikan.</string>
+    <string name="perftop_column_cpu">CPU</string>
+    <string name="perftop_column_ram">RAM</string>
+    <string name="perftop_column_pid">PID</string>
+    <string name="perftop_column_name">NAMA</string>
+    <string name="perftop_refresh">Muat ulang</string>
 </resources>

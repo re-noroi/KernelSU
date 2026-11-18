@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Compress
 import androidx.compose.material.icons.filled.DeveloperBoard
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.QueryStats
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material3.Button
@@ -736,6 +737,11 @@ fun TuningScreenMaterial(
                             WakeLockMonitorEntry(onClick = actions.onOpenWakelocks)
                         }
                     }
+                    item {
+                        SegmentedItemContainer {
+                            PerfTopEntry(onClick = actions.onOpenPerfTop)
+                        }
+                    }
                 }
             }
             item {
@@ -1157,6 +1163,40 @@ private fun WakeLockMonitorEntry(onClick: () -> Unit) {
             )
             Text(
                 text = stringResource(R.string.wakelocks_entry_summary),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun PerfTopEntry(onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Filled.QueryStats,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.perftop_title),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Text(
+                text = stringResource(R.string.perftop_entry_summary),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
