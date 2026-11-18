@@ -462,10 +462,15 @@ private fun UsageGraph(
         if (history.isEmpty()) return@Canvas
 
         val step = if (history.size > 1) width / (history.size - 1) else width
+        // Keep the stroke fully inside the canvas: at 0% the line would
+        // otherwise sit on the bottom edge and be clipped away, which reads as
+        // "no data" even though the GPU is simply idle.
+        val inset = 1.dp.toPx().coerceAtMost(height / 2f)
+        val usable = (height - inset * 2f).coerceAtLeast(1f)
         val points = history.mapIndexed { index, busy ->
             Offset(
                 x = (index * step).coerceIn(0f, width),
-                y = height - (busy.coerceIn(0, 100) / 100f) * height,
+                y = height - inset - (busy.coerceIn(0, 100) / 100f) * usable,
             )
         }
 

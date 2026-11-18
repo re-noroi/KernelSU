@@ -77,7 +77,10 @@ object GpuMonitor {
             .mapNotNull(::normalizeFreq)
             .filter { it > 0L }
 
-        val cur = parseFreq(values["C"])
+        // A clock-gated GPU legitimately reports 0 Hz while idle; FKM still
+        // shows it, so keep zero for the current frequency only. Max, min and
+        // the available list must stay positive to be useful.
+        val cur = parseFreq(values["C"], allowZero = true)
         val max = parseFreq(values["X"])
             ?: available.maxOrNull()
         val min = parseFreq(values["N"])
@@ -105,16 +108,17 @@ object GpuMonitor {
         else -> ""
     }
 
-    private fun parseFreq(raw: String?): Long? {
+    private fun parseFreq(raw: String?, allowZero: Boolean = false): Long? {
         if (raw.isNullOrBlank()) return null
-        return normalizeFreq(raw)
+        return normalizeFreq(raw, allowZero)
     }
 
     /** Normalises Hz, kHz and MHz to kHz. */
-    private fun normalizeFreq(raw: String): Long? {
+    private fun normalizeFreq(raw: String, allowZero: Boolean = false): Long? {
         val token = NUMBER.find(raw)?.value ?: return null
         val value = token.toDoubleOrNull() ?: return null
-        if (value <= 0.0) return null
+        if (value < 0.0) return null
+        if (value == 0.0) return if (allowZero) 0L else null
         return when {
             value >= 1_000_000.0 -> (value / 1000.0).toLong()
             value >= 10_000.0 -> value.toLong()
