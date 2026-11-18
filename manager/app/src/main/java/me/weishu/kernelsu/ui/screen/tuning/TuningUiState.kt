@@ -76,6 +76,7 @@ data class TuningActions(
     val onBack: () -> Unit,
     val onOpenMemoryMonitor: () -> Unit,
     val onOpenCpuMonitor: () -> Unit,
+    val onOpenGpuMonitor: () -> Unit,
     val onOpenBattery: () -> Unit,
     val onOpenThermalMonitor: () -> Unit,
     val onOpenThermalApps: () -> Unit,

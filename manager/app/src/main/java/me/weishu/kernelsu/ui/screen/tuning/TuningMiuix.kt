@@ -724,6 +724,15 @@ fun TuningScreenMiuix(
                             .padding(top = 12.dp)
                             .fillMaxWidth()
                     ) {
+                        GpuMonitorEntryMiuix(onClick = actions.onOpenGpuMonitor)
+                    }
+                }
+                item {
+                    Card(
+                        modifier = Modifier
+                            .padding(top = 12.dp)
+                            .fillMaxWidth()
+                    ) {
                         Column {
                             IntInputMiuix(
                                 title = stringResource(R.string.tuning_pixel_density),
@@ -1068,6 +1077,40 @@ private fun CpuMonitorEntryMiuix(onClick: () -> Unit) {
             )
             Text(
                 text = stringResource(R.string.cpu_monitor_entry_summary),
+                fontSize = 12.sp,
+                color = colorScheme.onSurfaceVariantSummary,
+            )
+        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = colorScheme.onSurfaceVariantSummary,
+        )
+    }
+}
+
+@Composable
+private fun GpuMonitorEntryMiuix(onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.Speed,
+            contentDescription = null,
+            tint = colorScheme.primary,
+        )
+        Spacer(Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.gpu_monitor_title),
+                fontSize = 15.sp,
+            )
+            Text(
+                text = stringResource(R.string.gpu_monitor_entry_summary),
                 fontSize = 12.sp,
                 color = colorScheme.onSurfaceVariantSummary,
             )

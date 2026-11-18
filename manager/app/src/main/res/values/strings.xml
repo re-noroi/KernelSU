@@ -917,4 +917,24 @@
     <string name="cpu_monitor_unit_minutes">%1$d m</string>
     <string name="cpu_monitor_unit_seconds">%1$d s</string>
     <string name="cpu_monitor_refresh">Refresh</string>
+
+    <!-- GPU monitor -->
+    <string name="gpu_monitor_title">GPU monitor</string>
+    <string name="gpu_monitor_entry_summary">Live GPU usage, clock speed and a usage graph</string>
+    <string name="gpu_monitor_live_title">GPU</string>
+    <string name="gpu_monitor_reading">Reading GPU data…</string>
+    <string name="gpu_monitor_unavailable">This device did not expose GPU telemetry.</string>
+    <string name="gpu_monitor_usage">Usage: %1$d%%</string>
+    <string name="gpu_monitor_current_freq">Current freq: %1$s</string>
+    <string name="gpu_monitor_max_freq">Max freq: %1$s</string>
+    <string name="gpu_monitor_min_freq">Min freq: %1$s</string>
+    <string name="gpu_monitor_governor">Governor: %1$s</string>
+    <string name="gpu_monitor_vendor">Vendor: %1$s</string>
+    <string name="gpu_monitor_renderer">Renderer: %1$s</string>
+    <string name="gpu_monitor_history_title">GPU usage</string>
+    <string name="gpu_monitor_history_summary">Samples collected while this tab is open</string>
+    <string name="gpu_monitor_history_count">%1$d samples</string>
+    <string name="gpu_monitor_history_empty">Keep this tab open to build a usage graph.</string>
+    <string name="gpu_monitor_history_clear">Clear graph</string>
+    <string name="gpu_monitor_refresh">Refresh</string>
 </resources>
