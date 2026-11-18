@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.viewmodel
 
+import android.os.SystemClock
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -30,6 +31,7 @@ class GpuMonitorViewModel : ViewModel() {
     val uiState: StateFlow<GpuMonitorUiState> = _uiState.asStateFlow()
 
     private var running = false
+    private var lastHistoryElapsed = 0L
 
     fun refresh() {
         if (running) return
@@ -37,10 +39,20 @@ class GpuMonitorViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val live = GpuMonitor.readLive()
+                // Live values refresh every second, but the graph is sampled
+                // every ten so its 90-point window stays 15 minutes wide.
+                val busy = live.busyPercent
+                val now = SystemClock.elapsedRealtime()
+                val record = busy != null &&
+                    (lastHistoryElapsed == 0L || now - lastHistoryElapsed >= HISTORY_INTERVAL_MS)
+                if (record) lastHistoryElapsed = now
                 _uiState.update { previous ->
-                    val history = live.busyPercent?.let { busy ->
-                        (previous.history + busy).takeLast(MAX_SAMPLES)
-                    } ?: previous.history
+                    val history = if (record) {
+                        busy?.let { (previous.history + it).takeLast(MAX_SAMPLES) }
+                            ?: previous.history
+                    } else {
+                        previous.history
+                    }
                     previous.copy(live = live, liveLoaded = true, history = history)
                 }
             } finally {
@@ -50,11 +62,13 @@ class GpuMonitorViewModel : ViewModel() {
     }
 
     fun clearHistory() {
+        lastHistoryElapsed = 0L
         _uiState.update { it.copy(history = emptyList()) }
     }
 
     private companion object {
         /** 90 samples at one every 10 s is a 15 minute window. */
         const val MAX_SAMPLES = 90
+        const val HISTORY_INTERVAL_MS = 10_000L
     }
 }
