@@ -410,7 +410,14 @@ private fun LiveCard(
                     CpuDivider(colors)
 
                     InfoRow(
-                        label = stringResource(R.string.cpu_monitor_system_load, live.loadPercent),
+                        label = live.loadPercent?.let {
+                            stringResource(R.string.cpu_monitor_load, it)
+                        } ?: stringResource(R.string.cpu_monitor_load_reading),
+                        value = null,
+                        colors = colors,
+                    )
+                    InfoRow(
+                        label = stringResource(R.string.cpu_monitor_load_average, live.loadAvgPercent),
                         value = null,
                         colors = colors,
                     )

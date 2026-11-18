@@ -895,7 +895,9 @@
     <string name="cpu_monitor_reading">Reading CPU data…</string>
     <string name="cpu_monitor_unavailable">This device did not expose CPU frequency information.</string>
     <string name="cpu_monitor_offline">Offline</string>
-    <string name="cpu_monitor_system_load">System load: %1$d%%</string>
+    <string name="cpu_monitor_load">Load: %1$d%%</string>
+    <string name="cpu_monitor_load_average">Load avg: %1$d%%</string>
+    <string name="cpu_monitor_load_reading">Load: reading…</string>
     <string name="cpu_monitor_cluster_max_freq">%1$s cluster max freq: %2$s</string>
     <string name="cpu_monitor_governor">Governor: %1$s</string>
     <string name="cpu_monitor_cluster_cpu">CPU</string>
