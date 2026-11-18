@@ -37,6 +37,7 @@ import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material.icons.rounded.Compress
 import androidx.compose.material.icons.rounded.DeveloperBoard
 import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.QueryStats
 import androidx.compose.material.icons.rounded.Storage
 import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.Palette
@@ -743,6 +744,15 @@ fun TuningScreenMiuix(
                             .padding(top = 12.dp)
                             .fillMaxWidth()
                     ) {
+                        PerfTopEntryMiuix(onClick = actions.onOpenPerfTop)
+                    }
+                }
+                item {
+                    Card(
+                        modifier = Modifier
+                            .padding(top = 12.dp)
+                            .fillMaxWidth()
+                    ) {
                         Column {
                             IntInputMiuix(
                                 title = stringResource(R.string.tuning_pixel_density),
@@ -1155,6 +1165,40 @@ private fun WakeLockMonitorEntryMiuix(onClick: () -> Unit) {
             )
             Text(
                 text = stringResource(R.string.wakelocks_entry_summary),
+                fontSize = 12.sp,
+                color = colorScheme.onSurfaceVariantSummary,
+            )
+        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = colorScheme.onSurfaceVariantSummary,
+        )
+    }
+}
+
+@Composable
+private fun PerfTopEntryMiuix(onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.QueryStats,
+            contentDescription = null,
+            tint = colorScheme.primary,
+        )
+        Spacer(Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.perftop_title),
+                fontSize = 15.sp,
+            )
+            Text(
+                text = stringResource(R.string.perftop_entry_summary),
                 fontSize = 12.sp,
                 color = colorScheme.onSurfaceVariantSummary,
             )

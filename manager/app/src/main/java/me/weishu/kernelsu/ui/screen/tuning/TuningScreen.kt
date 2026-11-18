@@ -40,6 +40,7 @@ fun TuningScreen(
         onOpenCpuMonitor = dropUnlessResumed { navigator.push(Route.CpuMonitor) },
         onOpenGpuMonitor = dropUnlessResumed { navigator.push(Route.GpuMonitor) },
         onOpenWakelocks = dropUnlessResumed { navigator.push(Route.Wakelocks) },
+        onOpenPerfTop = dropUnlessResumed { navigator.push(Route.PerfTop) },
         onOpenBattery = dropUnlessResumed { navigator.push(Route.Battery) },
         onOpenThermalMonitor = dropUnlessResumed { navigator.push(Route.ThermalMonitor) },
         onOpenThermalApps = dropUnlessResumed { navigator.push(Route.TuningThermalApps) },
