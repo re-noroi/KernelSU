@@ -7,6 +7,17 @@ import me.weishu.kernelsu.data.SysfsNodeCache
 /** One `label: value` pair as reported by the system. */
 data class BatteryStatRow(val label: String, val value: String)
 
+/** Why a dump came back empty, so the screen can say something useful. */
+enum class BatteryStatsFailure {
+    NONE,
+
+    /** The root shell could not be started or the command produced nothing. */
+    NO_ROOT,
+
+    /** The command ran but the expected sections were not in its output. */
+    NO_DATA,
+}
+
 /**
  * The "Statistics since last charge" and "Estimated power use" blocks of
  * `dumpsys batterystats`. These are the values the reference battery monitor
@@ -16,6 +27,7 @@ data class BatteryStatsDump(
     val available: Boolean = false,
     val sinceCharge: List<BatteryStatRow> = emptyList(),
     val powerUse: List<BatteryStatRow> = emptyList(),
+    val failure: BatteryStatsFailure = BatteryStatsFailure.NONE,
 ) {
     fun valueOf(label: String): String? =
         sinceCharge.firstOrNull { it.label.equals(label, ignoreCase = true) }?.value
@@ -36,8 +48,24 @@ object BatteryStatsDumper {
     )
 
     /**
+     * `dumpsys batterystats` can print tens of megabytes. Its `Battery
+     * History` event log is the bulk of that and none of it is parsed here,
+     * so `sed` keeps only the range that starts at the statistics block. The
+     * range end is harmless: if the history log was printed first (the usual
+     * order) it never matches again and the rest of the stream is kept.
+     */
+    private const val STATS_COMMAND =
+        "dumpsys batterystats 2>/dev/null | sed -n '/^Statistics since last charge/,/^Battery History/p'"
+
+    /** Used when the trimmed output came back empty, e.g. a renamed header. */
+    private const val PLAIN_COMMAND = "dumpsys batterystats 2>/dev/null"
+
+    /** Re-entering the screen within this window reuses the last dump. */
+    private const val CACHE_TTL_MILLIS = 30_000L
+
+    /**
      * In display order, mirroring the reference screens. Labels must match the
-     * beginning of a `dumpsys` line; anything the kernel does not report is
+     * beginning of a `dumpsys` line; anything the device does not report is
      * simply skipped.
      */
     private val SINCE_CHARGE_LABELS = listOf(
@@ -66,13 +94,47 @@ object BatteryStatsDumper {
         "Total WiFi Multicast wakelock time",
     )
 
+    @Volatile
+    private var cached: BatteryStatsDump? = null
+
+    @Volatile
+    private var cachedAtMillis = 0L
+
     /**
      * One shell call, on the caller's IO context. `dumpsys` can take a second
      * or two and produce a large buffer, which is why this is only invoked
-     * when the user opens the stats screen or taps refresh.
+     * when the user opens the stats screen or taps refresh. Results are cached
+     * for [CACHE_TTL_MILLIS] so navigating back and forth does not repeat it;
+     * pass [force] to bypass the cache on an explicit refresh.
      */
-    suspend fun read(): BatteryStatsDump = withContext(Dispatchers.IO) {
-        parse(SysfsNodeCache.execRootCommand("dumpsys batterystats 2>/dev/null"))
+    suspend fun read(force: Boolean = false): BatteryStatsDump = withContext(Dispatchers.IO) {
+        val now = System.nanoTime() / 1_000_000L
+        val hit = cached
+        if (!force && hit != null && now - cachedAtMillis < CACHE_TTL_MILLIS) {
+            return@withContext hit
+        }
+
+        val filtered = SysfsNodeCache.execRootCommandOrNull(STATS_COMMAND)
+        val raw = when {
+            // The root shell itself failed.
+            filtered == null -> null
+            // Header missing or spelled differently: fall back to the
+            // unfiltered dump rather than showing nothing.
+            filtered.isBlank() -> SysfsNodeCache.execRootCommandOrNull(PLAIN_COMMAND)
+            else -> filtered
+        }
+        val dump = when {
+            // The root shell itself never ran.
+            raw == null -> BatteryStatsDump(failure = BatteryStatsFailure.NO_ROOT)
+            // It ran but printed nothing usable on either attempt.
+            raw.isBlank() -> BatteryStatsDump(failure = BatteryStatsFailure.NO_DATA)
+            else -> parse(raw).let {
+                if (it.available) it else it.copy(failure = BatteryStatsFailure.NO_DATA)
+            }
+        }
+        cached = dump
+        cachedAtMillis = now
+        dump
     }
 
     fun parse(raw: String): BatteryStatsDump {
@@ -110,10 +172,11 @@ object BatteryStatsDumper {
             val colon = line.indexOf(':')
             if (colon <= 0) return@mapNotNull null
             val key = line.substring(0, colon).trim()
-            // Skip totals and per-UID entries: the reference only shows the
-            // component breakdown (Screen, Idle, Wifi, ...), and UID rows carry
-            // huge multi-part values that overflow a phone-width card.
-            if (key.isEmpty() || key.any { it.isDigit() } ||
+            // Skip the totals and the per-UID rows. Component names are kept
+            // even if they contain digits, and nothing is truncated, so a
+            // device that reports more components simply shows more rows.
+            val isPerUid = key.startsWith("Uid ", ignoreCase = true) || key.all { it.isDigit() }
+            if (key.isEmpty() || isPerUid ||
                 key.contains("capacity", true) || key.contains("computed", true)
             ) {
                 return@mapNotNull null
@@ -122,10 +185,10 @@ object BatteryStatsDumper {
             // `apps:` breakdown repeats the mAh figure and is dropped.
             val rawValue = line.substring(colon + 1).trim()
             val mAh = LEADING_NUMBER.find(rawValue)?.value ?: return@mapNotNull null
-            val duration = DURATION.find(rawValue)?.groupValues?.get(1)?.trim()?.take(16)
+            val duration = DURATION.find(rawValue)?.groupValues?.get(1)?.trim()
             val value = if (duration.isNullOrEmpty()) "$mAh mAh" else "$mAh mAh · $duration"
             BatteryStatRow(key, value)
-        }.take(10)
+        }
     }
 
     private fun isSectionEnd(line: String): Boolean =

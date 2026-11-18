@@ -264,12 +264,21 @@ object SysfsNodeCache {
     }
 
     fun execRootCommand(cmd: String): String {
+        return execRootCommandOrNull(cmd) ?: ""
+    }
+
+    /**
+     * Like [execRootCommand], but distinguishes a shell that never ran (root
+     * denied, process killed) from a command that legitimately printed
+     * nothing, which the callers that surface errors need.
+     */
+    fun execRootCommandOrNull(cmd: String): String? {
         return try {
             val out = mutableListOf<String>()
             getRootShell(true).newJob().add(cmd).to(out).exec()
             out.joinToString("\n").trim()
         } catch (e: Exception) {
-            ""
+            null
         }
     }
 
