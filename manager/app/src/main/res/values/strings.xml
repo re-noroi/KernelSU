@@ -820,4 +820,25 @@
     <string name="battery_monitor_deep_sleep">Deep sleep: %1$s (%2$s%%)</string>
     <string name="battery_monitor_awake">Awake: %1$s (%2$s%%)</string>
     <string name="battery_monitor_reset_stats">Reset battery stats</string>
+
+    <!-- Battery monitor detail screen -->
+    <string name="battery_monitor_stats_open">View detailed stats</string>
+    <string name="battery_monitor_stats_summary">Screen on/off, drain and raw battery statistics</string>
+    <string name="battery_monitor_stats_title">Battery monitor stats</string>
+    <string name="battery_monitor_stats_refresh">Refresh stats</string>
+    <string name="battery_monitor_stats_screen_on">Screen on</string>
+    <string name="battery_monitor_stats_screen_off">Screen off</string>
+    <string name="battery_monitor_stats_duration">Duration</string>
+    <string name="battery_monitor_stats_battery_drained">Battery drained</string>
+    <string name="battery_monitor_stats_active_drain">Active drain</string>
+    <string name="battery_monitor_stats_idle_drain">Idle drain</string>
+    <string name="battery_monitor_stats_deep_sleep">Deep sleep</string>
+    <string name="battery_monitor_stats_awake">Awake</string>
+    <string name="battery_monitor_stats_power_use">Estimated power use</string>
+    <string name="battery_monitor_stats_raw">Raw stats since last charge</string>
+    <string name="battery_monitor_stats_loading">Reading battery stats…</string>
+    <string name="battery_monitor_stats_unavailable">Battery stats are unavailable. Root access may be required.</string>
+    <string name="battery_monitor_stats_drained">%1$s (%2$s mAh)</string>
+    <string name="battery_monitor_stats_rate">%1$s%% per hour</string>
+    <string name="battery_monitor_stats_share">%1$s (%2$s%%)</string>
 </resources>

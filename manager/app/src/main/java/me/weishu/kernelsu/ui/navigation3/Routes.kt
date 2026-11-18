@@ -53,6 +53,10 @@ sealed interface Route : NavKey, Parcelable {
 
     @Parcelize
     @Serializable
+    data object BatteryMonitorStats : Route
+
+    @Parcelize
+    @Serializable
     data object ThermalMonitor : Route
 
     @Parcelize

@@ -817,4 +817,25 @@ Apakah Anda ingin memulihkan profil ini?</string>
     <string name="battery_monitor_deep_sleep">Tidur dalam: %1$s (%2$s%%)</string>
     <string name="battery_monitor_awake">Terjaga: %1$s (%2$s%%)</string>
     <string name="battery_monitor_reset_stats">Reset statistik baterai</string>
+
+    <!-- Battery monitor detail screen -->
+    <string name="battery_monitor_stats_open">Lihat statistik lengkap</string>
+    <string name="battery_monitor_stats_summary">Layar menyala/mati, pengurasan, dan statistik baterai mentah</string>
+    <string name="battery_monitor_stats_title">Statistik pemantau baterai</string>
+    <string name="battery_monitor_stats_refresh">Segarkan statistik</string>
+    <string name="battery_monitor_stats_screen_on">Layar menyala</string>
+    <string name="battery_monitor_stats_screen_off">Layar mati</string>
+    <string name="battery_monitor_stats_duration">Durasi</string>
+    <string name="battery_monitor_stats_battery_drained">Baterai terpakai</string>
+    <string name="battery_monitor_stats_active_drain">Pengurasan aktif</string>
+    <string name="battery_monitor_stats_idle_drain">Pengurasan idle</string>
+    <string name="battery_monitor_stats_deep_sleep">Tidur dalam</string>
+    <string name="battery_monitor_stats_awake">Terjaga</string>
+    <string name="battery_monitor_stats_power_use">Perkiraan penggunaan daya</string>
+    <string name="battery_monitor_stats_raw">Statistik mentah sejak pengisian terakhir</string>
+    <string name="battery_monitor_stats_loading">Membaca statistik baterai…</string>
+    <string name="battery_monitor_stats_unavailable">Statistik baterai tidak tersedia. Akses root mungkin diperlukan.</string>
+    <string name="battery_monitor_stats_drained">%1$s (%2$s mAh)</string>
+    <string name="battery_monitor_stats_rate">%1$s%% per jam</string>
+    <string name="battery_monitor_stats_share">%1$s (%2$s%%)</string>
 </resources>
