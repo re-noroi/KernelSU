@@ -22,13 +22,21 @@ data class PerfTopProcess(
  * positions because toybox glues the state and CPU columns together in the
  * header (`S[%CPU]`) while printing them as two values per row.
  *
+ * Two iterations are requested on purpose. In batch mode the first table's
+ * `%CPU` is the average since each process started, which makes a busy process
+ * look idle and an old idle process look expensive; the second table is
+ * computed over the sample interval, which is the number Kernel Managers show.
+ * Only the last table is kept.
+ *
  * Rows are sorted here rather than relying on `top`'s default order, and only
  * the most expensive processes are kept so the UI never composes hundreds of
  * rows.
  */
 object PerfTopMonitor {
 
-    private const val COMMAND = "top -b -n 1 2>/dev/null"
+    private const val COMMAND =
+        "O=\$(top -b -n 2 -d 1 2>/dev/null); " +
+            "[ -z \"\$O\" ] && O=\$(top -b -n 1 2>/dev/null); echo \"\$O\""
 
     suspend fun read(): List<PerfTopProcess>? = withContext(Dispatchers.IO) {
         parse(SysfsNodeCache.execRootCommandOrNull(COMMAND))
@@ -42,7 +50,7 @@ object PerfTopMonitor {
         var resIndex = 5
         var cpuIndex = 8
         var argsIndex = 11
-        val processes = mutableListOf<PerfTopProcess>()
+        var processes = mutableListOf<PerfTopProcess>()
 
         raw.lineSequence().forEach { rawLine ->
             val line = rawLine.trim()
@@ -51,6 +59,9 @@ object PerfTopMonitor {
             if (tokens.isEmpty()) return@forEach
 
             if (tokens[0] == "PID" && tokens.any { it == "RES" || it == "RSS" }) {
+                // A second header starts the next iteration's table; the rows
+                // already collected belong to the previous, averaged sample.
+                processes = mutableListOf()
                 header = tokens
                 val pid = tokens.indexOf("PID")
                 val res = tokens.indexOfFirst { it == "RES" || it == "RSS" }
