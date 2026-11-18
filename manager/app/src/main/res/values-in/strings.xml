@@ -936,4 +936,24 @@ Apakah Anda ingin memulihkan profil ini?</string>
     <string name="gpu_monitor_history_empty">Biarkan tab ini terbuka untuk membentuk grafik penggunaan.</string>
     <string name="gpu_monitor_history_clear">Hapus grafik</string>
     <string name="gpu_monitor_refresh">Muat ulang</string>
+
+    <!-- Wakelocks monitor -->
+    <string name="wakelocks_title">Wakelock</string>
+    <string name="wakelocks_entry_summary">Wake source kernel yang membuat perangkat tetap bangun</string>
+    <string name="wakelocks_toggle_title">Pelacakan wakelock</string>
+    <string name="wakelocks_toggle_summary">Hanya baca penghitung wake source kernel saat pelacakan aktif</string>
+    <string name="wakelocks_stats_title">Semua wakelock</string>
+    <string name="wakelocks_reset">Reset statistik wakelock</string>
+    <string name="wakelocks_resetting">Memulai ulang pengukuran…</string>
+    <string name="wakelocks_reading">Membaca data wake source…</string>
+    <string name="wakelocks_empty">Tidak ada wakelock yang ditahan sejak reset terakhir.</string>
+    <string name="wakelocks_unavailable">Kernel ini tidak menyediakan penghitung wake source.</string>
+    <string name="wakelocks_window">Rentang: %1$s</string>
+    <string name="wakelocks_since">Sejak diaktifkan atau reset terakhir</string>
+    <string name="wakelocks_note">Nama berasal dari kernel; tag job dan sinkronisasi aplikasi tidak disertakan.</string>
+    <string name="wakelocks_refresh">Muat ulang</string>
+    <string name="wakelocks_unit_days">%1$d hr</string>
+    <string name="wakelocks_unit_hours">%1$d j</string>
+    <string name="wakelocks_unit_minutes">%1$d mnt</string>
+    <string name="wakelocks_unit_seconds">%1$d dtk</string>
 </resources>
