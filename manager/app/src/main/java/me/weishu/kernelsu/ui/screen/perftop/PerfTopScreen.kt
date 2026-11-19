@@ -141,14 +141,6 @@ private fun PerfTopMaterial(state: PerfTopUiState, onRefresh: () -> Unit) {
                     )
                 },
                 navigationIcon = { TopBarBackButton(onClick = { navigator.pop() }) },
-                actions = {
-                    IconButton(onClick = onRefresh) {
-                        Icon(
-                            Icons.Rounded.Refresh,
-                            contentDescription = stringResource(R.string.perftop_refresh),
-                        )
-                    }
-                },
                 colors = expressiveTopAppBarColors(),
                 windowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
                 scrollBehavior = scrollBehavior,
@@ -203,15 +195,6 @@ private fun PerfTopMiuix(state: PerfTopUiState, onRefresh: () -> Unit) {
                             MiuixIcon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = null,
-                                tint = colorScheme.onSurface,
-                            )
-                        }
-                    },
-                    actions = {
-                        MiuixIconButton(onClick = onRefresh) {
-                            MiuixIcon(
-                                imageVector = Icons.Rounded.Refresh,
-                                contentDescription = stringResource(R.string.perftop_refresh),
                                 tint = colorScheme.onSurface,
                             )
                         }

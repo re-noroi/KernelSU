@@ -131,10 +131,6 @@ fun CpuMonitorScreen() {
         onToggleStats = viewModel::setStatsEnabled,
         onResetStats = viewModel::resetStats,
         onSelectCluster = viewModel::selectCluster,
-        onRefresh = {
-            viewModel.refreshLive()
-            viewModel.refreshStats()
-        },
     )
 
     when (LocalUiMode.current) {
@@ -147,7 +143,6 @@ private data class CpuCallbacks(
     val onToggleStats: (Boolean) -> Unit,
     val onResetStats: () -> Unit,
     val onSelectCluster: (Int) -> Unit,
-    val onRefresh: () -> Unit,
 )
 
 // ---------------------------------------------------------------------------
@@ -178,14 +173,6 @@ private fun CpuMonitorMaterial(state: CpuMonitorUiState, callbacks: CpuCallbacks
                     )
                 },
                 navigationIcon = { TopBarBackButton(onClick = { navigator.pop() }) },
-                actions = {
-                    IconButton(onClick = callbacks.onRefresh) {
-                        Icon(
-                            Icons.Rounded.Refresh,
-                            contentDescription = stringResource(R.string.cpu_monitor_refresh),
-                        )
-                    }
-                },
                 colors = expressiveTopAppBarColors(),
                 windowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
                 scrollBehavior = scrollBehavior,
@@ -240,15 +227,6 @@ private fun CpuMonitorMiuix(state: CpuMonitorUiState, callbacks: CpuCallbacks) {
                             MiuixIcon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = null,
-                                tint = colorScheme.onSurface,
-                            )
-                        }
-                    },
-                    actions = {
-                        MiuixIconButton(onClick = callbacks.onRefresh) {
-                            MiuixIcon(
-                                imageVector = Icons.Rounded.Refresh,
-                                contentDescription = stringResource(R.string.cpu_monitor_refresh),
                                 tint = colorScheme.onSurface,
                             )
                         }
@@ -447,18 +425,30 @@ private fun LiveCard(
 
 @Composable
 private fun CoreCell(core: CpuCoreLive, colors: CpuColors, modifier: Modifier = Modifier) {
-    Column(modifier = modifier.semantics(mergeDescendants = true) {}) {
+    // The four per-row cells are weighted, so the outer edges of the first and
+    // last cell would otherwise look uneven: the text is centred and padded
+    // symmetrically to keep both gutters the same width.
+    Column(
+        modifier = modifier
+            .semantics(mergeDescendants = true) {}
+            .padding(horizontal = 2.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         Text(
             text = if (core.curFreqKhz > 0L) formatFreq(core.curFreqKhz)
             else stringResource(R.string.cpu_monitor_offline),
             color = colors.value,
-            fontSize = 15.sp,
+            fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            textAlign = TextAlign.Center,
         )
         Text(
             text = formatFreq(core.maxFreqKhz),
             color = colors.label,
             fontSize = 12.sp,
+            maxLines = 1,
+            textAlign = TextAlign.Center,
         )
     }
 }
