@@ -28,8 +28,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeFlexibleTopAppBar
@@ -110,6 +112,10 @@ fun GpuMonitorScreen() {
     val callbacks = GpuCallbacks(
         onRefresh = { viewModel.refresh() },
         onClearHistory = viewModel::clearHistory,
+        onLowerMin = viewModel::lowerMinFreq,
+        onRaiseMin = viewModel::raiseMinFreq,
+        onLowerMax = viewModel::lowerMaxFreq,
+        onRaiseMax = viewModel::raiseMaxFreq,
     )
 
     when (LocalUiMode.current) {
@@ -121,6 +127,10 @@ fun GpuMonitorScreen() {
 private data class GpuCallbacks(
     val onRefresh: () -> Unit,
     val onClearHistory: () -> Unit,
+    val onLowerMin: () -> Unit,
+    val onRaiseMin: () -> Unit,
+    val onLowerMax: () -> Unit,
+    val onRaiseMax: () -> Unit,
 )
 
 // ---------------------------------------------------------------------------
@@ -281,6 +291,11 @@ private fun GpuContent(
         item {
             LiveCard(state = state, isMiuix = isMiuix, colors = colors)
         }
+        if (state.live.canLimit) {
+            item {
+                LimitCard(state = state, callbacks = callbacks, isMiuix = isMiuix, colors = colors)
+            }
+        }
         item {
             HistoryCard(state = state, callbacks = callbacks, isMiuix = isMiuix, colors = colors)
         }
@@ -372,6 +387,91 @@ private fun LiveCard(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun LimitCard(
+    state: GpuMonitorUiState,
+    callbacks: GpuCallbacks,
+    isMiuix: Boolean,
+    colors: GpuColors,
+) {
+    val live = state.live
+    GpuCard(isMiuix = isMiuix, top = 4, bottom = 4) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp)) {
+            Text(
+                text = stringResource(R.string.gpu_monitor_limits_title),
+                color = colors.value,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = stringResource(R.string.gpu_monitor_limits_summary),
+                color = colors.label,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+            Spacer(Modifier.height(6.dp))
+            LimitRow(
+                label = stringResource(R.string.gpu_monitor_limits_min),
+                value = live.minFreqKhz?.let(::formatFreq).orEmpty(),
+                enabled = !state.limitsBusy,
+                onLower = callbacks.onLowerMin,
+                onRaise = callbacks.onRaiseMin,
+                colors = colors,
+            )
+            LimitRow(
+                label = stringResource(R.string.gpu_monitor_limits_max),
+                value = live.maxFreqKhz?.let(::formatFreq).orEmpty(),
+                enabled = !state.limitsBusy,
+                onLower = callbacks.onLowerMax,
+                onRaise = callbacks.onRaiseMax,
+                colors = colors,
+            )
+        }
+    }
+}
+
+@Composable
+private fun LimitRow(
+    label: String,
+    value: String,
+    enabled: Boolean,
+    onLower: () -> Unit,
+    onRaise: () -> Unit,
+    colors: GpuColors,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            color = colors.label,
+            fontSize = 14.sp,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = value,
+            color = colors.value,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+        )
+        IconButton(onClick = onLower, enabled = enabled) {
+            Icon(
+                imageVector = Icons.Rounded.Remove,
+                contentDescription = stringResource(R.string.gpu_monitor_limit_decrease),
+                tint = colors.accent,
+            )
+        }
+        IconButton(onClick = onRaise, enabled = enabled) {
+            Icon(
+                imageVector = Icons.Rounded.Add,
+                contentDescription = stringResource(R.string.gpu_monitor_limit_increase),
+                tint = colors.accent,
+            )
         }
     }
 }
