@@ -26,6 +26,7 @@ private const val KEY_USE_SOFT_REBOOT = "soft_reboot"
 private const val KEY_MODULE_PREFLASH = "module_preflash"
 private const val KEY_MODULE_AUTO_HOT_INSTALL = "module_auto_hot_install"
 private const val KEY_BATTERY_MONITOR = "battery_monitor_enabled"
+private const val KEY_BATTERY_MONITOR_RESET_ON_UNPLUG = "battery_monitor_reset_on_unplug"
 
 /** Prefer soft reboot: always in jailbreak mode, or when the setting is enabled. */
 fun isSoftRebootPreferred(): Boolean =
@@ -249,6 +250,10 @@ class SettingsRepositoryImpl : SettingsRepository {
     override var batteryMonitorEnabled: Boolean
         get() = prefs.getBoolean(KEY_BATTERY_MONITOR, false)
         set(value) = prefs.edit { putBoolean(KEY_BATTERY_MONITOR, value) }
+
+    override var batteryMonitorResetOnUnplug: Boolean
+        get() = prefs.getBoolean(KEY_BATTERY_MONITOR_RESET_ON_UNPLUG, true)
+        set(value) = prefs.edit { putBoolean(KEY_BATTERY_MONITOR_RESET_ON_UNPLUG, value) }
 
     override var bottomBarKernelTool: String
         get() = prefs.getString(KernelTool.PREF_KEY, KernelTool.Tuning.id) ?: KernelTool.Tuning.id

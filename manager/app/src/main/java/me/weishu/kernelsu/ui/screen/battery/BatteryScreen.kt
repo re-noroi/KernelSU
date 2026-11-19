@@ -100,6 +100,9 @@ fun BatteryScreen() {
     val context = LocalContext.current
     val settingsRepository = remember { SettingsRepositoryImpl() }
     var monitorEnabled by remember { mutableStateOf(settingsRepository.batteryMonitorEnabled) }
+    var resetOnUnplug by remember {
+        mutableStateOf(settingsRepository.batteryMonitorResetOnUnplug)
+    }
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
@@ -144,10 +147,29 @@ fun BatteryScreen() {
         }
     }
 
+    val onResetOnUnplugChange: (Boolean) -> Unit = { enabled ->
+        resetOnUnplug = enabled
+        settingsRepository.batteryMonitorResetOnUnplug = enabled
+    }
+
     when (LocalUiMode.current) {
-        UiMode.Miuix -> BatteryScreenMiuix(uiState, monitorEnabled, onMonitorToggle, onResetMonitor)
-        UiMode.Material, UiMode.Minimal ->
-            BatteryScreenMaterial(uiState, monitorEnabled, onMonitorToggle, onResetMonitor)
+        UiMode.Miuix -> BatteryScreenMiuix(
+            state = uiState,
+            monitorEnabled = monitorEnabled,
+            resetOnUnplug = resetOnUnplug,
+            onMonitorToggle = onMonitorToggle,
+            onResetMonitor = onResetMonitor,
+            onResetOnUnplugChange = onResetOnUnplugChange,
+        )
+
+        UiMode.Material, UiMode.Minimal -> BatteryScreenMaterial(
+            state = uiState,
+            monitorEnabled = monitorEnabled,
+            resetOnUnplug = resetOnUnplug,
+            onMonitorToggle = onMonitorToggle,
+            onResetMonitor = onResetMonitor,
+            onResetOnUnplugChange = onResetOnUnplugChange,
+        )
     }
 }
 
@@ -159,8 +181,10 @@ fun BatteryScreen() {
 private fun BatteryScreenMaterial(
     state: BatteryUiState,
     monitorEnabled: Boolean,
+    resetOnUnplug: Boolean,
     onMonitorToggle: (Boolean) -> Unit,
     onResetMonitor: () -> Unit,
+    onResetOnUnplugChange: (Boolean) -> Unit,
 ) {
     val navigator = LocalNavigator.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
@@ -203,6 +227,12 @@ private fun BatteryScreenMaterial(
             }
             if (monitorEnabled) {
                 item {
+                    BatteryResetOnUnplugCardMaterial(
+                        enabled = resetOnUnplug,
+                        onToggle = onResetOnUnplugChange,
+                    )
+                }
+                item {
                     BatteryMonitorStatsCardMaterial(
                         onClick = { navigator.push(Route.BatteryMonitorStats) },
                     )
@@ -235,8 +265,10 @@ private fun BatteryScreenMaterial(
 private fun BatteryScreenMiuix(
     state: BatteryUiState,
     monitorEnabled: Boolean,
+    resetOnUnplug: Boolean,
     onMonitorToggle: (Boolean) -> Unit,
     onResetMonitor: () -> Unit,
+    onResetOnUnplugChange: (Boolean) -> Unit,
 ) {
     val navigator = LocalNavigator.current
     val enableBlur = LocalEnableBlur.current
@@ -295,6 +327,12 @@ private fun BatteryScreenMiuix(
                     )
                 }
                 if (monitorEnabled) {
+                    item {
+                        BatteryResetOnUnplugCardMiuix(
+                            enabled = resetOnUnplug,
+                            onToggle = onResetOnUnplugChange,
+                        )
+                    }
                     item {
                         BatteryMonitorStatsCardMiuix(
                             onClick = { navigator.push(Route.BatteryMonitorStats) },
@@ -389,6 +427,65 @@ private fun BatteryMonitorCardMiuix(
                 MiuixIcon(
                     imageVector = Icons.Rounded.Refresh,
                     contentDescription = stringResource(R.string.battery_monitor_reset_stats),
+                )
+            }
+            MiuixSwitch(checked = enabled, onCheckedChange = onToggle)
+        }
+    }
+}
+
+@Composable
+private fun BatteryResetOnUnplugCardMaterial(
+    enabled: Boolean,
+    onToggle: (Boolean) -> Unit,
+) {
+    TonalCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 4.dp),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                Text(
+                    text = stringResource(R.string.battery_monitor_reset_on_unplug_title),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Medium,
+                )
+                Text(
+                    text = stringResource(R.string.battery_monitor_reset_on_unplug_summary),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 13.sp,
+                )
+            }
+            Switch(checked = enabled, onCheckedChange = onToggle)
+        }
+    }
+}
+
+@Composable
+private fun BatteryResetOnUnplugCardMiuix(
+    enabled: Boolean,
+    onToggle: (Boolean) -> Unit,
+) {
+    Card(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                Text(
+                    text = stringResource(R.string.battery_monitor_reset_on_unplug_title),
+                    color = colorScheme.onSurface,
+                    fontWeight = FontWeight.Medium,
+                )
+                Text(
+                    text = stringResource(R.string.battery_monitor_reset_on_unplug_summary),
+                    color = colorScheme.onSurfaceVariantSummary,
+                    fontSize = 13.sp,
                 )
             }
             MiuixSwitch(checked = enabled, onCheckedChange = onToggle)

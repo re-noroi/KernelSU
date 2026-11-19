@@ -2,6 +2,7 @@ package me.weishu.kernelsu.data.battery
 
 import android.content.Context
 import android.os.SystemClock
+import android.provider.Settings
 import androidx.core.content.edit
 import kotlin.math.max
 
@@ -21,6 +22,18 @@ class BatteryStatsStore(context: Context) {
 
     private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
+    /**
+     * Counter bumped by the framework on every boot. Comparing it with the
+     * stored value is the only reliable way to tell a reboot from a long
+     * stretch of suspended time, because both monotonic clocks restart at
+     * boot with values that can still be larger than the last persisted one.
+     * Devices that do not expose it report -1 and fall back to the clock check.
+     */
+    private val bootCount: Int = runCatching {
+        Settings.Global.getInt(context.contentResolver, Settings.Global.BOOT_COUNT, -1)
+    }.getOrDefault(-1)
+
+    private var lastBootCount = prefs.getInt(KEY_BOOT_COUNT, -1)
     private var lastElapsed = prefs.getLong(KEY_ELAPSED, 0L)
     private var lastUptime = prefs.getLong(KEY_UPTIME, 0L)
     private var lastLevel = prefs.getInt(KEY_LEVEL, -1)
@@ -87,32 +100,50 @@ class BatteryStatsStore(context: Context) {
      * any percentage drop to the state that was active. Safe to call as often
      * as the caller likes: it only reads clocks and does arithmetic.
      *
+     * @param resetOnUnplug when true, disconnecting the charger starts a fresh
+     *   measurement window (the default, which keeps the drained percentages
+     *   inside 0..100 per charge cycle). When false, the counters survive the
+     *   unplug and only [reset] clears them.
      * @return true when the device left the charger and every counter was
-     * reset, so callers can persist the zeros immediately.
+     *   reset, so callers can persist the zeros immediately.
      */
     fun settle(
         level: Int,
         screenOn: Boolean,
         charging: Boolean,
+        resetOnUnplug: Boolean = true,
         nowElapsed: Long = SystemClock.elapsedRealtime(),
         nowUptime: Long = SystemClock.uptimeMillis(),
     ): Boolean {
-        // First sample, or the device rebooted and both clocks restarted. Keep
-        // the cumulative totals but rebase, otherwise the delta would be bogus.
-        if (lastElapsed == 0L || nowElapsed < lastElapsed || nowUptime < lastUptime) {
+        // A reboot restarts every monotonic clock, so the stored deltas are
+        // meaningless: the gap across the reboot must not be booked to any
+        // state. The boot counter is authoritative when available; a clock
+        // that went backwards (or a freshly cleared store) is always a rebase
+        // too, so both are handled here.
+        val clockRebased = lastElapsed == 0L ||
+            nowElapsed < lastElapsed ||
+            nowUptime < lastUptime
+        val rebooted = bootCount >= 0 && lastBootCount >= 0 && bootCount != lastBootCount
+        if (clockRebased || rebooted) {
+            // Keep the cumulative totals but rebase, otherwise the delta would
+            // be bogus. Re-establishing `lastCharging` here is what stops the
+            // first sample after a reboot from looking like an unplug.
+            lastBootCount = bootCount
             lastElapsed = nowElapsed
             lastUptime = nowUptime
             lastLevel = level
             lastCharging = charging
+            lastScreenOn = screenOn
             return false
         }
+        lastBootCount = bootCount
 
-        // Unplugging starts a fresh measurement window: everything collected
-        // so far belongs to the cycle that just ended, and the raw "since last
-        // charge" section below restarts at the same moment. Without this the
-        // drain percentages would accumulate across charges and could read
-        // well over 100%. Durations reset with them so the two always agree.
-        if (!charging && lastCharging) {
+        // Unplugging starts a fresh measurement window when the user asked for
+        // one: everything collected so far belongs to the cycle that just
+        // ended, and the raw "since last charge" section below restarts at the
+        // same moment. Without this the drain percentages would accumulate
+        // across charges. Durations reset with them so the two always agree.
+        if (!charging && lastCharging && resetOnUnplug) {
             screenOnMillis = 0L
             screenOffMillis = 0L
             deepSleepMillis = 0L
@@ -158,6 +189,7 @@ class BatteryStatsStore(context: Context) {
 
     fun persist() {
         prefs.edit {
+            putInt(KEY_BOOT_COUNT, lastBootCount)
             putLong(KEY_ELAPSED, lastElapsed)
             putLong(KEY_UPTIME, lastUptime)
             putInt(KEY_LEVEL, lastLevel)
@@ -173,6 +205,7 @@ class BatteryStatsStore(context: Context) {
     }
 
     fun reset() {
+        lastBootCount = bootCount
         lastElapsed = 0L
         lastUptime = 0L
         lastLevel = -1
@@ -189,6 +222,7 @@ class BatteryStatsStore(context: Context) {
 
     private companion object {
         const val PREFS = "battery_monitor"
+        const val KEY_BOOT_COUNT = "boot_count"
         const val KEY_ELAPSED = "elapsed"
         const val KEY_UPTIME = "uptime"
         const val KEY_LEVEL = "level"

@@ -820,6 +820,8 @@
     <string name="battery_monitor_deep_sleep">Deep sleep: %1$s (%2$s%%)</string>
     <string name="battery_monitor_awake">Awake: %1$s (%2$s%%)</string>
     <string name="battery_monitor_reset_stats">Reset battery stats</string>
+    <string name="battery_monitor_reset_on_unplug_title">Reset stats after unplugging</string>
+    <string name="battery_monitor_reset_on_unplug_summary">Start a fresh measurement cycle each time the charger is disconnected</string>
 
     <!-- Battery monitor detail screen -->
     <string name="battery_monitor_stats_open">View detailed stats</string>
@@ -843,6 +845,7 @@
     <string name="battery_monitor_stats_share">%1$s (%2$s%%)</string>
     <string name="battery_monitor_stats_no_root">Battery stats need a working root shell.</string>
     <string name="battery_monitor_stats_since_charge">Since last charge</string>
+    <string name="battery_monitor_stats_since_reset">Since last reset</string>
     <string name="battery_monitor_stats_rate_pending">Not enough data yet</string>
     <string name="battery_monitor_stats_span_days">%1$d days</string>
     <string name="battery_monitor_stats_span_day">1 day</string>

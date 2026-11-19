@@ -817,6 +817,8 @@ Apakah Anda ingin memulihkan profil ini?</string>
     <string name="battery_monitor_deep_sleep">Tidur dalam: %1$s (%2$s%%)</string>
     <string name="battery_monitor_awake">Terjaga: %1$s (%2$s%%)</string>
     <string name="battery_monitor_reset_stats">Reset statistik baterai</string>
+    <string name="battery_monitor_reset_on_unplug_title">Reset statistik setelah dilepas</string>
+    <string name="battery_monitor_reset_on_unplug_summary">Mulai siklus pengukuran baru setiap kali charger dilepas</string>
 
     <!-- Battery monitor detail screen -->
     <string name="battery_monitor_stats_open">Lihat statistik lengkap</string>
@@ -840,6 +842,7 @@ Apakah Anda ingin memulihkan profil ini?</string>
     <string name="battery_monitor_stats_share">%1$s (%2$s%%)</string>
     <string name="battery_monitor_stats_no_root">Statistik baterai memerlukan shell root yang berfungsi.</string>
     <string name="battery_monitor_stats_since_charge">Sejak pengisian terakhir</string>
+    <string name="battery_monitor_stats_since_reset">Sejak reset terakhir</string>
     <string name="battery_monitor_stats_rate_pending">Data belum cukup</string>
     <string name="battery_monitor_stats_span_days">%1$d hari</string>
     <string name="battery_monitor_stats_span_day">1 hari</string>
