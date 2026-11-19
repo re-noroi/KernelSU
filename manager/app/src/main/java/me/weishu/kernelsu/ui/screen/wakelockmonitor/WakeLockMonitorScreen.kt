@@ -111,7 +111,6 @@ fun WakeLockMonitorScreen() {
     val callbacks = WakeLockCallbacks(
         onToggle = viewModel::setEnabled,
         onReset = viewModel::reset,
-        onRefresh = viewModel::refresh,
     )
 
     when (LocalUiMode.current) {
@@ -123,7 +122,6 @@ fun WakeLockMonitorScreen() {
 private data class WakeLockCallbacks(
     val onToggle: (Boolean) -> Unit,
     val onReset: () -> Unit,
-    val onRefresh: () -> Unit,
 )
 
 // ---------------------------------------------------------------------------
@@ -154,14 +152,6 @@ private fun WakeLockMonitorMaterial(state: WakeLockMonitorUiState, callbacks: Wa
                     )
                 },
                 navigationIcon = { TopBarBackButton(onClick = { navigator.pop() }) },
-                actions = {
-                    IconButton(onClick = callbacks.onRefresh, enabled = state.enabled) {
-                        Icon(
-                            Icons.Rounded.Refresh,
-                            contentDescription = stringResource(R.string.wakelocks_refresh),
-                        )
-                    }
-                },
                 colors = expressiveTopAppBarColors(),
                 windowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
                 scrollBehavior = scrollBehavior,
@@ -216,15 +206,6 @@ private fun WakeLockMonitorMiuix(state: WakeLockMonitorUiState, callbacks: WakeL
                             MiuixIcon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = null,
-                                tint = colorScheme.onSurface,
-                            )
-                        }
-                    },
-                    actions = {
-                        MiuixIconButton(onClick = callbacks.onRefresh, enabled = state.enabled) {
-                            MiuixIcon(
-                                imageVector = Icons.Rounded.Refresh,
-                                contentDescription = stringResource(R.string.wakelocks_refresh),
                                 tint = colorScheme.onSurface,
                             )
                         }

@@ -169,7 +169,11 @@ fun TuningScreenMiuix(
 
                 // ---- PERSISTENCE ----
                 item {
-                    Card(modifier = Modifier.fillMaxWidth()) {
+                    Card(
+                        modifier = Modifier
+                            .padding(top = 12.dp)
+                            .fillMaxWidth(),
+                    ) {
                         SwitchPreference(
                             title = stringResource(R.string.tuning_persist_title),
                             summary = stringResource(
@@ -183,7 +187,11 @@ fun TuningScreenMiuix(
                     }
                 }
                 item {
-                    Card(modifier = Modifier.fillMaxWidth()) {
+                    Card(
+                        modifier = Modifier
+                            .padding(top = 12.dp)
+                            .fillMaxWidth(),
+                    ) {
                         TuningDocsEntryMiuix(onClick = actions.onOpenTuningDocs)
                     }
                 }
@@ -191,7 +199,11 @@ fun TuningScreenMiuix(
                 // ---- THERMALS ----
                 item { SectionHeaderMiuix(stringResource(R.string.tuning_section_thermals)) }
                 item {
-                    Card(modifier = Modifier.fillMaxWidth()) {
+                    Card(
+                        modifier = Modifier
+                            .padding(top = 12.dp)
+                            .fillMaxWidth(),
+                    ) {
                         val thermalName = state.profiles.firstOrNull { it.index == state.thermalIndex }?.name
                         val summary = when {
                             !state.thermalSupported -> stringResource(R.string.tuning_unsupported)
@@ -340,7 +352,11 @@ fun TuningScreenMiuix(
                 if (state.memory.supported) {
                     item { SectionHeaderMiuix("Memory Management") }
                     item {
-                        Card(modifier = Modifier.fillMaxWidth()) {
+                        Card(
+                            modifier = Modifier
+                                .padding(top = 12.dp)
+                                .fillMaxWidth(),
+                        ) {
                             Column {
                                 // Swappiness — always exists, just might be RO
                                 IntInputMiuix(
@@ -432,7 +448,11 @@ fun TuningScreenMiuix(
                 if (state.zram.supported) {
                     item { SectionHeaderMiuix("zRAM") }
                     item {
-                        Card(modifier = Modifier.fillMaxWidth()) {
+                        Card(
+                            modifier = Modifier
+                                .padding(top = 12.dp)
+                                .fillMaxWidth(),
+                        ) {
                             // State row
                             Row(
                                 modifier = Modifier
@@ -519,7 +539,11 @@ fun TuningScreenMiuix(
                     // FakeDreamers
                     item { SubHeaderMiuix(stringResource(R.string.tuning_section_fakedreamers)) }
                     item {
-                        Card(modifier = Modifier.fillMaxWidth()) {
+                        Card(
+                            modifier = Modifier
+                                .padding(top = 12.dp)
+                                .fillMaxWidth(),
+                        ) {
                             if (state.scheduler.peltMultiplierSupported) {
                                 PeltMultiplierSwitchMiuix(
                                     checked = state.scheduler.peltMultiplier != 0,
@@ -599,7 +623,7 @@ fun TuningScreenMiuix(
                             item {
                                 Card(
                                     modifier = Modifier
-                                        .padding(top = 8.dp)
+                                        .padding(top = 12.dp)
                                         .fillMaxWidth()
                                 ) {
                                     Text(
@@ -661,7 +685,11 @@ fun TuningScreenMiuix(
                 if (state.network.supported) {
                     item { SectionHeaderMiuix("Networking") }
                     item {
-                        Card(modifier = Modifier.fillMaxWidth()) {
+                        Card(
+                            modifier = Modifier
+                                .padding(top = 12.dp)
+                                .fillMaxWidth(),
+                        ) {
                             OverlayDropdownPreference(
                                 title = "TCP Cong. Alg.",
                                 summary = "Current: ${state.network.tcpCurrent}",
@@ -707,7 +735,11 @@ fun TuningScreenMiuix(
                 // ---- MISCELLANEOUS ----
                 item { SectionHeaderMiuix(stringResource(R.string.tuning_section_misc)) }
                 item {
-                    Card(modifier = Modifier.fillMaxWidth()) {
+                    Card(
+                        modifier = Modifier
+                            .padding(top = 12.dp)
+                            .fillMaxWidth(),
+                    ) {
                         ColorCalibrationEntryMiuix(onClick = actions.onOpenColorCalibration)
                     }
                 }

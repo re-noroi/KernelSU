@@ -110,7 +110,6 @@ fun GpuMonitorScreen() {
     }
 
     val callbacks = GpuCallbacks(
-        onRefresh = { viewModel.refresh() },
         onClearHistory = viewModel::clearHistory,
         onLowerMin = viewModel::lowerMinFreq,
         onRaiseMin = viewModel::raiseMinFreq,
@@ -125,7 +124,6 @@ fun GpuMonitorScreen() {
 }
 
 private data class GpuCallbacks(
-    val onRefresh: () -> Unit,
     val onClearHistory: () -> Unit,
     val onLowerMin: () -> Unit,
     val onRaiseMin: () -> Unit,
@@ -161,14 +159,6 @@ private fun GpuMonitorMaterial(state: GpuMonitorUiState, callbacks: GpuCallbacks
                     )
                 },
                 navigationIcon = { TopBarBackButton(onClick = { navigator.pop() }) },
-                actions = {
-                    IconButton(onClick = callbacks.onRefresh) {
-                        Icon(
-                            Icons.Rounded.Refresh,
-                            contentDescription = stringResource(R.string.gpu_monitor_refresh),
-                        )
-                    }
-                },
                 colors = expressiveTopAppBarColors(),
                 windowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
                 scrollBehavior = scrollBehavior,
@@ -223,15 +213,6 @@ private fun GpuMonitorMiuix(state: GpuMonitorUiState, callbacks: GpuCallbacks) {
                             MiuixIcon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = null,
-                                tint = colorScheme.onSurface,
-                            )
-                        }
-                    },
-                    actions = {
-                        MiuixIconButton(onClick = callbacks.onRefresh) {
-                            MiuixIcon(
-                                imageVector = Icons.Rounded.Refresh,
-                                contentDescription = stringResource(R.string.gpu_monitor_refresh),
                                 tint = colorScheme.onSurface,
                             )
                         }

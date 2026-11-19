@@ -308,7 +308,7 @@ private fun ThermalZoneRows(
     mutedColor: Color,
     dividerColor: Color,
 ) {
-    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
         if (zones.isEmpty()) {
             Text(
                 text = stringResource(R.string.thermal_monitor_empty),
@@ -321,7 +321,7 @@ private fun ThermalZoneRows(
 
         zones.forEachIndexed { index, zone ->
             Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -329,20 +329,20 @@ private fun ThermalZoneRows(
                     Text(
                         text = zone.name,
                         color = valueColor,
-                        fontSize = 15.sp,
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
                     )
                     Text(
                         text = zone.type,
                         color = mutedColor,
-                        fontSize = 12.sp,
+                        fontSize = 11.sp,
                     )
                 }
                 Spacer(Modifier.width(12.dp))
                 Text(
                     text = zone.temperature,
                     color = valueColor,
-                    fontSize = 15.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
                 )
             }
