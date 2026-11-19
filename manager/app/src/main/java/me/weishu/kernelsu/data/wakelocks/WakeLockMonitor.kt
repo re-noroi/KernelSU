@@ -57,35 +57,40 @@ data class WakeLockRow(
 /**
  * Reads the cumulative wake-lock counters the system keeps.
  *
- * `dumpsys batterystats --checkin` is the primary source: it is always
- * readable, and it is the only one that carries both the kernel wake locks
- * (`kwl`) and the framework ones (`wl`) such as the `*job*` and `*sync*` tags
- * that Kernel Managers list. The kernel tables remain as a fallback for
- * devices where `dumpsys` is restricted:
+ * The primary source is the modern `/sys/class/wakeup` class: every kernel
+ * wakeup source (including the charger/PMIC and `pil-*` sources that Kernel
+ * Managers list) exposes `name` and `total_time_ms` there, and it needs no
+ * debugfs mount. The older tables stay as fallbacks:
  *
- * 1. `dumpsys batterystats --checkin` — milliseconds.
- * 2. debugfs `wakeup_sources` — kernel suspend blockers, milliseconds.
+ * 1. `/sys/class/wakeup/wakeup*` — kernel wakeup sources, milliseconds.
+ * 2. debugfs `wakeup_sources` — the same sources as one table, milliseconds.
  * 3. `/proc/wakelocks` — the pre-debugfs table, nanoseconds.
+ * 4. `dumpsys batterystats --checkin` — user-space framework wake locks.
  *
  * Android 12+ user builds do not mount debugfs at boot, so the command tries
- * a `mount -t debugfs` before giving up on the kernel tables.
+ * a `mount -t debugfs` before giving up on the kernel table.
  *
- * The counters are cumulative since unplug or boot, which is why the screen
- * keeps a baseline and only shows the growth since the user enabled it.
+ * The counters are cumulative since boot, which is why the screen keeps a
+ * baseline and only shows the growth since the user enabled it.
  */
 object WakeLockMonitor {
 
     private const val COMMAND =
-        "B=\$(dumpsys batterystats --checkin 2>/dev/null " +
-            "| grep -E '^[0-9]+,[0-9]+,(u|c|l),(kwl|wl),'); " +
-            "if [ -n \"\$B\" ]; then echo 'S|battery'; echo \"\$B\"; else " +
+        "C=/sys/class/wakeup; H=0; " +
+            "for d in \$C/wakeup*; do [ -r \"\$d/total_time_ms\" ] && H=1 && break; done; " +
+            "if [ \"\$H\" = 1 ]; then echo 'S|class'; " +
+            "for d in \$C/wakeup*; do " +
+            "n=\$(cat \"\$d/name\" 2>/dev/null); t=\$(cat \"\$d/total_time_ms\" 2>/dev/null); " +
+            "[ -n \"\$n\" ] && [ -n \"\$t\" ] && echo \"\$n\t\$t\"; done; else " +
             "D=/sys/kernel/debug; F=\$D/wakeup_sources; " +
             "[ -r \"\$F\" ] || mount -t debugfs debugfs \$D 2>/dev/null; " +
             "[ -r \"\$F\" ] || F=/d/wakeup_sources; " +
             "if [ -r \"\$F\" ] && [ \$(wc -l < \"\$F\") -gt 1 ]; then " +
             "echo 'S|debug'; cat \"\$F\" 2>/dev/null; " +
             "elif [ -r /proc/wakelocks ]; then echo 'S|proc'; cat /proc/wakelocks 2>/dev/null; " +
-            "fi; fi"
+            "else B=\$(dumpsys batterystats --checkin 2>/dev/null " +
+            "| grep -E '^[0-9]+,[0-9]+,(u|c|l),(kwl|wl),'); " +
+            "[ -n \"\$B\" ] && { echo 'S|battery'; echo \"\$B\"; }; fi; fi"
 
     /** Returns null when neither the kernel nor batterystats exposed anything. */
     suspend fun read(): WakeLockSnapshot? = withContext(Dispatchers.IO) {
@@ -102,11 +107,30 @@ object WakeLockMonitor {
         val source = lines[headerIndex].removePrefix("S|").trim()
         val body = lines.drop(headerIndex + 1)
         return when (source) {
+            "class" -> parseClass(body)
             "proc" -> parseTable(body, "proc", nanosecondSource = true)
             "debug" -> parseTable(body, "debug", nanosecondSource = false)
             "battery" -> parseCheckin(body)
             else -> null
         }
+    }
+
+    /**
+     * Parses `/sys/class/wakeup/wakeup*`, which the command flattens to
+     * `name<TAB>total_time_ms` lines. The name keeps any spaces or commas it
+     * has, so the split happens at the first tab only.
+     */
+    private fun parseClass(lines: List<String>): WakeLockSnapshot? {
+        val entries = LinkedHashMap<String, Long>()
+        lines.forEach { line ->
+            val split = line.indexOf('\t')
+            if (split <= 0) return@forEach
+            val name = line.substring(0, split).trim()
+            val total = line.substring(split + 1).trim().toLongOrNull() ?: return@forEach
+            if (name.isNotEmpty() && total > 0L) entries[name] = total
+        }
+        if (entries.isEmpty()) return null
+        return WakeLockSnapshot(entries, "class")
     }
 
     /**
