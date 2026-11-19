@@ -46,6 +46,8 @@ interface SettingsRepository {
     var moduleAutoHotInstall: Boolean
     /** Keep the ongoing battery telemetry notification running. */
     var batteryMonitorEnabled: Boolean
+    /** Start a fresh measurement window each time the charger is disconnected. */
+    var batteryMonitorResetOnUnplug: Boolean
     var bottomBarKernelTool: String
     var bottomBarToolTipsShown: Boolean
     val intentToken: String

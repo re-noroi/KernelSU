@@ -20,6 +20,7 @@ import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import me.weishu.kernelsu.R
+import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
 import java.util.Locale
 import kotlin.math.abs
 
@@ -46,6 +47,7 @@ class BatteryMonitorService : Service() {
     private lateinit var batteryManager: BatteryManager
     private lateinit var powerManager: PowerManager
     private lateinit var stats: BatteryStatsStore
+    private val settings = SettingsRepositoryImpl()
 
     private val handler = Handler(Looper.getMainLooper())
     private var foregroundStarted = false
@@ -190,7 +192,12 @@ class BatteryMonitorService : Service() {
             status == BatteryManager.BATTERY_STATUS_FULL ||
             plugged != 0
         val screenOn = powerManager.isInteractive
-        val newCycle = stats.settle(level = level, screenOn = screenOn, charging = charging)
+        val newCycle = stats.settle(
+            level = level,
+            screenOn = screenOn,
+            charging = charging,
+            resetOnUnplug = settings.batteryMonitorResetOnUnplug,
+        )
 
         val now = SystemClock.elapsedRealtime()
         // Leaving the charger zeroed every counter; write the zeros out before

@@ -65,6 +65,7 @@ import me.weishu.kernelsu.data.battery.BatteryStatsDump
 import me.weishu.kernelsu.data.battery.BatteryStatsDumper
 import me.weishu.kernelsu.data.battery.BatteryStatsFailure
 import me.weishu.kernelsu.data.battery.BatteryStatsStore
+import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
 import me.weishu.kernelsu.ui.LocalUiMode
 import me.weishu.kernelsu.ui.UiMode
 import me.weishu.kernelsu.ui.component.material.ExpressiveScaffold
@@ -307,6 +308,10 @@ private fun StatsContent(
         ?.replace(",", "")
         ?.let { Regex("[0-9]+(?:\\.[0-9]+)?").find(it)?.value?.toFloatOrNull() }
 
+    // When the counters survive an unplug they are no longer bounded by a
+    // charge cycle, so the section subtitle has to say so.
+    val resetOnUnplug = remember { SettingsRepositoryImpl().batteryMonitorResetOnUnplug }
+
     // Labels arrive from `dumpsys` in English; map the known ones and leave
     // anything newer as the device reported it.
     val sinceRows = mutableListOf<Pair<String, String>>()
@@ -327,7 +332,11 @@ private fun StatsContent(
         item {
             StatsSection(
                 title = stringResource(R.string.battery_monitor_stats_screen_on),
-                subtitle = stringResource(R.string.battery_monitor_stats_since_charge),
+                subtitle = if (resetOnUnplug) {
+                    stringResource(R.string.battery_monitor_stats_since_charge)
+                } else {
+                    stringResource(R.string.battery_monitor_stats_since_reset)
+                },
                 rows = listOf(
                     stringResource(R.string.battery_monitor_stats_duration) to
                         formatSpan(monitor.screenOnMillis),
@@ -343,7 +352,11 @@ private fun StatsContent(
         item {
             StatsSection(
                 title = stringResource(R.string.battery_monitor_stats_screen_off),
-                subtitle = stringResource(R.string.battery_monitor_stats_since_charge),
+                subtitle = if (resetOnUnplug) {
+                    stringResource(R.string.battery_monitor_stats_since_charge)
+                } else {
+                    stringResource(R.string.battery_monitor_stats_since_reset)
+                },
                 rows = listOf(
                     stringResource(R.string.battery_monitor_stats_duration) to
                         formatSpan(monitor.screenOffMillis),
