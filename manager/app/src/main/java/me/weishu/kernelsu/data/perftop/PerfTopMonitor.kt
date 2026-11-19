@@ -2,10 +2,11 @@ package me.weishu.kernelsu.data.perftop
 
 import androidx.compose.runtime.Immutable
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import me.weishu.kernelsu.data.SysfsNodeCache
 
-/** One process as printed by `top`. */
+/** One process as sampled from procfs. */
 @Immutable
 data class PerfTopProcess(
     val pid: Int,
@@ -15,93 +16,100 @@ data class PerfTopProcess(
 )
 
 /**
- * Reads the process table through a single batch `top` call.
+ * Samples the process table from `/proc`, the way Kernel Managers do it.
  *
- * Android ships toybox `top`, so no procfs walk is needed on our side: one
- * command produces the whole snapshot. The header is parsed for column
- * positions because toybox glues the state and CPU columns together in the
- * header (`S[%CPU]`) while printing them as two values per row.
+ * `top` on Android can only report lifetime averages in batch mode on some
+ * toybox builds, which is why its `%CPU` column reads far too high. Instead
+ * two `/proc` snapshots are taken one second apart: the per-process tick
+ * delta divided by the total CPU tick delta is the share of the whole device
+ * the process used during that second, the same arithmetic `top` uses for its
+ * interval table.
  *
- * Two iterations are requested on purpose. In batch mode the first table's
- * `%CPU` is the average since each process started, which makes a busy process
- * look idle and an old idle process look expensive; the second table is
- * computed over the sample interval, which is the number Kernel Managers show.
- * Only the last table is kept.
- *
- * Rows are sorted here rather than relying on `top`'s default order, and only
- * the most expensive processes are kept so the UI never composes hundreds of
- * rows.
+ * Every process row comes from `/proc/<pid>/stat`, so no extra files are read
+ * per process: field 14/15 are utime/stime and field 24 is the resident set.
  */
 object PerfTopMonitor {
 
-    private const val COMMAND =
-        "O=\$(top -b -n 2 -d 1 2>/dev/null); " +
-            "[ -z \"\$O\" ] && O=\$(top -b -n 1 2>/dev/null); echo \"\$O\""
+    /**
+     * Prints `T <total cpu ticks>` plus one `/proc/<pid>/stat` line per
+     * process. One `cat` covers every process, instead of a fork per pid.
+     */
+    private const val SNAPSHOT_COMMAND =
+        "awk '/^cpu /{print \"T \" \$2+\$3+\$4+\$5+\$6+\$7+\$8+\$9+\$10+\$11; exit}' /proc/stat; " +
+            "cat /proc/[0-9]*/stat 2>/dev/null"
 
     suspend fun read(): List<PerfTopProcess>? = withContext(Dispatchers.IO) {
-        parse(SysfsNodeCache.execRootCommandOrNull(COMMAND))
+        val first = SysfsNodeCache.execRootCommandOrNull(SNAPSHOT_COMMAND)
+        if (first.isNullOrBlank()) return@withContext null
+        // Long enough for the tick counters to move, short enough to stay
+        // inside the screen's refresh cadence.
+        delay(SAMPLE_WINDOW_MS)
+        val second = SysfsNodeCache.execRootCommandOrNull(SNAPSHOT_COMMAND)
+        if (second.isNullOrBlank()) return@withContext null
+
+        val before = parseSample(first) ?: return@withContext null
+        val after = parseSample(second) ?: return@withContext null
+        compute(before, after)
     }
 
-    fun parse(raw: String?): List<PerfTopProcess>? {
-        if (raw.isNullOrBlank()) return null
+    private data class ProcSample(
+        val name: String,
+        val ticks: Long,
+        val rssKb: Long,
+    )
 
-        var header: List<String>? = null
-        var pidIndex = 0
-        var resIndex = 5
-        var cpuIndex = 8
-        var argsIndex = 11
-        var processes = mutableListOf<PerfTopProcess>()
+    private data class Sample(
+        val totalTicks: Long,
+        val processes: Map<Int, ProcSample>,
+    )
 
-        raw.lineSequence().forEach { rawLine ->
-            val line = rawLine.trim()
-            if (line.isEmpty()) return@forEach
-            val tokens = line.split(Regex("\\s+"))
-            if (tokens.isEmpty()) return@forEach
+    private fun parseSample(raw: String): Sample? {
+        var total = -1L
+        val processes = HashMap<Int, ProcSample>()
 
-            if (tokens[0] == "PID" && tokens.any { it == "RES" || it == "RSS" }) {
-                // A second header starts the next iteration's table; the rows
-                // already collected belong to the previous, averaged sample.
-                processes = mutableListOf()
-                header = tokens
-                val pid = tokens.indexOf("PID")
-                val res = tokens.indexOfFirst { it == "RES" || it == "RSS" }
-                val cpu = tokens.indexOfFirst { it.contains("%CPU") }
-                val args = tokens.indexOfFirst { it == "ARGS" || it == "COMMAND" || it == "NAME" }
-                if (res < 0 || cpu < 0 || args < 0) {
-                    header = null
-                    return@forEach
+        raw.lineSequence().forEach { line ->
+            when {
+                line.startsWith("T ") -> {
+                    total = line.substring(2).trim().toLongOrNull() ?: -1L
                 }
-                // `S[%CPU]` is one header cell covering the state and CPU
-                // columns, so every later column shifts by one in data rows.
-                val glued = tokens[cpu].startsWith("S") && tokens[cpu].contains('[')
-                val shift = if (glued) 1 else 0
-                pidIndex = pid.coerceAtLeast(0)
-                resIndex = res
-                cpuIndex = cpu + shift
-                argsIndex = args + shift
-                return@forEach
+
+                line.length > 1 && line[0].isDigit() -> {
+                    val open = line.indexOf('(')
+                    val close = line.lastIndexOf(')')
+                    if (open <= 0 || close <= open) return@forEach
+                    val pid = line.substring(0, open).trim().toIntOrNull() ?: return@forEach
+                    val name = line.substring(open + 1, close)
+                    val rest = line.substring(close + 1).trim().split(WHITESPACE)
+                    // rest[0] is field 3 (state); utime/stime are fields 14/15,
+                    // rss is field 24.
+                    if (rest.size < 22) return@forEach
+                    val utime = rest[11].toLongOrNull() ?: return@forEach
+                    val stime = rest[12].toLongOrNull() ?: return@forEach
+                    val rssPages = rest[21].toLongOrNull() ?: 0L
+                    processes[pid] = ProcSample(name, utime + stime, rssPages * pageSizeKb)
+                }
             }
-
-            if (header == null) return@forEach
-            if (tokens.size <= argsIndex) return@forEach
-
-            val pid = tokens.getOrNull(pidIndex)?.toIntOrNull() ?: return@forEach
-            val cpu = tokens.getOrNull(cpuIndex)?.toFloatOrNull() ?: return@forEach
-            val res = tokens.getOrNull(resIndex)?.let(::parseSizeKb) ?: 0L
-            val name = tokens.drop(argsIndex).joinToString(" ").trim()
-            if (name.isEmpty()) return@forEach
-            if (cpu <= 0f && res <= 0L) return@forEach
-
-            processes += PerfTopProcess(
-                pid = pid,
-                name = name,
-                cpuPercent = cpu,
-                resKb = res,
-            )
         }
 
-        if (header == null) return null
-        return processes
+        if (total < 0L) return null
+        return Sample(total, processes)
+    }
+
+    private fun compute(before: Sample, after: Sample): List<PerfTopProcess> {
+        val totalDelta = after.totalTicks - before.totalTicks
+        if (totalDelta <= 0L) return emptyList()
+
+        return after.processes.mapNotNull { (pid, now) ->
+            val previous = before.processes[pid] ?: return@mapNotNull null
+            val delta = now.ticks - previous.ticks
+            if (delta <= 0L) return@mapNotNull null
+            PerfTopProcess(
+                pid = pid,
+                name = now.name,
+                cpuPercent = delta * 100f / totalDelta,
+                resKb = now.rssKb,
+            )
+        }
             .sortedWith(
                 compareByDescending<PerfTopProcess> { it.cpuPercent }
                     .thenByDescending { it.resKb }
@@ -110,23 +118,14 @@ object PerfTopMonitor {
             .take(MAX_ROWS)
     }
 
-    /** `top` prints RES as KiB by default, or with a K/M/G suffix. */
-    private fun parseSizeKb(raw: String): Long {
-        val text = raw.trim()
-        if (text.isEmpty()) return 0L
-        val unit = text.last()
-        val number = when {
-            unit.isDigit() -> text
-            else -> text.dropLast(1)
-        }.toDoubleOrNull() ?: return 0L
-        return when (unit.uppercaseChar()) {
-            'K' -> number.toLong()
-            'M' -> (number * 1024L).toLong()
-            'G' -> (number * 1024L * 1024L).toLong()
-            'B' -> (number / 1024L).toLong()
-            else -> number.toLong()
-        }
+    private val WHITESPACE = Regex("\\s+")
+
+    /** Some 16 KiB-page kernels exist, so the page size is not hard-coded. */
+    private val pageSizeKb: Long by lazy {
+        (android.system.Os.sysconf(android.system.OsConstants._SC_PAGESIZE) / 1024L).coerceAtLeast(1L)
     }
+
+    private const val SAMPLE_WINDOW_MS = 1_000L
 
     /** Four table rows are already more than a phone screen shows. */
     private const val MAX_ROWS = 40

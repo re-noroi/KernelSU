@@ -964,7 +964,7 @@
     <string name="perftop_title">PerfTop</string>
     <string name="perftop_entry_summary">Live process CPU and memory usage</string>
     <string name="perftop_processes_title">Processes</string>
-    <string name="perftop_summary">Sampled with top every 3 seconds while this tab is open</string>
+    <string name="perftop_summary">Sampled from procfs every 3 seconds while this tab is open</string>
     <string name="perftop_reading">Sampling processes…</string>
     <string name="perftop_unavailable">Unable to read the process list on this device.</string>
     <string name="perftop_empty">No processes were returned.</string>

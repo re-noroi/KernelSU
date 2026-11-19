@@ -452,5 +452,5 @@ private fun formatRam(resKb: Long): String {
     return "$megabytes MB"
 }
 
-/** One `top` call every 3 s, only while the tab is resumed. */
+/** One procfs sample every 3 s, only while the tab is resumed. */
 private const val REFRESH_INTERVAL_MS = 3_000L
