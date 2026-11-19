@@ -21,7 +21,7 @@ data class PerfTopUiState(
 )
 
 /**
- * Holds one `top` snapshot at a time. The screen owns the 3 s cadence and only
+ * Holds one procfs sample at a time. The screen owns the 3 s cadence and only
  * runs it while resumed, so nothing here samples in the background.
  */
 class PerfTopViewModel : ViewModel() {
