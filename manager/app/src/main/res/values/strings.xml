@@ -939,6 +939,12 @@
     <string name="gpu_monitor_history_empty">Keep this tab open to build a usage graph.</string>
     <string name="gpu_monitor_history_clear">Clear graph</string>
     <string name="gpu_monitor_refresh">Refresh</string>
+    <string name="gpu_monitor_limits_title">Frequency limits</string>
+    <string name="gpu_monitor_limits_summary">Lower the ceiling to save power, raise the floor for steadier frame rates.</string>
+    <string name="gpu_monitor_limits_min">Minimum</string>
+    <string name="gpu_monitor_limits_max">Maximum</string>
+    <string name="gpu_monitor_limit_decrease">Decrease frequency</string>
+    <string name="gpu_monitor_limit_increase">Increase frequency</string>
 
     <!-- Wakelocks monitor -->
     <string name="wakelocks_title">Wakelocks</string>

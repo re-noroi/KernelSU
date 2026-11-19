@@ -936,6 +936,12 @@ Apakah Anda ingin memulihkan profil ini?</string>
     <string name="gpu_monitor_history_empty">Biarkan tab ini terbuka untuk membentuk grafik penggunaan.</string>
     <string name="gpu_monitor_history_clear">Hapus grafik</string>
     <string name="gpu_monitor_refresh">Muat ulang</string>
+    <string name="gpu_monitor_limits_title">Batas frekuensi</string>
+    <string name="gpu_monitor_limits_summary">Turunkan batas atas untuk hemat daya, naikkan batas bawah untuk frame rate lebih stabil.</string>
+    <string name="gpu_monitor_limits_min">Minimum</string>
+    <string name="gpu_monitor_limits_max">Maksimum</string>
+    <string name="gpu_monitor_limit_decrease">Turunkan frekuensi</string>
+    <string name="gpu_monitor_limit_increase">Naikkan frekuensi</string>
 
     <!-- Wakelocks monitor -->
     <string name="wakelocks_title">Wakelock</string>
