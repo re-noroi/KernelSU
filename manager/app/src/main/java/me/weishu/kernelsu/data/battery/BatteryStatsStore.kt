@@ -60,6 +60,13 @@ class BatteryStatsStore(context: Context) {
     private var lastScreenOn = prefs.getBoolean(KEY_LAST_SCREEN_ON, true)
     private var lastCharging = prefs.getBoolean(KEY_LAST_CHARGING, false)
 
+    /**
+     * Whether charging has actually been observed since this process started.
+     * The persisted [lastCharging] can be stale after a kernel flash, so on its
+     * own it must never start a new measurement cycle.
+     */
+    private var chargingSeenThisBoot = false
+
     var screenOnMillis: Long = prefs.getLong(KEY_SCREEN_ON, 0L)
         private set
 
@@ -135,16 +142,26 @@ class BatteryStatsStore(context: Context) {
         nowElapsed: Long = SystemClock.elapsedRealtime(),
         nowUptime: Long = SystemClock.uptimeMillis(),
     ): Boolean {
-        // A reboot restarts every monotonic clock, so the stored deltas are
-        // meaningless: the gap across the reboot must not be booked to any
-        // state. A changed boot signature is authoritative; a clock that went
-        // backwards (or a freshly cleared store) is always a rebase too.
-        val clockRebased = lastElapsed == 0L ||
-            nowElapsed < lastElapsed ||
-            nowUptime < lastUptime
-        val rebooted = (lastBootSignature.isNotEmpty() && bootSignature != lastBootSignature) ||
-            (bootCount >= 0 && lastBootCount >= 0 && bootCount != lastBootCount)
-        if (clockRebased || rebooted) {
+        // Decide from plain values so the reboot/unplug precedence is unit
+        // testable without an Android Context. A reboot always wins over an
+        // apparent unplug: the stored clocks are meaningless after one, and
+        // the first sample must not be mistaken for a charger disconnect.
+        val decision = decideSettle(
+            charging = charging,
+            lastCharging = lastCharging,
+            resetOnUnplug = resetOnUnplug,
+            chargingSeenThisBoot = chargingSeenThisBoot,
+            lastElapsed = lastElapsed,
+            nowElapsed = nowElapsed,
+            lastUptime = lastUptime,
+            nowUptime = nowUptime,
+            lastBootSignature = lastBootSignature,
+            bootSignature = bootSignature,
+            lastBootCount = lastBootCount,
+            bootCount = bootCount,
+        )
+
+        if (decision.rebase) {
             // Keep the cumulative totals but rebase, otherwise the delta would
             // be bogus. Re-establishing `lastCharging` here is what stops the
             // first sample after a reboot from looking like an unplug.
@@ -154,6 +171,7 @@ class BatteryStatsStore(context: Context) {
             lastUptime = nowUptime
             lastLevel = level
             lastCharging = charging
+            chargingSeenThisBoot = charging
             lastScreenOn = screenOn
             // Persist the new boot identity right away. The service's throttled
             // writer may not run again for a minute, and the process can be
@@ -170,7 +188,7 @@ class BatteryStatsStore(context: Context) {
         // ended, and the raw "since last charge" section below restarts at the
         // same moment. Without this the drain percentages would accumulate
         // across charges. Durations reset with them so the two always agree.
-        if (!charging && lastCharging && resetOnUnplug) {
+        if (decision.newCycle) {
             screenOnMillis = 0L
             screenOffMillis = 0L
             deepSleepMillis = 0L
@@ -184,6 +202,7 @@ class BatteryStatsStore(context: Context) {
             lastLevel = level
             return true
         }
+        if (charging) chargingSeenThisBoot = true
         lastCharging = charging
 
         val wall = nowElapsed - lastElapsed
@@ -240,6 +259,7 @@ class BatteryStatsStore(context: Context) {
         lastLevel = -1
         lastScreenOn = true
         lastCharging = false
+        chargingSeenThisBoot = false
         screenOnMillis = 0L
         screenOffMillis = 0L
         deepSleepMillis = 0L
