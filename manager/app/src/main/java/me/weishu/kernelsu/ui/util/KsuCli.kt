@@ -37,6 +37,8 @@ import java.nio.charset.StandardCharsets
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.zip.ZipFile
 
@@ -661,7 +663,24 @@ private fun readMagic(channel: DataSourceChannel): String {
     return String(buffer.array(), StandardCharsets.ISO_8859_1)
 }
 
+// All reboot entry points are UI callbacks. ShellUtils.fastCmd/execKsud block until
+// the root shell job finishes, and during shutdown that job is killed before it can
+// reply - which used to park the main thread in FutureTask.get() and let MIUI report
+// an app hang. Serialize the work on a private worker so no caller can ever block.
+private val rebootExecutor: ExecutorService by lazy {
+    Executors.newSingleThreadExecutor { runnable ->
+        Thread(runnable, "ksu-reboot").apply { isDaemon = true }
+    }
+}
+
 fun reboot(reason: String = "") {
+    rebootExecutor.execute {
+        runCatching { rebootBlocking(reason) }
+            .onFailure { Log.e(TAG, "reboot failed", it) }
+    }
+}
+
+private fun rebootBlocking(reason: String) {
     if (reason == "soft_reboot") {
         execKsud("soft-reboot", true, true)
         return
