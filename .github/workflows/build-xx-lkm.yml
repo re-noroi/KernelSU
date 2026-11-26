@@ -42,31 +42,16 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Get KowSU version
-      id: version
+    - name: Fetch and checkout xxKSU driver
       run: |
         git config --global --add safe.directory /__w/KernelSU/KernelSU
-        cd kernel
-        KSU_GIT_VERSION=$(git rev-list --count HEAD)
-        KSU_VERSION=$(expr 30000 + $KSU_GIT_VERSION)
-        echo "KSU_VERSION=$KSU_VERSION" >> $GITHUB_OUTPUT
-        echo "Calculated KSU_VERSION: $KSU_VERSION"
-
-    - name: Fetch and checkout xxKSU
-      run: |
-        git remote add xx https://github.com/backslashxx/KernelSU
-        git fetch xx master
-        git checkout xx/master
-
-        if ! (set -o pipefail; curl -sSfL "https://raw.githubusercontent.com/KOWX712/files/main/KowSU/xxksu.patch" | patch -p1); then
-          echo "Patch failed or rejected, restoring modified files..."
-          git checkout .
-          git clean -fd
-          echo "Applying fallback patch from midori01/KernelSU xx branch (xx~2)..."
-          patch -p1 < <(curl -sSfL "https://github.com/midori01/KernelSU/commit/xx~2.patch")
-        fi
-
-        sed -i "s/CFLAGS_ksu.o += -DKSU_VERSION=.*/CFLAGS_ksu.o += -DKSU_VERSION=${{ steps.version.outputs.KSU_VERSION }}/" kernel/Makefile
+        # The original backslashxx repository is gone. The maintained xx
+        # driver is the xxksu-driver branch of this fork, which already
+        # carries the noroiSU manager signature and the correct driver
+        # version, so no external patches are needed here.
+        git remote add xx https://github.com/re-noroi/KernelSU.git
+        git fetch xx xxksu-driver
+        git checkout -B xx-ksu xx/xxksu-driver
 
     - name: Build kernelsu.ko
       env:
@@ -80,8 +65,8 @@ jobs:
 
         echo "=== Building kernelsu.ko for KMI: ${{ matrix.kmi }} from xx branch ==="
 
-        # The xx branch Makefile carries upstream defaults; fall back to KowSU
-        # values when the caller doesn't provide them (e.g. non-PR builds).
+        # Fall back to the manager defaults when the caller doesn't provide
+        # expected signature values (e.g. non-PR builds).
         PACKAGE_NAME="${PACKAGE_NAME:-com.kowx712.supermanager}"
         EXPECTED_SIZE="${EXPECTED_SIZE:-0x375}"
         EXPECTED_HASH="${EXPECTED_HASH:-484fcba6e6c43b1fb09700633bf2fb4758f13cb0b2f4457b80d075084b26c588}"
