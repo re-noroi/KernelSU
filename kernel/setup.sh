@@ -4,11 +4,11 @@ set -eu
 GKI_ROOT=$(pwd)
 
 display_usage() {
-    echo "Usage: $0 [--cleanup | <commit-or-tag>]"
+    echo "Usage: $0 [--cleanup | <commit-or-tag-or-branch>]"
     echo "  --cleanup:              Cleans up previous modifications made by the script."
-    echo "  <commit-or-tag>:        Sets up or updates the KernelSU to specified tag or commit."
+    echo "  <commit-or-tag-or-branch>: Checks out the specified ref instead of the maintained driver branch."
     echo "  -h, --help:             Displays this usage information."
-    echo "  (no args):              Sets up or updates the KernelSU environment to the latest tagged version."
+    echo "  (no args):              Sets up or updates the driver from re-noroi/KernelSU's xxksu-driver branch."
 }
 
 initialize_variables() {
@@ -39,16 +39,18 @@ perform_cleanup() {
 # Sets up or update KernelSU environment
 setup_kernelsu() {
     echo "[+] Setting up KernelSU..."
-    test -d "$GKI_ROOT/KernelSU" || git clone https://github.com/backslashxx/KernelSU && echo "[+] Repository cloned."
+    # The original backslashxx repository is gone; the maintained sources now
+    # live on this branch of re-noroi/KernelSU.
+    REPO_URL="https://github.com/re-noroi/KernelSU.git"
+    DRIVER_BRANCH="xxksu-driver"
+    test -d "$GKI_ROOT/KernelSU" || git clone -b "$DRIVER_BRANCH" "$REPO_URL" "$GKI_ROOT/KernelSU" && echo "[+] Repository cloned."
     cd "$GKI_ROOT/KernelSU"
     git stash && echo "[-] Stashed current changes."
-    if [ "$(git status | grep -Po 'v\d+(\.\d+)*' | head -n1)" ]; then
-        git checkout main && echo "[-] Switched to main branch."
-    fi
-    git pull && echo "[+] Repository updated."
     if [ -z "${1-}" ]; then
-        git checkout "$(git describe --abbrev=0 --tags)" && echo "[-] Checked out latest tag."
+        git checkout "$DRIVER_BRANCH" && echo "[-] Switched to $DRIVER_BRANCH branch."
+        git pull --ff-only origin "$DRIVER_BRANCH" && echo "[+] Repository updated."
     else
+        git fetch origin && echo "[+] Fetched refs."
         git checkout "$1" && echo "[-] Checked out $1." || echo "[-] Checkout default branch"
     fi
     cd "$DRIVER_DIR"
