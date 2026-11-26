@@ -506,16 +506,26 @@ static inline void kfree_byref(void *buf) { kfree(*(void **)buf); }
  *
  */
 #if defined(CONFIG_KSU_NOPRINTK) && !defined(CONFIG_KSU_DEBUG)
-#define pr_emerg(...)	do { } while (0)
-#define pr_alert(...)	do { } while (0)
-#define pr_crit(f...)	do { } while (0)
-#define pr_err(...)	do { } while (0)
-#define pr_warn(...)	do { } while (0)
-#define pr_notice(...)	do { } while (0)
-#define pr_info(...)	do { } while (0)
-#define pr_debug(...)	do { } while (0)
-#define pr_devel(...)	do { } while (0)
-#define printk(...)	do { } while (0)
+#undef pr_emerg
+#define pr_emerg(fmt, ...)	(0)
+#undef pr_alert
+#define pr_alert(fmt, ...)	(0)
+#undef pr_crit
+#define pr_crit(fmt, ...)	(0)
+#undef pr_err
+#define pr_err(fmt, ...)	(0)
+#undef pr_warn
+#define pr_warn(fmt, ...)	(0)
+#undef pr_notice
+#define pr_notice(fmt, ...)	(0)
+#undef pr_info
+#define pr_info(fmt, ...)	(0)
+#undef pr_debug
+#define pr_debug(fmt, ...)	(0)
+#undef pr_devel
+#define pr_devel(fmt, ...)	(0)
+#undef printk
+#define printk(fmt, ...)	(0)
 #endif // CONFIG_KSU_NOPRINTK && !CONFIG_KSU_DEBUG
 
 // no ratelimit
