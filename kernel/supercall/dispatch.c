@@ -805,6 +805,28 @@ out:
 	return ret;
 }
 
+#if defined(CONFIG_KSU_HACK_ARM64_BRANCH_LINK)
+char hook_type[] = "Branch Link x/3";
+#elif defined(CONFIG_KSU_TAMPER_SYSCALL_TABLE)
+const char *hook_type = "Syscall Table Tamper";
+#else
+const char *hook_type = "Manual";
+#endif
+
+static int do_get_hook_type(void __user *arg)
+{
+	struct ksu_hook_type_cmd cmd = { 0 };
+
+	strscpy(cmd.hook_type, hook_type, sizeof(cmd.hook_type));
+
+	if (copy_to_user(arg, &cmd, sizeof(cmd))) {
+		pr_err("get_hook_type: copy_to_user failed\n");
+		return -EFAULT;
+	}
+
+	return 0;
+}
+
 // IOCTL handlers mapping table
 static const struct ksu_ioctl_cmd_map ksu_ioctl_handlers[] = {
 	{ .cmd = KSU_IOCTL_GRANT_ROOT, .name = "GRANT_ROOT", .handler = do_grant_root, .perm_check = allowed_for_su  },
@@ -832,6 +854,7 @@ static const struct ksu_ioctl_cmd_map ksu_ioctl_handlers[] = {
 	{ .cmd = KSU_IOCTL_GET_SULOG_FD, .name = "GET_SULOG_FD", .handler = do_get_sulog_fd, .perm_check = only_root },
 	{ .cmd = KSU_IOCTL_DISABLE_ESCAPE_TO_ROOT, .name = "DISABLE_ESCAPE_TO_ROOT", .handler = do_disable_escape_to_root, .perm_check = only_root, .allow_su_session = true },
 	{ .cmd = KSU_IOCTL_LOOKUP_SYMBOLS, .name = "LOOKUP_SYMBOLS", .handler = do_lookup_symbols, .perm_check = only_root },
+	{ .cmd = KSU_IOCTL_HOOK_TYPE, .name = "HOOK_TYPE", .handler = do_get_hook_type, .perm_check = manager_or_root },
 	{ .cmd = 0, .name = NULL, .handler = NULL, .perm_check = NULL } // Sentinel
 };
 
