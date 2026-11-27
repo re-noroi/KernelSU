@@ -344,9 +344,21 @@ static int do_set_app_profile(void __user *arg)
 	return ret;
 }
 
+/* External tooling probes this ID for AVC spoofing support. */
+#define KSU_FEATURE_ID_AVC_SPOOF 10003
+
+static inline u32 ksu_normalize_feature_id(u32 feature_id)
+{
+	if (feature_id == KSU_FEATURE_ID_AVC_SPOOF)
+		return KSU_FEATURE_SELINUX_HIDE;
+
+	return feature_id;
+}
+
 static int do_get_feature(void __user *arg)
 {
 	struct ksu_get_feature_cmd cmd;
+	u32 feature_id;
 	bool supported = false;
 	int ret;
 
@@ -355,11 +367,12 @@ static int do_get_feature(void __user *arg)
 		return -EFAULT;
 	}
 
-	ret = ksu_get_feature(cmd.feature_id, &cmd.value, &supported);
+	feature_id = ksu_normalize_feature_id(cmd.feature_id);
+	ret = ksu_get_feature(feature_id, &cmd.value, &supported);
 	cmd.supported = 0;
 	if (supported) {
 		cmd.supported |= KSU_FEATURE_FLAG_SUPPORTED;
-		if (ksu_feature_is_forced(cmd.feature_id)) {
+		if (ksu_feature_is_forced(feature_id)) {
 			cmd.supported |= KSU_FEATURE_FLAG_FORCED;
 		}
 	}
@@ -380,6 +393,7 @@ static int do_get_feature(void __user *arg)
 static int do_set_feature(void __user *arg)
 {
 	struct ksu_set_feature_cmd cmd;
+	u32 feature_id;
 	int ret;
 
 	if (copy_from_user(&cmd, arg, sizeof(cmd))) {
@@ -387,7 +401,8 @@ static int do_set_feature(void __user *arg)
 		return -EFAULT;
 	}
 
-	ret = ksu_set_feature(cmd.feature_id, cmd.value);
+	feature_id = ksu_normalize_feature_id(cmd.feature_id);
+	ret = ksu_set_feature(feature_id, cmd.value);
 	if (ret) {
 		pr_err("set_feature: failed for feature %u: %d\n", cmd.feature_id, ret);
 		return ret;
